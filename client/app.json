@@ -10,7 +10,9 @@
     "splash": {
       "backgroundColor": "#0f0f23"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.saferide.guardian"
@@ -26,6 +28,11 @@
         "CAMERA"
       ]
     },
-    "plugins": ["expo-location", "expo-image-picker", "expo-camera"]
+    "plugins": [
+      "expo-location",
+      "expo-image-picker",
+      "expo-camera",
+      "expo-asset"
+    ]
   }
 }
