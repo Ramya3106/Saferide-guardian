@@ -1,0 +1,108 @@
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { AuthProvider, useAuth } from "./src/context/AuthContext";
+import { Text } from "react-native";
+
+// Screens
+import LoginScreen from "./src/screens/LoginScreen";
+import RegisterScreen from "./src/screens/RegisterScreen";
+import HomeScreen from "./src/screens/HomeScreen";
+import ReportScreen from "./src/screens/ReportScreen";
+import MyComplaintsScreen from "./src/screens/MyComplaintsScreen";
+import ComplaintDetailScreen from "./src/screens/ComplaintDetailScreen";
+import AlertsScreen from "./src/screens/AlertsScreen";
+import ProfileScreen from "./src/screens/ProfileScreen";
+
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+function MainTabs() {
+  const { user } = useAuth();
+  const isStaff = ["driver", "conductor", "ttr", "rpf", "police"].includes(user?.role);
+
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarStyle: { backgroundColor: "#1a1a2e", borderTopColor: "#16213e" },
+        tabBarActiveTintColor: "#e94560",
+        tabBarInactiveTintColor: "#8b8b8b",
+        headerStyle: { backgroundColor: "#1a1a2e" },
+        headerTintColor: "#fff",
+      }}
+    >
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ tabBarLabel: "Home", tabBarIcon: () => <Text>🏠</Text> }}
+      />
+      <Tab.Screen
+        name="Report"
+        component={ReportScreen}
+        options={{ tabBarLabel: "Report", tabBarIcon: () => <Text>📝</Text> }}
+      />
+      <Tab.Screen
+        name="MyComplaints"
+        component={MyComplaintsScreen}
+        options={{ tabBarLabel: "My Items", tabBarIcon: () => <Text>📦</Text> }}
+      />
+      {isStaff && (
+        <Tab.Screen
+          name="Alerts"
+          component={AlertsScreen}
+          options={{ tabBarLabel: "Alerts", tabBarIcon: () => <Text>🔔</Text> }}
+        />
+      )}
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ tabBarLabel: "Profile", tabBarIcon: () => <Text>👤</Text> }}
+      />
+    </Tab.Navigator>
+  );
+}
+
+function AppNavigator() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {!user ? (
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+        </>
+      ) : (
+        <>
+          <Stack.Screen name="Main" component={MainTabs} />
+          <Stack.Screen
+            name="ComplaintDetail"
+            component={ComplaintDetailScreen}
+            options={{
+              headerShown: true,
+              headerStyle: { backgroundColor: "#1a1a2e" },
+              headerTintColor: "#fff",
+              title: "Complaint Details",
+            }}
+          />
+        </>
+      )}
+    </Stack.Navigator>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <NavigationContainer>
+        <AppNavigator />
+      </NavigationContainer>
+    </AuthProvider>
+  );
+}
+
