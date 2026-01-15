@@ -10,9 +10,7 @@
     "splash": {
       "backgroundColor": "#0f0f23"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.saferide.guardian"
