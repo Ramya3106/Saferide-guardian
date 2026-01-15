@@ -122,7 +122,7 @@ export default function RegisterScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f0f23",
+    backgroundColor: "#0a192f",
   },
   content: {
     padding: 20,
@@ -131,22 +131,22 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#e94560",
+    color: "#64ffda",
     marginBottom: 30,
     textAlign: "center",
   },
   input: {
-    backgroundColor: "#1a1a2e",
+    backgroundColor: "#112240",
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
     color: "#fff",
     borderWidth: 1,
-    borderColor: "#16213e",
+    borderColor: "#233554",
     marginBottom: 15,
   },
   label: {
-    color: "#fff",
+    color: "#ccd6f6",
     fontSize: 16,
     marginBottom: 10,
     marginTop: 5,
@@ -161,23 +161,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: "#1a1a2e",
+    backgroundColor: "#112240",
     borderWidth: 1,
-    borderColor: "#16213e",
+    borderColor: "#233554",
   },
   roleSelected: {
-    backgroundColor: "#e94560",
-    borderColor: "#e94560",
+    backgroundColor: "#64ffda",
+    borderColor: "#64ffda",
   },
   roleText: {
-    color: "#8b8b8b",
+    color: "#8892b0",
     fontSize: 14,
   },
   roleTextSelected: {
-    color: "#fff",
+    color: "#0a192f",
   },
   button: {
-    backgroundColor: "#e94560",
+    backgroundColor: "#64ffda",
     borderRadius: 12,
     padding: 16,
     alignItems: "center",
@@ -187,12 +187,12 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: "#fff",
+    color: "#0a192f",
     fontSize: 18,
     fontWeight: "bold",
   },
   link: {
-    color: "#e94560",
+    color: "#64ffda",
     textAlign: "center",
     marginTop: 20,
     fontSize: 15,
