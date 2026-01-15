@@ -25,11 +25,11 @@ function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarStyle: { backgroundColor: "#1a1a2e", borderTopColor: "#16213e" },
-        tabBarActiveTintColor: "#e94560",
-        tabBarInactiveTintColor: "#8b8b8b",
-        headerStyle: { backgroundColor: "#1a1a2e" },
-        headerTintColor: "#fff",
+        tabBarStyle: { backgroundColor: "#112240", borderTopColor: "#233554" },
+        tabBarActiveTintColor: "#64ffda",
+        tabBarInactiveTintColor: "#8892b0",
+        headerStyle: { backgroundColor: "#112240" },
+        headerTintColor: "#ccd6f6",
       }}
     >
       <Tab.Screen
@@ -85,8 +85,8 @@ function AppNavigator() {
             component={ComplaintDetailScreen}
             options={{
               headerShown: true,
-              headerStyle: { backgroundColor: "#1a1a2e" },
-              headerTintColor: "#fff",
+              headerStyle: { backgroundColor: "#112240" },
+              headerTintColor: "#ccd6f6",
               title: "Complaint Details",
             }}
           />
