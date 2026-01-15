@@ -20,7 +20,9 @@ const Tab = createBottomTabNavigator();
 
 function MainTabs() {
   const { user } = useAuth();
-  const isStaff = ["driver", "conductor", "ttr", "rpf", "police"].includes(user?.role);
+  const isStaff = ["driver", "conductor", "ttr", "rpf", "police"].includes(
+    user?.role
+  );
 
   return (
     <Tab.Navigator
@@ -105,4 +107,3 @@ export default function App() {
     </AuthProvider>
   );
 }
-
