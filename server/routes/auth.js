@@ -18,7 +18,9 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: "Phone number is required" });
     }
     if (!password || password.length < 6) {
-      return res.status(400).json({ error: "Password must be at least 6 characters" });
+      return res
+        .status(400)
+        .json({ error: "Password must be at least 6 characters" });
     }
 
     // Check if user already exists
@@ -34,7 +36,7 @@ router.post("/register", async (req, res) => {
       password,
       role: role || "passenger",
     };
-    
+
     // Only include email if it's provided and not empty
     if (email && email.trim()) {
       userData.email = email.trim();
@@ -47,14 +49,19 @@ router.post("/register", async (req, res) => {
       expiresIn: "30d",
     });
 
-    res.status(201).json({ 
-      token, 
-      user: { id: user._id, name: user.name, phone: user.phone, role: user.role } 
+    res.status(201).json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+      },
     });
   } catch (error) {
     // Handle mongoose validation errors
     if (error.name === "ValidationError") {
-      const errors = Object.values(error.errors).map(err => err.message);
+      const errors = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({ error: errors.join(", ") });
     }
     // Handle duplicate key error (unique constraint)
@@ -62,7 +69,11 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: "Phone number already registered" });
     }
     console.error("Registration error:", error);
-    res.status(500).json({ error: error.message || "Registration failed. Please try again." });
+    res
+      .status(500)
+      .json({
+        error: error.message || "Registration failed. Please try again.",
+      });
   }
 });
 
