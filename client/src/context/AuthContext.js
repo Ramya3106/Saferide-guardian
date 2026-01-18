@@ -40,13 +40,19 @@ export function AuthProvider({ children }) {
   }
 
   async function register(data) {
-    const response = await api.post("/auth/register", data);
-    const { token: newToken, user: newUser } = response.data;
-    await AsyncStorage.setItem("@saferide:token", newToken);
-    await AsyncStorage.setItem("@saferide:user", JSON.stringify(newUser));
-    api.defaults.headers.Authorization = `Bearer ${newToken}`;
-    setToken(newToken);
-    setUser(newUser);
+    try {
+      const response = await api.post("/auth/register", data);
+      const { token: newToken, user: newUser } = response.data;
+      await AsyncStorage.setItem("@saferide:token", newToken);
+      await AsyncStorage.setItem("@saferide:user", JSON.stringify(newUser));
+      api.defaults.headers.Authorization = `Bearer ${newToken}`;
+      setToken(newToken);
+      setUser(newUser);
+      return { success: true };
+    } catch (error) {
+      // Re-throw error so RegisterScreen can handle it
+      throw error;
+    }
   }
 
   async function logout() {

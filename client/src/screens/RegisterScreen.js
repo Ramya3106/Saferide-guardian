@@ -29,18 +29,36 @@ export default function RegisterScreen({ navigation }) {
   const { register } = useAuth();
 
   async function handleRegister() {
-    if (!name || !phone || !password) {
-      Alert.alert("Error", "Please fill required fields");
+    if (!name || !name.trim()) {
+      Alert.alert("Error", "Please enter your name");
+      return;
+    }
+    if (!phone || !phone.trim()) {
+      Alert.alert("Error", "Please enter your phone number");
+      return;
+    }
+    if (!password || password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters");
       return;
     }
     setLoading(true);
     try {
-      await register({ name, phone, email, password, role });
+      await register({ 
+        name: name.trim(), 
+        phone: phone.trim(), 
+        email: email.trim() || undefined, 
+        password, 
+        role 
+      });
+      Alert.alert("Success", "Registration successful!", [
+        { text: "OK", onPress: () => navigation.navigate("Home") }
+      ]);
     } catch (error) {
-      Alert.alert(
-        "Error",
-        error.response?.data?.error || "Registration failed"
-      );
+      const errorMessage = 
+        error.response?.data?.error || 
+        error.message || 
+        "Registration failed. Please try again.";
+      Alert.alert("Registration Failed", errorMessage);
     } finally {
       setLoading(false);
     }
