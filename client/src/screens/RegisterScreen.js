@@ -43,20 +43,20 @@ export default function RegisterScreen({ navigation }) {
     }
     setLoading(true);
     try {
-      await register({ 
-        name: name.trim(), 
-        phone: phone.trim(), 
-        email: email.trim() || undefined, 
-        password, 
-        role 
+      await register({
+        name: name.trim(),
+        phone: phone.trim(),
+        email: email.trim() || undefined,
+        password,
+        role,
       });
       Alert.alert("Success", "Registration successful!", [
-        { text: "OK", onPress: () => navigation.navigate("Home") }
+        { text: "OK", onPress: () => navigation.navigate("Home") },
       ]);
     } catch (error) {
-      const errorMessage = 
-        error.response?.data?.error || 
-        error.message || 
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
         "Registration failed. Please try again.";
       Alert.alert("Registration Failed", errorMessage);
     } finally {
