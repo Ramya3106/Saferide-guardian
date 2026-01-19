@@ -54,8 +54,12 @@ mongoose
   .connect(MONGO_URI)
   .then(() => {
     console.log("MongoDB connected");
-    server.listen(PORT, () => {
+    // Bind to 0.0.0.0 to accept connections from all network interfaces
+    // This allows Android emulator (10.0.2.2) and physical devices to connect
+    server.listen(PORT, "0.0.0.0", () => {
       console.log(`SafeRide Guardian server running on port ${PORT}`);
+      console.log(`Server accessible at http://localhost:${PORT}`);
+      console.log(`For Android emulator: http://10.0.2.2:${PORT}`);
     });
   })
   .catch((err) => console.error("MongoDB connection error:", err));
