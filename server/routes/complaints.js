@@ -62,10 +62,10 @@ router.post(
         priorityScore >= 85
           ? "critical"
           : priorityScore >= 70
-          ? "high"
-          : priorityScore >= 50
-          ? "medium"
-          : "low";
+            ? "high"
+            : priorityScore >= 50
+              ? "medium"
+              : "low";
 
       const complaint = new Complaint({
         userId: req.user._id,
@@ -87,7 +87,7 @@ router.post(
 
       // Generate QR for handoff using the actual complaint id so deep links work
       complaint.handoffQRCode = await QRCode.toDataURL(
-        `saferide://complaint/${complaint._id.toString()}`
+        `saferide://complaint/${complaint._id.toString()}`,
       );
       await complaint.save();
 
@@ -99,7 +99,7 @@ router.post(
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
-  }
+  },
 );
 
 // Get user's complaints
@@ -119,7 +119,7 @@ router.get("/:id", authMiddleware, async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id).populate(
       "userId recoveredBy",
-      "name phone role"
+      "name phone role",
     );
     if (!complaint)
       return res.status(404).json({ error: "Complaint not found" });
