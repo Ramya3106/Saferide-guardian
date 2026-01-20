@@ -67,11 +67,6 @@ router.post(
           ? "medium"
           : "low";
 
-      // Generate QR for handoff
-      const handoffQRCode = await QRCode.toDataURL(
-        `saferide://complaint/${uuidv4()}`
-      );
-
       const complaint = new Complaint({
         userId: req.user._id,
         itemType,
@@ -86,9 +81,14 @@ router.post(
         vehicleNumber,
         routeId,
         incidentTime: new Date(incidentTime),
-        handoffQRCode,
       });
 
+      await complaint.save();
+
+      // Generate QR for handoff using the actual complaint id so deep links work
+      complaint.handoffQRCode = await QRCode.toDataURL(
+        `saferide://complaint/${complaint._id.toString()}`
+      );
       await complaint.save();
 
       // Trigger alert routing
