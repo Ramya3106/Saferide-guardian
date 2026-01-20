@@ -42,7 +42,7 @@ const linking = {
 function MainTabs() {
   const { user } = useAuth();
   const isStaff = ["driver", "conductor", "ttr", "rpf", "police"].includes(
-    user?.role
+    user?.role,
   );
 
   return (
