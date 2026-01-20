@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { Text } from "react-native";
+import * as Linking from "expo-linking";
 
 // Screens
 import LoginScreen from "./src/screens/LoginScreen";
@@ -17,6 +18,26 @@ import ProfileScreen from "./src/screens/ProfileScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
+const linking = {
+  prefixes: [Linking.createURL("/"), "saferide://"],
+  config: {
+    screens: {
+      Login: "login",
+      Register: "register",
+      Main: {
+        screens: {
+          Home: "home",
+          Report: "report",
+          MyComplaints: "my-complaints",
+          Alerts: "alerts",
+          Profile: "profile",
+        },
+      },
+      ComplaintDetail: "complaint/:id",
+    },
+  },
+};
 
 function MainTabs() {
   const { user } = useAuth();
@@ -101,7 +122,7 @@ function AppNavigator() {
 export default function App() {
   return (
     <AuthProvider>
-      <NavigationContainer>
+      <NavigationContainer linking={linking} fallback={<Text>Loading...</Text>}>
         <AppNavigator />
       </NavigationContainer>
     </AuthProvider>

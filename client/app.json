@@ -4,6 +4,7 @@
     "slug": "saferide-guardian",
     "version": "1.0.0",
     "sdkVersion": "54.0.0",
+    "scheme": "saferide",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "splash": {
@@ -23,6 +24,17 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "CAMERA"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "saferide"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "plugins": [
