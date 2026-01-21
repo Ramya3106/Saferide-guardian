@@ -69,7 +69,9 @@ export default function ComplaintDetailScreen({ route }) {
     return (
       <View style={styles.loading}>
         <Text style={styles.errorText}>{error}</Text>
-        <Text style={styles.errorHint}>Check your connection and try again</Text>
+        <Text style={styles.errorHint}>
+          Check your connection and try again
+        </Text>
       </View>
     );
   }
