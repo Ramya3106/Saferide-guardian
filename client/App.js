@@ -125,12 +125,12 @@ export default function App() {
 
   React.useEffect(() => {
     const errorHandler = (error, isFatal) => {
-      console.error('Global error:', error);
+      console.error("Global error:", error);
       if (isFatal) {
-        setError(error.message || 'An error occurred');
+        setError(error.message || "An error occurred");
       }
     };
-    
+
     return () => {};
   }, []);
 
@@ -156,25 +156,25 @@ export default function App() {
 const styles = StyleSheet.create({
   errorContainer: {
     flex: 1,
-    backgroundColor: '#0f0f23',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#0f0f23",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   errorTitle: {
-    color: '#e94560',
+    color: "#e94560",
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 10,
   },
   errorMessage: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 10,
   },
   errorHint: {
-    color: '#8b8b8b',
+    color: "#8b8b8b",
     fontSize: 14,
   },
 });
