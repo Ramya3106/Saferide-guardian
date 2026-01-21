@@ -6,33 +6,52 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { io } from "socket.io-client";
 import api from "../services/api";
+
+// Get the socket URL based on platform
+const getSocketURL = () => {
+  if (__DEV__) {
+    if (Platform.OS === "android") {
+      return "http://10.0.2.2:5000";
+    }
+    return "http://localhost:5000";
+  }
+  return "http://192.168.1.5:5000";
+};
 
 export default function ComplaintDetailScreen({ route }) {
   const { id } = route.params;
   const [complaint, setComplaint] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchComplaint();
 
-    const socket = io("http://localhost:5000");
-    socket.emit("join-complaint", id);
-    socket.on("status-update", (updated) => {
-      setComplaint(updated);
-    });
+    try {
+      const socket = io(getSocketURL());
+      socket.emit("join-complaint", id);
+      socket.on("status-update", (updated) => {
+        setComplaint(updated);
+      });
 
-    return () => socket.disconnect();
+      return () => socket.disconnect();
+    } catch (err) {
+      console.error("Socket connection error:", err);
+    }
   }, [id]);
 
   async function fetchComplaint() {
     try {
       const response = await api.get(`/complaints/${id}`);
       setComplaint(response.data);
+      setError(null);
     } catch (error) {
       console.error("Failed to fetch complaint:", error);
+      setError(error.message || "Failed to load complaint");
     } finally {
       setLoading(false);
     }
@@ -42,6 +61,15 @@ export default function ComplaintDetailScreen({ route }) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color="#e94560" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.loading}>
+        <Text style={styles.errorText}>{error}</Text>
+        <Text style={styles.errorHint}>Check your connection and try again</Text>
       </View>
     );
   }
@@ -188,6 +216,12 @@ const styles = StyleSheet.create({
   errorText: {
     color: "#e94560",
     fontSize: 16,
+  },
+  errorHint: {
+    color: "#8b8b8b",
+    fontSize: 14,
+    marginTop: 10,
+    textAlign: "center",
   },
   header: {
     flexDirection: "row",
