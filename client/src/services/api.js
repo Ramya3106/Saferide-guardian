@@ -5,7 +5,7 @@ import { Platform } from "react-native";
 const getBaseURL = () => {
   // You can override this by setting API_BASE_URL environment variable
   // For Expo: use expo-constants or environment config
-  
+
   if (__DEV__) {
     // For Android emulator, use special IP that maps to host's localhost
     if (Platform.OS === "android") {
@@ -41,20 +41,24 @@ api.interceptors.request.use(
   (error) => {
     console.error("API Request Error:", error);
     return Promise.reject(error);
-  }
+  },
 );
 
 // Add response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.code === "ECONNREFUSED" || error.message.includes("Network Error")) {
-      console.error("Cannot connect to server. Make sure the server is running on port 5000");
+    if (
+      error.code === "ECONNREFUSED" ||
+      error.message.includes("Network Error")
+    ) {
+      console.error(
+        "Cannot connect to server. Make sure the server is running on port 5000",
+      );
       error.message = "Cannot connect to server. Please check your connection.";
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;
-
