@@ -50,16 +50,25 @@ app.get("/api/health", (req, res) => {
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/saferide";
 
+// Start server even if MongoDB fails (for testing)
+const startServer = () => {
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`SafeRide Guardian server running on port ${PORT}`);
+    console.log(`Server accessible at http://localhost:${PORT}`);
+    console.log(`For Android emulator: http://10.0.2.2:${PORT}`);
+    console.log(`For physical devices: http://10.168.37.29:${PORT}`);
+  });
+};
+
 mongoose
   .connect(MONGO_URI)
   .then(() => {
     console.log("MongoDB connected");
-    // Bind to 0.0.0.0 to accept connections from all network interfaces
-    // This allows Android emulator (10.0.2.2) and physical devices to connect
-    server.listen(PORT, "0.0.0.0", () => {
-      console.log(`SafeRide Guardian server running on port ${PORT}`);
-      console.log(`Server accessible at http://localhost:${PORT}`);
-      console.log(`For Android emulator: http://10.0.2.2:${PORT}`);
-    });
+    startServer();
   })
-  .catch((err) => console.error("MongoDB connection error:", err));
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+    console.warn("⚠️  Starting server WITHOUT database - API calls will fail!");
+    console.warn("Please install MongoDB or use MongoDB Atlas");
+    startServer();
+  });
