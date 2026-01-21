@@ -21,7 +21,7 @@ const getBaseURL = () => {
   // Change this to your computer's IP address when testing on physical device
   // Windows: ipconfig -> IPv4 Address
   // Mac/Linux: ifconfig or ip addr
-  return "http://192.168.1.5:5000/api";
+  return "http://10.168.37.29:5000/api";
 };
 
 const api = axios.create({
