@@ -3,7 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
-import { Text } from "react-native";
+import { Text, View, StyleSheet } from "react-native";
 // import * as Linking from "expo-linking"; // Disabled for Expo Go compatibility
 
 // Screens
@@ -121,6 +121,29 @@ function AppNavigator() {
 }
 
 export default function App() {
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    const errorHandler = (error, isFatal) => {
+      console.error('Global error:', error);
+      if (isFatal) {
+        setError(error.message || 'An error occurred');
+      }
+    };
+    
+    return () => {};
+  }, []);
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorTitle}>App Error</Text>
+        <Text style={styles.errorMessage}>{error}</Text>
+        <Text style={styles.errorHint}>Please restart the app</Text>
+      </View>
+    );
+  }
+
   return (
     <AuthProvider>
       <NavigationContainer fallback={<Text>Loading...</Text>}>
@@ -129,3 +152,29 @@ export default function App() {
     </AuthProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  errorContainer: {
+    flex: 1,
+    backgroundColor: '#0f0f23',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorTitle: {
+    color: '#e94560',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  errorMessage: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  errorHint: {
+    color: '#8b8b8b',
+    fontSize: 14,
+  },
+});
