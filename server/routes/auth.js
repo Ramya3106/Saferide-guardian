@@ -3,7 +3,11 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || "saferide-secret-key";
+// Use env secret only; fail fast if missing so tokens are consistent
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is not set in environment variables");
+}
 
 // Register
 router.post("/register", async (req, res) => {
@@ -46,7 +50,7 @@ router.post("/register", async (req, res) => {
     await user.save();
 
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
-      expiresIn: "30d",
+      expiresIn: "7d",
     });
 
     res.status(201).json({
@@ -69,11 +73,9 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: "Phone number already registered" });
     }
     console.error("Registration error:", error);
-    res
-      .status(500)
-      .json({
-        error: error.message || "Registration failed. Please try again.",
-      });
+    res.status(500).json({
+      error: error.message || "Registration failed. Please try again.",
+    });
   }
 });
 
@@ -88,7 +90,7 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
-      expiresIn: "30d",
+      expiresIn: "7d",
     });
 
     res.json({
