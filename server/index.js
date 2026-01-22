@@ -48,7 +48,10 @@ app.get("/api/health", (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/saferide";
+const MONGO_URI =
+  process.env.MONGODB_URI ||
+  process.env.MONGO_URI ||
+  "mongodb://localhost:27017/saferide";
 
 // Start server even if MongoDB fails (for testing)
 const startServer = () => {
