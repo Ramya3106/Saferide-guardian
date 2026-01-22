@@ -1,27 +1,39 @@
 import axios from "axios";
 import { Platform } from "react-native";
+import Constants from "expo-constants";
 
-// Get the API base URL based on the platform
+// Get the API base URL based on platform and Expo host so QR-scan on a phone works.
 const getBaseURL = () => {
-  // You can override this by setting API_BASE_URL environment variable
-  // For Expo: use expo-constants or environment config
+  // Expo public env override (set EXPO_PUBLIC_API_BASE_URL)
+  if (process.env.EXPO_PUBLIC_API_BASE_URL) {
+    return process.env.EXPO_PUBLIC_API_BASE_URL;
+  }
+
+  // Derive LAN host from Expo dev server (works for QR scan on physical device)
+  const hostUri =
+    Constants.expoConfig?.hostUri ||
+    Constants.expoConfig?.extra?.expoGo?.hostUri ||
+    Constants.manifest2?.extra?.expoGo?.hostUri ||
+    Constants.manifest?.hostUri;
+
+  if (hostUri) {
+    const host = hostUri.split(":")[0];
+    return `http://${host}:5000/api`;
+  }
 
   if (__DEV__) {
-    // For Android emulator, use special IP that maps to host's localhost
+    // Android emulator to local machine
     if (Platform.OS === "android") {
-      // 10.0.2.2 is the special IP that Android emulator uses to access host machine's localhost
       return "http://10.0.2.2:5000/api";
     }
-    // For iOS simulator, localhost works
+    // iOS simulator to local machine
     if (Platform.OS === "ios") {
       return "http://localhost:5000/api";
     }
   }
-  // For physical devices, use your actual local network IP
-  // Change this to your computer's IP address when testing on physical device
-  // Windows: ipconfig -> IPv4 Address
-  // Mac/Linux: ifconfig or ip addr
-  return "http://10.168.37.29:5000/api";
+
+  // Fallback: replace with your machine's LAN IP if needed
+  return "http://192.168.1.100:5000/api";
 };
 
 const api = axios.create({
