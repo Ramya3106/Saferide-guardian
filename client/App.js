@@ -15,6 +15,10 @@ import MyComplaintsScreen from "./src/screens/MyComplaintsScreen";
 import ComplaintDetailScreen from "./src/screens/ComplaintDetailScreen";
 import AlertsScreen from "./src/screens/AlertsScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
+import QRCodeScannerScreen from "./src/screens/QRCodeScannerScreen";
+
+// Components
+import FastNavigationPanel from "./src/components/FastNavigationPanel";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
