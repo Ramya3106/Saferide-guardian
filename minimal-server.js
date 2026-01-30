@@ -16,7 +16,7 @@ app.get("/api/health", (req, res) => {
 const PORT = 5000;
 
 server
-  .listen(PORT, '127.0.0.1', () => {
+  .listen(PORT, "127.0.0.1", () => {
     console.log(`✓ MINIMAL SERVER running on port ${PORT}`);
     console.log(`✓ Test: http://localhost:${PORT}/api/health`);
   })
