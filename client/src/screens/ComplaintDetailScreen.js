@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { io } from "socket.io-client";
 import Constants from "expo-constants";
-import api from "../services/api";
+import api, { getCurrentBaseURL } from "../services/api";
 import networkService from "../services/networkService";
 
 // Get the socket URL based on platform with multiple fallbacks
@@ -41,6 +41,8 @@ const getSocketURL = () => {
 
 export default function ComplaintDetailScreen({ route }) {
   const { id } = route.params;
+  const apiBase = getCurrentBaseURL();
+  const serverBase = apiBase.replace(/\/api$/, "");
   const [complaint, setComplaint] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -292,7 +294,7 @@ export default function ComplaintDetailScreen({ route }) {
             {complaint.itemPhotos.map((photo, i) => (
               <Image
                 key={i}
-                source={{ uri: `http://localhost:5000/${photo}` }}
+                source={{ uri: `${serverBase}/${photo}` }}
                 style={styles.photo}
               />
             ))}
