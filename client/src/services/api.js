@@ -47,7 +47,9 @@ const api = axios.create({
 // Add request interceptor for debugging
 api.interceptors.request.use(
   (config) => {
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+    console.log(
+      `API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`,
+    );
     return config;
   },
   (error) => {
@@ -66,7 +68,7 @@ api.interceptors.response.use(
       url: error.config?.url,
       baseURL: error.config?.baseURL,
     });
-    
+
     if (
       error.code === "ECONNREFUSED" ||
       error.code === "ECONNABORTED" ||
