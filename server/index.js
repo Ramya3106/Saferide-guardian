@@ -59,7 +59,7 @@ const MONGO_URI =
 // Start server
 const startServer = () => {
   server
-    .listen(PORT, () => {
+    .listen(PORT, '127.0.0.1', () => {
       console.log("\n✓✓✓ SafeRide Guardian SERVER STARTED ✓✓✓");
       console.log(`✓ Listening on port ${PORT}`);
       console.log(`✓ Test URL: http://localhost:${PORT}/api/health`);
