@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,42 +7,113 @@ import {
   Image,
   ActivityIndicator,
   Platform,
+  TouchableOpacity,
+  RefreshControl,
 } from "react-native";
 import { io } from "socket.io-client";
+import Constants from "expo-constants";
 import api from "../services/api";
+import networkService from "../services/networkService";
 
-// Get the socket URL based on platform
+// Get the socket URL based on platform with multiple fallbacks
 const getSocketURL = () => {
+  const hostUri =
+    Constants.expoConfig?.hostUri ||
+    Constants.expoConfig?.extra?.expoGo?.hostUri ||
+    Constants.manifest2?.extra?.expoGo?.hostUri ||
+    Constants.manifest?.hostUri;
+
+  if (hostUri) {
+    const host = hostUri.split(":")[0];
+    return `http://${host}:5000`;
+  }
+
   if (__DEV__) {
     if (Platform.OS === "android") {
       return "http://10.0.2.2:5000";
     }
     return "http://localhost:5000";
   }
-  return "http://192.168.1.5:5000";
+
+  // Fallback for production
+  return "http://localhost:5000";
 };
 
 export default function ComplaintDetailScreen({ route }) {
   const { id } = route.params;
   const [complaint, setComplaint] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [isConnected, setIsConnected] = useState(true);
+  const socketRef = useRef(null);
+  const socketConnectAttempts = useRef(0);
+  const MAX_SOCKET_ATTEMPTS = 3;
 
   useEffect(() => {
     fetchComplaint();
+    networkService.initialize();
 
+    const networkUnsubscribe = networkService.subscribe((connected) => {
+      setIsConnected(connected);
+      if (connected && !complaint) {
+        // Retry fetching if network comes back
+        fetchComplaint();
+      }
+    });
+
+    initializeSocket();
+
+    return () => {
+      networkUnsubscribe();
+      networkService.destroy();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, [id]);
+
+  const initializeSocket = () => {
     try {
-      const socket = io(getSocketURL());
-      socket.emit("join-complaint", id);
-      socket.on("status-update", (updated) => {
+      const socketURL = getSocketURL();
+      console.log("[Socket] Connecting to:", socketURL);
+
+      socketRef.current = io(socketURL, {
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 5,
+        timeout: 10000,
+        transports: ["websocket", "polling"], // Fallback to polling
+      });
+
+      socketRef.current.on("connect", () => {
+        console.log("[Socket] Connected:", socketRef.current.id);
+        socketConnectAttempts.current = 0;
+        socketRef.current.emit("join-complaint", id);
+      });
+
+      socketRef.current.on("status-update", (updated) => {
+        console.log("[Socket] Status update received:", updated);
         setComplaint(updated);
       });
 
-      return () => socket.disconnect();
+      socketRef.current.on("error", (error) => {
+        console.error("[Socket] Error:", error);
+      });
+
+      socketRef.current.on("disconnect", (reason) => {
+        console.warn("[Socket] Disconnected:", reason);
+      });
+
+      socketRef.current.on("connect_error", (error) => {
+        console.error("[Socket] Connection error:", error);
+        socketConnectAttempts.current += 1;
+      });
     } catch (err) {
-      console.error("Socket connection error:", err);
+      console.error("[Socket] Initialization error:", err);
     }
-  }, [id]);
+  };
 
   async function fetchComplaint() {
     try {
@@ -50,17 +121,25 @@ export default function ComplaintDetailScreen({ route }) {
       setComplaint(response.data);
       setError(null);
     } catch (error) {
-      console.error("Failed to fetch complaint:", error);
-      setError(error.message || "Failed to load complaint");
+      console.error("[Complaint] Failed to fetch:", error);
+      const errorMsg = error.userMessage || error.message || "Failed to load complaint";
+      setError(errorMsg);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchComplaint();
+  };
 
   if (loading) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color="#e94560" />
+        <Text style={styles.loadingText}>Loading complaint details...</Text>
       </View>
     );
   }
@@ -69,9 +148,10 @@ export default function ComplaintDetailScreen({ route }) {
     return (
       <View style={styles.loading}>
         <Text style={styles.errorText}>{error}</Text>
-        <Text style={styles.errorHint}>
-          Check your connection and try again
-        </Text>
+        <Text style={styles.errorHint}>Check your connection and try again</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchComplaint}>
+          <Text style={styles.retryButtonText}>🔄 Retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -84,11 +164,24 @@ export default function ComplaintDetailScreen({ route }) {
     );
   }
 
-  const statusSteps = ["reported", "alerted", "located", "secured", "returned"];
-  const currentIndex = statusSteps.indexOf(complaint.status);
-
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor="#e94560"
+        />
+      }
+    >
+      {!isConnected && (
+        <View style={styles.networkBanner}>
+          <Text style={styles.networkBannerText}>
+            ⚠️ No internet connection
+          </Text>
+        </View>
+      )}
       <View style={styles.header}>
         <Text style={styles.itemType}>
           {complaint.itemType.charAt(0).toUpperCase() +
