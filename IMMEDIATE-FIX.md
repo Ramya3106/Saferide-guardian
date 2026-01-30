@@ -1,6 +1,7 @@
 # IMMEDIATE FIX - QR Code Error
 
 ## The Problem
+
 Your Windows Firewall is blocking port 8081, so your phone cannot connect to the Metro bundler.
 
 ## SOLUTION - Do This Now:
@@ -12,10 +13,11 @@ Your Windows Firewall is blocking port 8081, so your phone cannot connect to the
 3. Click "Allow an app through Windows Firewall"
 4. Click "Change settings" button
 5. Scroll and find **"Node.js: Server-side JavaScript"**
-6. **CHECK BOTH BOXES:** ✓ Private  ✓ Public
+6. **CHECK BOTH BOXES:** ✓ Private ✓ Public
 7. Click OK
 
 **OR Run this PowerShell command as Administrator:**
+
 ```powershell
 New-NetFirewallRule -DisplayName "Node.js for Expo" -Direction Inbound -Program "C:\Program Files\nodejs\node.exe" -Action Allow
 ```
@@ -25,6 +27,7 @@ New-NetFirewallRule -DisplayName "Node.js for Expo" -Direction Inbound -Program 
 **Double-click:** `QUICK-FIX.bat`
 
 This will:
+
 - Configure firewall (follow prompts)
 - Start backend server
 - Start Metro bundler with LAN mode
@@ -36,6 +39,7 @@ This will:
 3. **Scan QR code** from Metro Bundler window
 
 **OR manually enter:**
+
 - In Expo Go, tap "Enter URL manually"
 - Type: `exp://10.144.132.29:8081`
 - Tap Connect
@@ -58,6 +62,7 @@ Scan the new QR code. Tunnel works through internet, no local network needed.
 ## Verify Connection
 
 **On your phone's browser**, visit:
+
 ```
 http://10.144.132.29:8081
 ```
@@ -70,12 +75,14 @@ http://10.144.132.29:8081
 ## Complete Working Setup
 
 **Terminal 1:**
+
 ```bash
 cd c:\Users\divya\Documents\Saferide\Saferide-guardian
 node server/index.js
 ```
 
 **Terminal 2:**
+
 ```bash
 cd c:\Users\divya\Documents\Saferide\Saferide-guardian\client
 npx expo start --lan
