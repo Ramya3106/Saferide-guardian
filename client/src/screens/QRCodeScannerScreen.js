@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  TextInput,
+  Platform,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import api from "../services/api";
@@ -16,6 +18,8 @@ export default function QRCodeScannerScreen({ navigation }) {
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
+  const [showManual, setShowManual] = useState(false);
+  const [manualId, setManualId] = useState("");
   const cameraRef = useRef();
 
   const MAX_RETRIES = 3;
@@ -197,34 +201,54 @@ export default function QRCodeScannerScreen({ navigation }) {
       <TouchableOpacity
         style={styles.manualButton}
         onPress={() => {
-          Alert.prompt(
-            "Enter Complaint ID",
-            "Paste the complaint ID from your QR code:",
-            [
-              {
-                text: "Cancel",
-                onPress: () => {
-                  setScanned(false);
-                },
-              },
-              {
-                text: "View",
-                onPress: (complaintId) => {
-                  if (complaintId?.trim()) {
-                    navigation.replace("ComplaintDetail", {
-                      id: complaintId.trim(),
-                    });
-                  }
-                  setScanned(false);
-                },
-              },
-            ],
-            "plain-text",
-          );
+          // Use inline modal for cross-platform manual entry
+          setShowManual(true);
+          setManualId("");
         }}
       >
         <Text style={styles.manualButtonText}>📋 Manual Entry</Text>
       </TouchableOpacity>
+
+      {showManual && (
+        <View style={styles.manualOverlay}>
+          <View style={styles.manualCard}>
+            <Text style={styles.manualTitle}>Enter Complaint ID</Text>
+            <TextInput
+              style={styles.manualInput}
+              placeholder="24-char Complaint ID"
+              placeholderTextColor="#aaa"
+              value={manualId}
+              onChangeText={setManualId}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <View style={styles.manualActions}>
+              <TouchableOpacity
+                style={[styles.smallButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowManual(false);
+                  setScanned(false);
+                }}
+              >
+                <Text style={styles.smallButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.smallButton, styles.confirmButton]}
+                onPress={() => {
+                  const id = manualId.trim();
+                  if (id) {
+                    setShowManual(false);
+                    navigation.replace("ComplaintDetail", { id });
+                    setScanned(false);
+                  }
+                }}
+              >
+                <Text style={styles.smallButtonText}>View</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -312,6 +336,65 @@ const styles = StyleSheet.create({
   manualButtonText: {
     color: "#fff",
     fontSize: 14,
+    fontWeight: "bold",
+  },
+  manualOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  manualCard: {
+    width: "100%",
+    maxWidth: 420,
+    backgroundColor: "#1a1a1a",
+    padding: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#333",
+  },
+  manualTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  manualInput: {
+    backgroundColor: "#111",
+    color: "#fff",
+    borderWidth: 1,
+    borderColor: "#444",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === "ios" ? 12 : 8,
+    fontSize: 16,
+  },
+  manualActions: {
+    marginTop: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  smallButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  cancelButton: {
+    backgroundColor: "#444",
+  },
+  confirmButton: {
+    backgroundColor: "#e94560",
+  },
+  smallButtonText: {
+    color: "#fff",
     fontWeight: "bold",
   },
 });
