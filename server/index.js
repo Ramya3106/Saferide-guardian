@@ -55,12 +55,13 @@ const MONGO_URI =
 
 // Start server even if MongoDB fails (for testing)
 const startServer = () => {
-  server
-    .listen(PORT, "0.0.0.0", () => {
-      console.log(`SafeRide Guardian server running on port ${PORT}`);
-      console.log(`Server accessible at http://localhost:${PORT}`);
-      console.log(`For Android emulator: http://10.0.2.2:${PORT}`);
-      console.log(`For physical devices: http://10.144.132.29:${PORT}`);
+  const serverInstance = server
+    .listen(PORT, () => {
+      const addr = serverInstance.address();
+      console.log(`\n✓ SafeRide Guardian server RUNNING on port ${addr.port}`);
+      console.log(`✓ Server accessible at http://localhost:${PORT}`);
+      console.log(`✓ For Android emulator: http://10.0.2.2:${PORT}`);
+      console.log(`✓ For physical devices: http://10.144.132.29:${PORT}\n`);
     })
     .on("error", (err) => {
       if (err.code === "EADDRINUSE") {
@@ -71,6 +72,7 @@ const startServer = () => {
         process.exit(1);
       } else {
         console.error("❌ Server error:", err);
+        console.error(err);
         process.exit(1);
       }
     });
