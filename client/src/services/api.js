@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Platform, NetInfo } from "react-native";
+import { Platform } from "react-native";
 import Constants from "expo-constants";
 
 // Store the base URL in a variable that can be updated
