@@ -1,20 +1,24 @@
 # FIX: QR Code Scan Error - "Failed to download remote update"
 
 ## Error Shown
+
 ```
 Uncaught Error: java.io.IOException: Failed to download remote update
 10:29:36 Fatal Error
 ```
 
 ## Root Cause
+
 Your Android phone cannot reach the Expo Metro bundler on your computer at `10.144.132.29:8081`. This is a **network connectivity issue**, not a code problem.
 
 ## Solutions (Try in Order)
 
 ### Solution 1: Ensure Same WiFi Network ⭐ MOST COMMON
+
 **Both your phone AND computer MUST be on the exact same WiFi network.**
 
 **Check:**
+
 1. On your phone: Settings → WiFi → Note the network name
 2. On your computer: Check WiFi icon in taskbar
 3. **They must match exactly!**
@@ -28,6 +32,7 @@ If on different networks → Connect both to the same WiFi, then restart the Met
 Windows Firewall may be blocking the connection.
 
 **Steps:**
+
 1. Press `Windows + R`
 2. Type `firewall.cpl` and press Enter
 3. Click "Allow an app or feature through Windows Defender Firewall"
@@ -48,6 +53,7 @@ Windows Firewall may be blocking the connection.
 If firewall/network issues persist, use Expo's tunnel feature:
 
 **Steps:**
+
 1. Stop the current Metro bundler (Ctrl+C)
 2. Start with tunnel:
    ```bash
@@ -110,6 +116,7 @@ Connect your phone via USB cable:
 ## Quick Checklist
 
 Before scanning QR code:
+
 - [ ] Phone and computer on same WiFi network
 - [ ] Metro bundler is running (`npx expo start`)
 - [ ] You see the QR code in terminal
@@ -122,6 +129,7 @@ Before scanning QR code:
 ## Testing Network Connection
 
 **On your phone's browser**, visit:
+
 ```
 http://10.144.132.29:8081/status
 ```
@@ -134,11 +142,13 @@ http://10.144.132.29:8081/status
 ## Recommended Approach
 
 **For Development (Fastest):**
+
 1. Ensure same WiFi
 2. Configure firewall
 3. Use QR code scan
 
 **If Nothing Works:**
+
 1. Use tunnel mode: `npx expo start --tunnel`
 2. Or use USB connection with `npx expo start` then press `a`
 
@@ -147,18 +157,23 @@ http://10.144.132.29:8081/status
 ## Starting Everything Correctly
 
 **Terminal 1 - Backend Server:**
+
 ```bash
 cd c:\Users\divya\Documents\Saferide\Saferide-guardian
 node server/index.js
 ```
+
 Keep running!
 
 **Terminal 2 - Metro Bundler:**
+
 ```bash
 cd c:\Users\divya\Documents\Saferide\Saferide-guardian\client
 npx expo start
 ```
+
 OR with tunnel:
+
 ```bash
 npx expo start --tunnel
 ```
