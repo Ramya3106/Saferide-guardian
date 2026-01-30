@@ -59,7 +59,7 @@ const startServer = () => {
     console.log(`SafeRide Guardian server running on port ${PORT}`);
     console.log(`Server accessible at http://localhost:${PORT}`);
     console.log(`For Android emulator: http://10.0.2.2:${PORT}`);
-    console.log(`For physical devices: http://10.168.37.29:${PORT}`);
+    console.log(`For physical devices: http://10.144.132.29:${PORT}`);
   });
 };
 
