@@ -4,33 +4,41 @@ class NetworkService {
   constructor() {
     this.isConnected = true;
     this.listeners = [];
+    this.unsubscribe = null;
   }
 
   // Initialize network monitoring
   async initialize() {
     try {
       const state = await NetInfo.fetch();
-      this.isConnected = state.isConnected;
-      console.log("[Network] Initial state:", state);
+      this.isConnected = state?.isConnected ?? true;
+      console.log("[Network] Initial state:", {
+        connected: this.isConnected,
+        type: state?.type,
+      });
 
       // Subscribe to network state changes
+      if (this.unsubscribe) {
+        this.unsubscribe();
+      }
+
       this.unsubscribe = NetInfo.addEventListener((state) => {
         const wasConnected = this.isConnected;
-        this.isConnected = state.isConnected;
+        this.isConnected = state?.isConnected ?? true;
 
         console.log("[Network] State changed:", {
-          isConnected: state.isConnected,
-          type: state.type,
-          details: state.details,
+          connected: this.isConnected,
+          type: state?.type,
         });
 
         // Notify listeners of changes
-        if (wasConnected !== state.isConnected) {
-          this.notifyListeners(state.isConnected);
+        if (wasConnected !== this.isConnected) {
+          this.notifyListeners(this.isConnected);
         }
       });
     } catch (error) {
       console.error("[Network] Initialization error:", error);
+      this.isConnected = true;
     }
   }
 
@@ -38,7 +46,7 @@ class NetworkService {
   async isNetworkAvailable() {
     try {
       const state = await NetInfo.fetch();
-      return state.isConnected;
+      return state?.isConnected ?? this.isConnected;
     } catch (error) {
       console.error("[Network] Check error:", error);
       return this.isConnected;
@@ -68,6 +76,7 @@ class NetworkService {
   destroy() {
     if (this.unsubscribe) {
       this.unsubscribe();
+      this.unsubscribe = null;
     }
     this.listeners = [];
   }
