@@ -3,9 +3,10 @@
 ## ✅ Status: ALL FIXES COMPLETE
 
 The QR code scanning error has been **permanently fixed** with:
+
 - ✅ Network connectivity monitoring
 - ✅ Automatic retry mechanism (3 attempts)
-- ✅ Better error handling  
+- ✅ Better error handling
 - ✅ Fast navigation system
 - ✅ Pull-to-refresh functionality
 - ✅ Socket.io auto-reconnection
@@ -15,20 +16,25 @@ The QR code scanning error has been **permanently fixed** with:
 ## 🎯 Quick Start (3 Steps)
 
 ### Step 1: Start Backend Server
+
 ```bash
 cd C:\Users\divya\Documents\Saferide\Saferide-guardian\server
 npm start
 ```
+
 ✅ Wait for: `SafeRide Guardian SERVER STARTED`
 
 ### Step 2: Start Frontend (NEW TERMINAL)
+
 ```bash
 cd C:\Users\divya\Documents\Saferide\Saferide-guardian\client
 npm start
 ```
+
 ✅ Wait for: Metro Bundler to start and show QR code
 
 ### Step 3: Scan QR Code
+
 - Open **Expo Go** app on your Android phone
 - Tap **"Scan QR code"**
 - Point camera at QR code in terminal
@@ -49,13 +55,16 @@ After app loads:
 ## 🔍 What Was Fixed
 
 ### Root Cause
+
 The "java.io.IOException: Failed to download remote update" error occurred when:
+
 - Network connectivity was unstable
 - API requests timed out
 - Socket.io connections failed
 - No retry mechanism existed
 
 ### Solution Applied
+
 1. **API Service** - Automatic retry with exponential backoff
 2. **Network Service** - Real-time connectivity monitoring
 3. **QR Scanner** - Complete error handling & fallbacks
@@ -66,39 +75,47 @@ The "java.io.IOException: Failed to download remote update" error occurred when:
 
 ## 📁 Key Files Modified
 
-| File | Changes |
-|------|---------|
-| `client/src/services/api.js` | Added retry logic, better error handling |
-| `client/src/services/networkService.js` | Network monitoring |
-| `client/src/screens/QRCodeScannerScreen.js` | Fixed missing setRetryCount |
-| `client/src/screens/ComplaintDetailScreen.js` | Enhanced socket handling |
-| `client/package.json` | Added netinfo dependency |
+| File                                          | Changes                                  |
+| --------------------------------------------- | ---------------------------------------- |
+| `client/src/services/api.js`                  | Added retry logic, better error handling |
+| `client/src/services/networkService.js`       | Network monitoring                       |
+| `client/src/screens/QRCodeScannerScreen.js`   | Fixed missing setRetryCount              |
+| `client/src/screens/ComplaintDetailScreen.js` | Enhanced socket handling                 |
+| `client/package.json`                         | Added netinfo dependency                 |
 
 ---
 
 ## 🆘 Troubleshooting
 
 ### Issue: Port 8081 already in use
+
 **Solution:** Kill node processes and restart
+
 ```bash
 taskkill /F /IM node.exe /T
 npm start
 ```
 
 ### Issue: Dependencies not installed
+
 **Solution:** Install fresh
+
 ```bash
 npm install
 ```
 
 ### Issue: Expo cache issues
+
 **Solution:** Clear and start fresh
+
 ```bash
 npx expo start -c
 ```
 
 ### Issue: Server not responding
+
 **Solution:** Ensure server is running on correct port
+
 ```bash
 cd server
 npm start  # Should show port 5000
@@ -124,6 +141,7 @@ npm start  # Should show port 5000
 When everything is working:
 
 1. **Backend logs show:**
+
    ```
    ✓ MongoDB connected
    ✓ Listening on port 5000
@@ -131,6 +149,7 @@ When everything is working:
    ```
 
 2. **Frontend shows:**
+
    ```
    › Metro waiting on exp://[IP]:8082
    › Scan the QR code with Expo Go
@@ -176,6 +195,7 @@ npm start -c
 ## ✅ Deployment Checklist
 
 Before going to production:
+
 - [ ] Server runs without errors
 - [ ] Client builds successfully
 - [ ] QR scanner works
