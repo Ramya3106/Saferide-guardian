@@ -33,7 +33,7 @@ const getBaseURL = () => {
   }
 
   // Fallback: replace with your machine's LAN IP if needed
-  return "http://192.168.1.100:5000/api";
+  return "http://10.144.132.29:5000/api";
 };
 
 const api = axios.create({
@@ -47,7 +47,7 @@ const api = axios.create({
 // Add request interceptor for debugging
 api.interceptors.request.use(
   (config) => {
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    console.log(`API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
     return config;
   },
   (error) => {
@@ -60,9 +60,18 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    console.error("API Error Details:", {
+      message: error.message,
+      code: error.code,
+      url: error.config?.url,
+      baseURL: error.config?.baseURL,
+    });
+    
     if (
       error.code === "ECONNREFUSED" ||
-      error.message.includes("Network Error")
+      error.code === "ECONNABORTED" ||
+      error.message.includes("Network Error") ||
+      error.message.includes("timeout")
     ) {
       console.error(
         "Cannot connect to server. Make sure the server is running on port 5000",
