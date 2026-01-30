@@ -7,22 +7,20 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { BarCodeScanner } from "expo-barcode-scanner";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import api from "../services/api";
 import networkService from "../services/networkService";
 
 export default function QRCodeScannerScreen({ navigation }) {
-  const [hasPermission, setHasPermission] = useState(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
-  const [retryCount, setRetryCount] = useState(0);
-  const scannerRef = useRef();
+  const cameraRef = useRef();
 
   const MAX_RETRIES = 3;
 
   useEffect(() => {
-    requestCameraPermission();
     networkService.initialize();
 
     const unsubscribe = networkService.subscribe((connected) => {
@@ -41,29 +39,11 @@ export default function QRCodeScannerScreen({ navigation }) {
     };
   }, []);
 
-  const requestCameraPermission = async () => {
-    try {
-      const { status } = await BarCodeScanner.requestPermissionsAsync();
-      setHasPermission(status === "granted");
-      if (status !== "granted") {
-        Alert.alert(
-          "Camera Permission",
-          "Camera permission is required to scan QR codes.",
-          [{ text: "OK" }],
-        );
-      }
-    } catch (error) {
-      console.error("[QR Scanner] Permission error:", error);
-      Alert.alert("Error", "Failed to request camera permission");
-    }
-  };
-
   const handleBarCodeScanned = async ({ type, data }) => {
     if (scanned || loading) return;
 
     setScanned(true);
     setLoading(true);
-    setRetryCount(0);
 
     await processQRCode(data);
   };
@@ -162,7 +142,7 @@ export default function QRCodeScannerScreen({ navigation }) {
     }
   };
 
-  if (hasPermission === null) {
+  if (!permission) {
     return (
       <View style={styles.container}>
         <ActivityIndicator size="large" color="#e94560" />
@@ -171,14 +151,11 @@ export default function QRCodeScannerScreen({ navigation }) {
     );
   }
 
-  if (hasPermission === false) {
+  if (!permission.granted) {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>Camera permission not granted</Text>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={requestCameraPermission}
-        >
+        <TouchableOpacity style={styles.button} onPress={requestPermission}>
           <Text style={styles.buttonText}>Grant Permission</Text>
         </TouchableOpacity>
       </View>
@@ -187,10 +164,14 @@ export default function QRCodeScannerScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <BarCodeScanner
-        ref={scannerRef}
-        onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+      <CameraView
+        ref={cameraRef}
         style={StyleSheet.absoluteFill}
+        facing="back"
+        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+        barcodeScannerSettings={{
+          barcodeTypes: ["qr"],
+        }}
       />
 
       {/* Overlay with scanning frame */}
