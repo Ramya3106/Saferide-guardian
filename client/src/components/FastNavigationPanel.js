@@ -6,12 +6,14 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 
 /**
  * FastNavigationPanel - Quick access navigation component
  * Provides fast shortcuts to main app features
  */
-export default function FastNavigationPanel({ navigation, userRole }) {
+export default function FastNavigationPanel({ userRole }) {
+  const navigation = useNavigation();
   const navigationOptions = [
     {
       id: "home",

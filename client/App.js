@@ -52,7 +52,7 @@ function MainTabs() {
 
   return (
     <>
-      <FastNavigationPanel navigation={null} userRole={user?.role} />
+      <FastNavigationPanel userRole={user?.role} />
       <Tab.Navigator
         screenOptions={{
           tabBarStyle: {
