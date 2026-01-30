@@ -51,43 +51,46 @@ function MainTabs() {
   );
 
   return (
-    <Tab.Navigator
-      screenOptions={{
-        tabBarStyle: { backgroundColor: "#112240", borderTopColor: "#233554" },
-        tabBarActiveTintColor: "#64ffda",
-        tabBarInactiveTintColor: "#8892b0",
-        headerStyle: { backgroundColor: "#112240" },
-        headerTintColor: "#ccd6f6",
-      }}
-    >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{ tabBarLabel: "Home", tabBarIcon: () => <Text>🏠</Text> }}
-      />
-      <Tab.Screen
-        name="Report"
-        component={ReportScreen}
-        options={{ tabBarLabel: "Report", tabBarIcon: () => <Text>📝</Text> }}
-      />
-      <Tab.Screen
-        name="MyComplaints"
-        component={MyComplaintsScreen}
-        options={{ tabBarLabel: "My Items", tabBarIcon: () => <Text>📦</Text> }}
-      />
-      {isStaff && (
+    <>
+      <FastNavigationPanel navigation={null} userRole={user?.role} />
+      <Tab.Navigator
+        screenOptions={{
+          tabBarStyle: { backgroundColor: "#112240", borderTopColor: "#233554" },
+          tabBarActiveTintColor: "#64ffda",
+          tabBarInactiveTintColor: "#8892b0",
+          headerStyle: { backgroundColor: "#112240" },
+          headerTintColor: "#ccd6f6",
+        }}
+      >
         <Tab.Screen
-          name="Alerts"
-          component={AlertsScreen}
-          options={{ tabBarLabel: "Alerts", tabBarIcon: () => <Text>🔔</Text> }}
+          name="Home"
+          component={HomeScreen}
+          options={{ tabBarLabel: "Home", tabBarIcon: () => <Text>🏠</Text> }}
         />
-      )}
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{ tabBarLabel: "Profile", tabBarIcon: () => <Text>👤</Text> }}
-      />
-    </Tab.Navigator>
+        <Tab.Screen
+          name="Report"
+          component={ReportScreen}
+          options={{ tabBarLabel: "Report", tabBarIcon: () => <Text>📝</Text> }}
+        />
+        <Tab.Screen
+          name="MyComplaints"
+          component={MyComplaintsScreen}
+          options={{ tabBarLabel: "My Items", tabBarIcon: () => <Text>📦</Text> }}
+        />
+        {isStaff && (
+          <Tab.Screen
+            name="Alerts"
+            component={AlertsScreen}
+            options={{ tabBarLabel: "Alerts", tabBarIcon: () => <Text>🔔</Text> }}
+          />
+        )}
+        <Tab.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{ tabBarLabel: "Profile", tabBarIcon: () => <Text>👤</Text> }}
+        />
+      </Tab.Navigator>
+    </>
   );
 }
 
@@ -116,6 +119,16 @@ function AppNavigator() {
               headerStyle: { backgroundColor: "#112240" },
               headerTintColor: "#ccd6f6",
               title: "Complaint Details",
+            }}
+          />
+          <Stack.Screen
+            name="QRCodeScanner"
+            component={QRCodeScannerScreen}
+            options={{
+              headerShown: true,
+              headerStyle: { backgroundColor: "#000" },
+              headerTintColor: "#fff",
+              title: "Scan QR Code",
             }}
           />
         </>
