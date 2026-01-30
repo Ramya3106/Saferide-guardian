@@ -84,7 +84,9 @@ export default function QRCodeScannerScreen({ navigation }) {
       const complaintMatch = qrData.match(/complaint\/([a-f0-9]{24})/);
 
       if (!complaintMatch) {
-        throw new Error("Invalid QR code format. Please scan a valid SafeRide QR code.");
+        throw new Error(
+          "Invalid QR code format. Please scan a valid SafeRide QR code.",
+        );
       }
 
       const complaintId = complaintMatch[1];
@@ -119,10 +121,7 @@ export default function QRCodeScannerScreen({ navigation }) {
     }
   };
 
-  const fetchComplaintWithRetry = async (
-    complaintId,
-    attempt = 1,
-  ) => {
+  const fetchComplaintWithRetry = async (complaintId, attempt = 1) => {
     try {
       console.log(
         `[QR Scanner] Fetching complaint ${complaintId} (Attempt ${attempt}/${MAX_RETRIES})`,
@@ -130,7 +129,10 @@ export default function QRCodeScannerScreen({ navigation }) {
 
       const response = await api.get(`/complaints/${complaintId}`);
 
-      console.log("[QR Scanner] Complaint fetched successfully:", response.data);
+      console.log(
+        "[QR Scanner] Complaint fetched successfully:",
+        response.data,
+      );
 
       // Success - navigate to detail screen
       Alert.alert("Success", "QR Code scanned successfully!", [
@@ -144,10 +146,7 @@ export default function QRCodeScannerScreen({ navigation }) {
 
       setLoading(false);
     } catch (error) {
-      console.error(
-        `[QR Scanner] Attempt ${attempt} failed:`,
-        error.message,
-      );
+      console.error(`[QR Scanner] Attempt ${attempt} failed:`, error.message);
 
       if (attempt < MAX_RETRIES) {
         // Exponential backoff: 1s, 2s, 4s
@@ -176,7 +175,10 @@ export default function QRCodeScannerScreen({ navigation }) {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>Camera permission not granted</Text>
-        <TouchableOpacity style={styles.button} onPress={requestCameraPermission}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={requestCameraPermission}
+        >
           <Text style={styles.buttonText}>Grant Permission</Text>
         </TouchableOpacity>
       </View>
@@ -194,9 +196,7 @@ export default function QRCodeScannerScreen({ navigation }) {
       {/* Overlay with scanning frame */}
       <View style={styles.overlay}>
         <View style={styles.scanFrame} />
-        <Text style={styles.instructionText}>
-          Point camera at the QR code
-        </Text>
+        <Text style={styles.instructionText}>Point camera at the QR code</Text>
       </View>
 
       {/* Loading indicator */}
@@ -232,7 +232,9 @@ export default function QRCodeScannerScreen({ navigation }) {
                 text: "View",
                 onPress: (complaintId) => {
                   if (complaintId?.trim()) {
-                    navigation.replace("ComplaintDetail", { id: complaintId.trim() });
+                    navigation.replace("ComplaintDetail", {
+                      id: complaintId.trim(),
+                    });
                   }
                   setScanned(false);
                 },
