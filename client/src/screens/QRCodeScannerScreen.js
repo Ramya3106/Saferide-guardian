@@ -85,7 +85,6 @@ export default function QRCodeScannerScreen({ navigation }) {
           onPress: () => {
             setScanned(false);
             setLoading(false);
-            setRetryCount(0);
           },
         },
         {
@@ -93,7 +92,6 @@ export default function QRCodeScannerScreen({ navigation }) {
           onPress: () => {
             setScanned(false);
             setLoading(false);
-            setRetryCount(0);
             navigation.goBack();
           },
         },
