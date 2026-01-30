@@ -207,28 +207,38 @@ export default function ComplaintDetailScreen({ route }) {
       {/* Status Timeline */}
       <View style={styles.timeline}>
         <Text style={styles.sectionTitle}>Status Timeline</Text>
-        {["reported", "alerted", "located", "secured", "returned"].map((step, i) => {
-          const statusSteps = ["reported", "alerted", "located", "secured", "returned"];
-          const currentIndex = statusSteps.indexOf(complaint.status);
-          return (
-            <View key={step} style={styles.timelineItem}>
-              <View style={[styles.dot, i <= currentIndex && styles.dotActive]} />
-              {i < statusSteps.length - 1 && (
+        {["reported", "alerted", "located", "secured", "returned"].map(
+          (step, i) => {
+            const statusSteps = [
+              "reported",
+              "alerted",
+              "located",
+              "secured",
+              "returned",
+            ];
+            const currentIndex = statusSteps.indexOf(complaint.status);
+            return (
+              <View key={step} style={styles.timelineItem}>
                 <View
-                  style={[styles.line, i < currentIndex && styles.lineActive]}
+                  style={[styles.dot, i <= currentIndex && styles.dotActive]}
                 />
-              )}
-              <Text
-                style={[
-                  styles.stepText,
-                  i <= currentIndex && styles.stepTextActive,
-                ]}
-              >
-                {step.charAt(0).toUpperCase() + step.slice(1)}
-              </Text>
-            </View>
-          );
-        })}
+                {i < statusSteps.length - 1 && (
+                  <View
+                    style={[styles.line, i < currentIndex && styles.lineActive]}
+                  />
+                )}
+                <Text
+                  style={[
+                    styles.stepText,
+                    i <= currentIndex && styles.stepTextActive,
+                  ]}
+                >
+                  {step.charAt(0).toUpperCase() + step.slice(1)}
+                </Text>
+              </View>
+            );
+          },
+        )}
       </View>
 
       {/* Details */}
