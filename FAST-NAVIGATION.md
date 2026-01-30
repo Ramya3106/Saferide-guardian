@@ -3,6 +3,7 @@
 ## Quick Navigation
 
 ### Main Screens
+
 1. **Home** - Dashboard with quick actions
 2. **Report** - Report a lost item
 3. **My Complaints** - View your reports
@@ -11,19 +12,20 @@
 
 ### Navigation Shortcuts
 
-| Screen | How to Access | Time |
-|--------|---------------|------|
-| Home | Tap house icon | <1s |
-| Report Item | Tap + button | <1s |
-| My Complaints | Tap list icon | <1s |
-| Alerts | Tap bell icon | <1s |
-| Profile | Tap person icon | <1s |
+| Screen        | How to Access   | Time |
+| ------------- | --------------- | ---- |
+| Home          | Tap house icon  | <1s  |
+| Report Item   | Tap + button    | <1s  |
+| My Complaints | Tap list icon   | <1s  |
+| Alerts        | Tap bell icon   | <1s  |
+| Profile       | Tap person icon | <1s  |
 
 ---
 
 ## Getting Started Fast
 
 ### 1. Register Account (First Time)
+
 ```
 1. Tap "Register" on Login screen
 2. Fill in:
@@ -36,6 +38,7 @@
 ```
 
 ### 2. Report a Lost Item
+
 ```
 1. Tap "+" or "Report" button
 2. Take photo (or choose from gallery)
@@ -49,6 +52,7 @@
 ```
 
 ### 3. View Your Reports
+
 ```
 1. Tap "My Complaints"
 2. See all your reports
@@ -60,6 +64,7 @@
 ```
 
 ### 4. Receive Alerts
+
 ```
 1. Tap "Alerts"
 2. Enable notifications
@@ -71,13 +76,13 @@
 
 ## Keyboard Shortcuts (When Available)
 
-| Action | Shortcut |
-|--------|----------|
-| Go Home | Tap House Icon |
-| Add New | Tap + Button |
-| Refresh | Pull down to refresh |
-| Back | Tap Back Arrow |
-| Logout | Profile → Settings → Logout |
+| Action  | Shortcut                    |
+| ------- | --------------------------- |
+| Go Home | Tap House Icon              |
+| Add New | Tap + Button                |
+| Refresh | Pull down to refresh        |
+| Back    | Tap Back Arrow              |
+| Logout  | Profile → Settings → Logout |
 
 ---
 
@@ -93,20 +98,24 @@
 ## Troubleshooting Navigation
 
 ### Screen shows loading spinner forever
+
 - Close Expo Go app
 - Reopen Expo Go
 - Rescan QR code
 
 ### Can't tap buttons
+
 - Wait 5 seconds for screen to fully load
 - Check if screen is loading (spinner visible)
 
 ### App crashes after action
+
 - Note what you were doing
 - Check Metro window for errors
 - Report the issue
 
 ### Navigation feels slow
+
 - Check WiFi connection
 - Restart app (close and reopen)
 - Ensure backend server is running
@@ -116,6 +125,7 @@
 ## Recommended Workflow
 
 ### For Finding Lost Items
+
 ```
 1. Home → View recent items
 2. Tap item to see details
@@ -124,6 +134,7 @@
 ```
 
 ### For Reporting Lost Item
+
 ```
 1. Home → Tap "Report"
 2. Take clear photo
@@ -133,6 +144,7 @@
 ```
 
 ### For Managing Reports
+
 ```
 1. My Complaints → View all
 2. See status of each
@@ -145,18 +157,21 @@
 ## Fast Tips
 
 ⚡ **Speed Up App:**
+
 - Close unnecessary apps on phone
 - Ensure good WiFi signal
 - Restart app if slow
 - Use USB connection for development
 
 ⚡ **Speed Up Scanning:**
+
 - Hold phone steady
 - Ensure good lighting
 - Center QR code in frame
 - Wait for beep/success message
 
 ⚡ **Speed Up Registration:**
+
 - Prepare info before opening
 - Use simple password
 - Choose role carefully
@@ -176,6 +191,7 @@
 **For complete setup instructions, see:** `START-ALL.bat` or `COMPLETE-SOLUTION.md`
 
 **Quick commands:**
+
 ```
 # Start everything
 Double-click: START-ALL.bat
