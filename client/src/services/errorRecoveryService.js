@@ -32,12 +32,15 @@ class ErrorRecoveryService {
    * @returns {Promise}
    */
   async executeWithRetry(fn, errorType = "network", onRetry) {
-    const strategy = this.retryStrategies[errorType] || this.retryStrategies.network;
+    const strategy =
+      this.retryStrategies[errorType] || this.retryStrategies.network;
     let lastError;
 
     for (let attempt = 1; attempt <= strategy.maxRetries + 1; attempt++) {
       try {
-        console.log(`[Recovery] Attempt ${attempt} of ${strategy.maxRetries + 1}`);
+        console.log(
+          `[Recovery] Attempt ${attempt} of ${strategy.maxRetries + 1}`,
+        );
         return await fn();
       } catch (error) {
         lastError = error;
