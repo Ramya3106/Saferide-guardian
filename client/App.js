@@ -55,7 +55,10 @@ function MainTabs() {
       <FastNavigationPanel navigation={null} userRole={user?.role} />
       <Tab.Navigator
         screenOptions={{
-          tabBarStyle: { backgroundColor: "#112240", borderTopColor: "#233554" },
+          tabBarStyle: {
+            backgroundColor: "#112240",
+            borderTopColor: "#233554",
+          },
           tabBarActiveTintColor: "#64ffda",
           tabBarInactiveTintColor: "#8892b0",
           headerStyle: { backgroundColor: "#112240" },
@@ -75,19 +78,28 @@ function MainTabs() {
         <Tab.Screen
           name="MyComplaints"
           component={MyComplaintsScreen}
-          options={{ tabBarLabel: "My Items", tabBarIcon: () => <Text>📦</Text> }}
+          options={{
+            tabBarLabel: "My Items",
+            tabBarIcon: () => <Text>📦</Text>,
+          }}
         />
         {isStaff && (
           <Tab.Screen
             name="Alerts"
             component={AlertsScreen}
-            options={{ tabBarLabel: "Alerts", tabBarIcon: () => <Text>🔔</Text> }}
+            options={{
+              tabBarLabel: "Alerts",
+              tabBarIcon: () => <Text>🔔</Text>,
+            }}
           />
         )}
         <Tab.Screen
           name="Profile"
           component={ProfileScreen}
-          options={{ tabBarLabel: "Profile", tabBarIcon: () => <Text>👤</Text> }}
+          options={{
+            tabBarLabel: "Profile",
+            tabBarIcon: () => <Text>👤</Text>,
+          }}
         />
       </Tab.Navigator>
     </>
