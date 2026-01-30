@@ -58,19 +58,21 @@ const MONGO_URI =
 
 // Start server
 const startServer = () => {
-  server.listen(PORT, () => {
-    console.log("\n✓✓✓ SafeRide Guardian SERVER STARTED ✓✓✓");
-    console.log(`✓ Listening on port ${PORT}`);
-    console.log(`✓ Test URL: http://localhost:${PORT}/api/health`);
-    console.log("✓✓✓ Server is READY for requests ✓✓✓\n");
-  }).on("error", (err) => {
-    if (err.code === "EADDRINUSE") {
-      console.error(`\n❌ Port ${PORT} already in use!\n`);
+  server
+    .listen(PORT, () => {
+      console.log("\n✓✓✓ SafeRide Guardian SERVER STARTED ✓✓✓");
+      console.log(`✓ Listening on port ${PORT}`);
+      console.log(`✓ Test URL: http://localhost:${PORT}/api/health`);
+      console.log("✓✓✓ Server is READY for requests ✓✓✓\n");
+    })
+    .on("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        console.error(`\n❌ Port ${PORT} already in use!\n`);
+        process.exit(1);
+      }
+      console.error("❌ Server error:", err);
       process.exit(1);
-    }
-    console.error("❌ Server error:", err);
-    process.exit(1);
-  });
+    });
 };
 
 // Handle errors
