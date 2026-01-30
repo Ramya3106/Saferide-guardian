@@ -55,31 +55,35 @@ const MONGO_URI =
 
 // Start server even if MongoDB fails (for testing)
 const startServer = () => {
-  server.listen(PORT, "0.0.0.0", () => {
-    console.log(`SafeRide Guardian server running on port ${PORT}`);
-    console.log(`Server accessible at http://localhost:${PORT}`);
-    console.log(`For Android emulator: http://10.0.2.2:${PORT}`);
-    console.log(`For physical devices: http://10.144.132.29:${PORT}`);
-  }).on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      console.error(`❌ Port ${PORT} is already in use!`);
-      console.error('To fix: Kill the process using the port or change PORT in .env');
-      process.exit(1);
-    } else {
-      console.error('❌ Server error:', err);
-      process.exit(1);
-    }
-  });
+  server
+    .listen(PORT, "0.0.0.0", () => {
+      console.log(`SafeRide Guardian server running on port ${PORT}`);
+      console.log(`Server accessible at http://localhost:${PORT}`);
+      console.log(`For Android emulator: http://10.0.2.2:${PORT}`);
+      console.log(`For physical devices: http://10.144.132.29:${PORT}`);
+    })
+    .on("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        console.error(`❌ Port ${PORT} is already in use!`);
+        console.error(
+          "To fix: Kill the process using the port or change PORT in .env",
+        );
+        process.exit(1);
+      } else {
+        console.error("❌ Server error:", err);
+        process.exit(1);
+      }
+    });
 };
 
 // Handle uncaught errors
-process.on('uncaughtException', (err) => {
-  console.error('❌ Uncaught Exception:', err);
+process.on("uncaughtException", (err) => {
+  console.error("❌ Uncaught Exception:", err);
   process.exit(1);
 });
 
-process.on('unhandledRejection', (err) => {
-  console.error('❌ Unhandled Rejection:', err);
+process.on("unhandledRejection", (err) => {
+  console.error("❌ Unhandled Rejection:", err);
   process.exit(1);
 });
 
