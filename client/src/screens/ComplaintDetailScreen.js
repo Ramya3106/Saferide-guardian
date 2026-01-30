@@ -122,7 +122,8 @@ export default function ComplaintDetailScreen({ route }) {
       setError(null);
     } catch (error) {
       console.error("[Complaint] Failed to fetch:", error);
-      const errorMsg = error.userMessage || error.message || "Failed to load complaint";
+      const errorMsg =
+        error.userMessage || error.message || "Failed to load complaint";
       setError(errorMsg);
     } finally {
       setLoading(false);
@@ -148,7 +149,9 @@ export default function ComplaintDetailScreen({ route }) {
     return (
       <View style={styles.loading}>
         <Text style={styles.errorText}>{error}</Text>
-        <Text style={styles.errorHint}>Check your connection and try again</Text>
+        <Text style={styles.errorHint}>
+          Check your connection and try again
+        </Text>
         <TouchableOpacity style={styles.retryButton} onPress={fetchComplaint}>
           <Text style={styles.retryButtonText}>🔄 Retry</Text>
         </TouchableOpacity>
