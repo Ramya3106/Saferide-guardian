@@ -1,11 +1,11 @@
-const express = require('express');
+const express = require("express");
 
 const router = express.Router();
 
-router.get('/health', (req, res) => {
+router.get("/health", (req, res) => {
   res.status(200).json({
-    status: 'ok',
-    service: 'saferide-guardian-api',
+    status: "ok",
+    service: "saferide-guardian-api",
     timestamp: new Date().toISOString(),
   });
 });
