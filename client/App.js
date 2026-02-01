@@ -67,11 +67,21 @@ const App = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.backgroundGlow} />
       <View style={styles.card}>
-        <Text style={styles.title}>SafeRide Guardian</Text>
-        <Text style={styles.subtitle}>
-          AI-Powered Lost Item Recovery for Public Transport
-        </Text>
+        <View style={styles.brandRow}>
+          <View>
+            <Text style={styles.title}>SafeRide Guardian</Text>
+            <Text style={styles.subtitle}>
+              AI-Powered Lost Item Recovery for Public Transport
+            </Text>
+          </View>
+          <View style={styles.statusPill}>
+            <View style={styles.statusDot} />
+            <Text style={styles.statusPillText}>Secure</Text>
+          </View>
+        </View>
+        <View style={styles.divider} />
 
         {isAuthenticated ? (
           <View style={styles.home}>
@@ -170,6 +180,12 @@ const App = () => {
                 </Text>
               </TouchableOpacity>
             </View>
+
+            <View style={styles.footerRow}>
+              <Text style={styles.footerText}>
+                By continuing, you agree to our privacy policy.
+              </Text>
+            </View>
           </View>
         )}
       </View>
@@ -185,16 +201,34 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 24,
   },
+  backgroundGlow: {
+    position: "absolute",
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: "#1E3A8A",
+    opacity: 0.2,
+    top: 40,
+    right: -80,
+  },
   card: {
     width: "100%",
     backgroundColor: "#121B2E",
     borderRadius: 20,
     padding: 24,
+    borderWidth: 1,
+    borderColor: "#1E2A44",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.2,
     shadowRadius: 20,
     elevation: 8,
+  },
+  brandRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
   },
   title: {
     fontSize: 28,
@@ -207,6 +241,33 @@ const styles = StyleSheet.create({
     color: "#CBD5F5",
     marginBottom: 20,
     lineHeight: 20,
+  },
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0F172A",
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "#1D4ED8",
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#22C55E",
+    marginRight: 6,
+  },
+  statusPillText: {
+    color: "#BFDBFE",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#1E2A44",
+    marginBottom: 18,
   },
   formTitle: {
     fontSize: 18,
@@ -241,6 +302,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 6,
+    shadowColor: "#1D4ED8",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 6,
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -248,6 +314,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: "#F8FAFC",
     fontWeight: "600",
+    letterSpacing: 0.3,
   },
   switchRow: {
     flexDirection: "row",
@@ -262,6 +329,18 @@ const styles = StyleSheet.create({
   switchLink: {
     color: "#38BDF8",
     fontWeight: "600",
+  },
+  footerRow: {
+    marginTop: 18,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#1E2A44",
+  },
+  footerText: {
+    color: "#64748B",
+    fontSize: 12,
+    textAlign: "center",
+    lineHeight: 16,
   },
   home: {
     marginTop: 6,
