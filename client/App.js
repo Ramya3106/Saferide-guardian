@@ -74,12 +74,15 @@ const App = () => {
         </Text>
 
         {isAuthenticated ? (
-          <View style={styles.home}> 
+          <View style={styles.home}>
             <Text style={styles.welcome}>Welcome back!</Text>
             <Text style={styles.homeText}>
               You are signed in and ready to track and recover lost items.
             </Text>
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleLogout}>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={handleLogout}
+            >
               <Text style={styles.secondaryButtonText}>Log out</Text>
             </TouchableOpacity>
           </View>
@@ -145,7 +148,10 @@ const App = () => {
             {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
 
             <TouchableOpacity
-              style={[styles.primaryButton, !canSubmit && styles.buttonDisabled]}
+              style={[
+                styles.primaryButton,
+                !canSubmit && styles.buttonDisabled,
+              ]}
               onPress={handleSubmit}
               disabled={!canSubmit}
             >
