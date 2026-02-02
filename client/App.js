@@ -196,9 +196,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0B1220",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
   },
   backgroundGlow: {
     position: "absolute",
@@ -209,6 +206,10 @@ const styles = StyleSheet.create({
     opacity: 0.2,
     top: 40,
     right: -80,
+  },
+  scrollContent: {
+    padding: 24,
+    paddingBottom: 40,
   },
   card: {
     width: "100%",
@@ -274,6 +275,17 @@ const styles = StyleSheet.create({
     color: "#E2E8F0",
     marginBottom: 16,
   },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#F8FAFC",
+    marginBottom: 6,
+  },
+  sectionSubtitle: {
+    color: "#94A3B8",
+    marginBottom: 16,
+    lineHeight: 20,
+  },
   inputGroup: {
     marginBottom: 14,
   },
@@ -290,6 +302,30 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     color: "#F8FAFC",
+  },
+  roleRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  roleChip: {
+    borderWidth: 1,
+    borderColor: "#1E2A44",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+  },
+  roleChipActive: {
+    backgroundColor: "#2563EB",
+    borderColor: "#2563EB",
+  },
+  roleChipText: {
+    color: "#CBD5F5",
+    fontSize: 12,
+  },
+  roleChipTextActive: {
+    color: "#F8FAFC",
+    fontWeight: "600",
   },
   errorText: {
     color: "#F87171",
