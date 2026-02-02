@@ -194,10 +194,7 @@ const App = () => {
       {ROLES.map((item) => (
         <TouchableOpacity
           key={item}
-          style={[
-            styles.roleChip,
-            role === item && styles.roleChipActive,
-          ]}
+          style={[styles.roleChip, role === item && styles.roleChipActive]}
           onPress={() => setRole(item)}
         >
           <Text
@@ -262,7 +259,10 @@ const App = () => {
             onChangeText={setComplaintTime}
           />
         </View>
-        <TouchableOpacity style={styles.primaryButton} onPress={handleSubmitComplaint}>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={handleSubmitComplaint}
+        >
           <Text style={styles.primaryButtonText}>Submit complaint</Text>
         </TouchableOpacity>
       </View>
@@ -272,14 +272,19 @@ const App = () => {
           <Text style={styles.cardTitle}>Matched Onboard Staff</Text>
           <Text style={styles.cardText}>Conductor Priya S • TN-01-AB-1234</Text>
           <Text style={styles.cardText}>Route: Velachery → CMBT</Text>
-          <Text style={styles.cardText}>Current stop: Medavakkam • ETA 8 mins</Text>
+          <Text style={styles.cardText}>
+            Current stop: Medavakkam • ETA 8 mins
+          </Text>
           <View style={styles.statusRow}>
             <View style={styles.statusDotLarge} />
             <Text style={styles.statusText}>
               Alert delivered in 58 seconds via push + SMS + voice.
             </Text>
           </View>
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleStaffConfirm}>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={handleStaffConfirm}
+          >
             <Text style={styles.secondaryButtonText}>
               Simulate staff update
             </Text>
@@ -296,7 +301,9 @@ const App = () => {
           <View style={styles.timelineRow}>
             <View style={styles.timelineDotActive} />
             <View>
-              <Text style={styles.timelineTitle}>Complaint → Staff Confirmation</Text>
+              <Text style={styles.timelineTitle}>
+                Complaint → Staff Confirmation
+              </Text>
               <Text style={styles.timelineSubtitle}>
                 Matched on vehicle + timing + geo-location
               </Text>
@@ -328,7 +335,9 @@ const App = () => {
         <View style={styles.queueItem}>
           <View>
             <Text style={styles.queueTitle}>Black backpack</Text>
-            <Text style={styles.queueMeta}>TN-01-AB-1234 • Stop: Medavakkam</Text>
+            <Text style={styles.queueMeta}>
+              TN-01-AB-1234 • Stop: Medavakkam
+            </Text>
           </View>
           <Text style={styles.queueStatus}>NEW</Text>
         </View>
@@ -339,7 +348,10 @@ const App = () => {
           </View>
           <Text style={styles.queueStatusAmber}>HIGH</Text>
         </View>
-        <TouchableOpacity style={styles.primaryButton} onPress={handleStaffConfirm}>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={handleStaffConfirm}
+        >
           <Text style={styles.primaryButtonText}>Mark item SAFE</Text>
         </TouchableOpacity>
       </View>
@@ -376,7 +388,10 @@ const App = () => {
         <Text style={styles.cardText}>PNR: 4528193021 • Passport + Visa</Text>
         <Text style={styles.cardText}>Train: MS-EXP-204 • Coach B2</Text>
         <Text style={styles.cardText}>Next stop: Guindy • ETA 9 mins</Text>
-        <TouchableOpacity style={styles.primaryButton} onPress={handleStaffConfirm}>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={handleStaffConfirm}
+        >
           <Text style={styles.primaryButtonText}>Verify PNR & confirm</Text>
         </TouchableOpacity>
       </View>
@@ -391,9 +406,16 @@ const App = () => {
       </Text>
       <View style={styles.cardBlock}>
         <Text style={styles.cardTitle}>Jurisdiction Escalations</Text>
-        <Text style={styles.cardText}>Medical dossier flagged • Case ID 98-204</Text>
-        <Text style={styles.cardText}>Location: CMBT • Linked staff: RPF-114</Text>
-        <TouchableOpacity style={styles.primaryButton} onPress={handleStaffConfirm}>
+        <Text style={styles.cardText}>
+          Medical dossier flagged • Case ID 98-204
+        </Text>
+        <Text style={styles.cardText}>
+          Location: CMBT • Linked staff: RPF-114
+        </Text>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={handleStaffConfirm}
+        >
           <Text style={styles.primaryButtonText}>Dispatch unit</Text>
         </TouchableOpacity>
       </View>
@@ -524,7 +546,9 @@ const App = () => {
 
               {isRegister && (
                 <View style={styles.verifyCard}>
-                  <Text style={styles.cardTitle}>OTP + Aadhaar verification</Text>
+                  <Text style={styles.cardTitle}>
+                    OTP + Aadhaar verification
+                  </Text>
                   <View style={styles.inputGroup}>
                     <Text style={styles.label}>Aadhaar number</Text>
                     <TextInput
@@ -548,7 +572,10 @@ const App = () => {
                     />
                   </View>
                   <TouchableOpacity
-                    style={[styles.secondaryButton, !canVerify && styles.buttonDisabled]}
+                    style={[
+                      styles.secondaryButton,
+                      !canVerify && styles.buttonDisabled,
+                    ]}
                     onPress={handleVerify}
                     disabled={!canVerify}
                   >
@@ -671,10 +698,15 @@ const App = () => {
                 </View>
               )}
 
-              {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
+              {error.length > 0 && (
+                <Text style={styles.errorText}>{error}</Text>
+              )}
 
               <TouchableOpacity
-                style={[styles.primaryButton, !canSubmit && styles.buttonDisabled]}
+                style={[
+                  styles.primaryButton,
+                  !canSubmit && styles.buttonDisabled,
+                ]}
                 onPress={handleSubmit}
                 disabled={!canSubmit}
               >
