@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from "react";
 import {
+  SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -7,40 +9,127 @@ import {
   View,
 } from "react-native";
 
+const ROLES = ["Passenger", "Driver", "Conductor", "TTR/RPF", "Police"];
+
 const App = () => {
   const [mode, setMode] = useState("login");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [role, setRole] = useState("Passenger");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [aadhaar, setAadhaar] = useState("");
+  const [otp, setOtp] = useState("");
+  const [isVerified, setIsVerified] = useState(false);
+
+  const [travelNumber, setTravelNumber] = useState("");
+  const [travelRoute, setTravelRoute] = useState("");
+  const [travelTiming, setTravelTiming] = useState("");
+  const [driverName, setDriverName] = useState("");
+  const [conductorName, setConductorName] = useState("");
+
+  const [vehicleNumber, setVehicleNumber] = useState("");
+  const [dutyRoute, setDutyRoute] = useState("");
+  const [shiftTiming, setShiftTiming] = useState("");
+  const [fromStop, setFromStop] = useState("");
+  const [toStop, setToStop] = useState("");
+
+  const [complaintItem, setComplaintItem] = useState("");
+  const [complaintDesc, setComplaintDesc] = useState("");
+  const [complaintLocation, setComplaintLocation] = useState("");
+  const [complaintTime, setComplaintTime] = useState("");
+  const [complaintSubmitted, setComplaintSubmitted] = useState(false);
+  const [staffConfirmed, setStaffConfirmed] = useState(false);
+  const [handoffComplete, setHandoffComplete] = useState(false);
+
   const [error, setError] = useState("");
 
   const isRegister = mode === "register";
+  const isStaffRole = role !== "Passenger";
+
+  const canVerify = useMemo(() => {
+    return aadhaar.trim().length >= 8 && otp.trim().length >= 4;
+  }, [aadhaar, otp]);
 
   const canSubmit = useMemo(() => {
     if (isRegister) {
-      return (
+      const baseReady =
         name.trim().length >= 2 &&
+        phone.trim().length >= 8 &&
         email.trim().length >= 5 &&
         password.trim().length >= 6 &&
-        confirmPassword.trim().length >= 6
+        confirmPassword.trim().length >= 6 &&
+        isVerified;
+
+      if (!baseReady) {
+        return false;
+      }
+
+      if (role === "Passenger") {
+        return (
+          travelNumber.trim().length >= 5 &&
+          travelRoute.trim().length >= 3 &&
+          travelTiming.trim().length >= 4
+        );
+      }
+
+      return (
+        vehicleNumber.trim().length >= 5 &&
+        dutyRoute.trim().length >= 3 &&
+        shiftTiming.trim().length >= 3 &&
+        fromStop.trim().length >= 2 &&
+        toStop.trim().length >= 2
       );
     }
+
     return email.trim().length >= 5 && password.trim().length >= 6;
-  }, [email, isRegister, name, password, confirmPassword]);
+  }, [
+    aadhaar,
+    confirmPassword,
+    dutyRoute,
+    email,
+    fromStop,
+    isRegister,
+    isVerified,
+    name,
+    password,
+    phone,
+    role,
+    shiftTiming,
+    toStop,
+    travelNumber,
+    travelRoute,
+    travelTiming,
+    vehicleNumber,
+  ]);
 
   const resetForm = () => {
     setName("");
+    setPhone("");
     setEmail("");
     setPassword("");
     setConfirmPassword("");
+    setAadhaar("");
+    setOtp("");
+    setIsVerified(false);
+    setTravelNumber("");
+    setTravelRoute("");
+    setTravelTiming("");
+    setDriverName("");
+    setConductorName("");
+    setVehicleNumber("");
+    setDutyRoute("");
+    setShiftTiming("");
+    setFromStop("");
+    setToStop("");
     setError("");
   };
 
   const handleSubmit = () => {
     if (!canSubmit) {
-      setError("Please fill all fields correctly.");
+      setError("Please complete all required fields.");
       return;
     }
 
@@ -61,133 +150,559 @@ const App = () => {
   const handleLogout = () => {
     setIsAuthenticated(false);
     setMode("login");
+    setComplaintSubmitted(false);
+    setStaffConfirmed(false);
+    setHandoffComplete(false);
     resetForm();
+  };
+
+  const handleVerify = () => {
+    if (!canVerify) {
+      setError("Enter valid Aadhaar and OTP to verify.");
+      return;
+    }
+    setError("");
+    setIsVerified(true);
+  };
+
+  const handleSubmitComplaint = () => {
+    if (
+      complaintItem.trim().length < 2 ||
+      complaintDesc.trim().length < 6 ||
+      complaintLocation.trim().length < 2 ||
+      complaintTime.trim().length < 3
+    ) {
+      setError("Add item, description, location, and time.");
+      return;
+    }
+    setError("");
+    setComplaintSubmitted(true);
+    setStaffConfirmed(false);
+    setHandoffComplete(false);
+  };
+
+  const handleStaffConfirm = () => {
+    setStaffConfirmed(true);
+  };
+
+  const handleHandoffComplete = () => {
+    setHandoffComplete(true);
+  };
+
+  const renderRoleSelector = () => (
+    <View style={styles.roleRow}>
+      {ROLES.map((item) => (
+        <TouchableOpacity
+          key={item}
+          style={[
+            styles.roleChip,
+            role === item && styles.roleChipActive,
+          ]}
+          onPress={() => setRole(item)}
+        >
+          <Text
+            style={[
+              styles.roleChipText,
+              role === item && styles.roleChipTextActive,
+            ]}
+          >
+            {item}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  const renderPassengerDashboard = () => (
+    <View>
+      <Text style={styles.sectionTitle}>Passenger Command Center</Text>
+      <Text style={styles.sectionSubtitle}>
+        Live complaint matching + recovery tracking for your trip.
+      </Text>
+
+      <View style={styles.cardBlock}>
+        <Text style={styles.cardTitle}>Raise Geo-Tagged Complaint</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Lost item</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Backpack / Phone / Documents"
+            placeholderTextColor="#94A3B8"
+            value={complaintItem}
+            onChangeText={setComplaintItem}
+          />
+        </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Description</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Color, brand, contents"
+            placeholderTextColor="#94A3B8"
+            value={complaintDesc}
+            onChangeText={setComplaintDesc}
+          />
+        </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Last seen location</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Medavakkam / Stop name"
+            placeholderTextColor="#94A3B8"
+            value={complaintLocation}
+            onChangeText={setComplaintLocation}
+          />
+        </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Time</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="10:05AM"
+            placeholderTextColor="#94A3B8"
+            value={complaintTime}
+            onChangeText={setComplaintTime}
+          />
+        </View>
+        <TouchableOpacity style={styles.primaryButton} onPress={handleSubmitComplaint}>
+          <Text style={styles.primaryButtonText}>Submit complaint</Text>
+        </TouchableOpacity>
+      </View>
+
+      {complaintSubmitted && (
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Matched Onboard Staff</Text>
+          <Text style={styles.cardText}>Conductor Priya S • TN-01-AB-1234</Text>
+          <Text style={styles.cardText}>Route: Velachery → CMBT</Text>
+          <Text style={styles.cardText}>Current stop: Medavakkam • ETA 8 mins</Text>
+          <View style={styles.statusRow}>
+            <View style={styles.statusDotLarge} />
+            <Text style={styles.statusText}>
+              Alert delivered in 58 seconds via push + SMS + voice.
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.secondaryButton} onPress={handleStaffConfirm}>
+            <Text style={styles.secondaryButtonText}>
+              Simulate staff update
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {staffConfirmed && (
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Live Recovery Tracking</Text>
+          <Text style={styles.cardText}>Status: Item SAFE ✅</Text>
+          <Text style={styles.cardText}>Collect at Guindy 10:15AM 📍</Text>
+          <Text style={styles.cardText}>Live ETA: 11 mins</Text>
+          <View style={styles.timelineRow}>
+            <View style={styles.timelineDotActive} />
+            <View>
+              <Text style={styles.timelineTitle}>Complaint → Staff Confirmation</Text>
+              <Text style={styles.timelineSubtitle}>
+                Matched on vehicle + timing + geo-location
+              </Text>
+            </View>
+          </View>
+          <View style={styles.timelineRow}>
+            <View style={styles.timelineDot} />
+            <View>
+              <Text style={styles.timelineTitle}>Rendezvous QR Pickup</Text>
+              <Text style={styles.timelineSubtitle}>
+                Scan QR to close custody log
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+
+  const renderStaffDashboard = () => (
+    <View>
+      <Text style={styles.sectionTitle}>{role} Duty Dashboard</Text>
+      <Text style={styles.sectionSubtitle}>
+        Live queue, QR handoffs, and custody logs for your duty roster.
+      </Text>
+
+      <View style={styles.cardBlock}>
+        <Text style={styles.cardTitle}>Active Complaint Queue</Text>
+        <View style={styles.queueItem}>
+          <View>
+            <Text style={styles.queueTitle}>Black backpack</Text>
+            <Text style={styles.queueMeta}>TN-01-AB-1234 • Stop: Medavakkam</Text>
+          </View>
+          <Text style={styles.queueStatus}>NEW</Text>
+        </View>
+        <View style={styles.queueItem}>
+          <View>
+            <Text style={styles.queueTitle}>Passport pouch</Text>
+            <Text style={styles.queueMeta}>Route: Velachery → CMBT</Text>
+          </View>
+          <Text style={styles.queueStatusAmber}>HIGH</Text>
+        </View>
+        <TouchableOpacity style={styles.primaryButton} onPress={handleStaffConfirm}>
+          <Text style={styles.primaryButtonText}>Mark item SAFE</Text>
+        </TouchableOpacity>
+      </View>
+
+      {staffConfirmed && (
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Custody & Handoff</Text>
+          <Text style={styles.cardText}>Item tagged: QR-8721</Text>
+          <Text style={styles.cardText}>Pickup window: 10:15AM @ Guindy</Text>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={handleHandoffComplete}
+          >
+            <Text style={styles.secondaryButtonText}>Scan QR handoff</Text>
+          </TouchableOpacity>
+          {handoffComplete && (
+            <Text style={styles.successText}>
+              Handoff complete. Custody log updated.
+            </Text>
+          )}
+        </View>
+      )}
+    </View>
+  );
+
+  const renderTtrDashboard = () => (
+    <View>
+      <Text style={styles.sectionTitle}>TTR/RPF Escalations</Text>
+      <Text style={styles.sectionSubtitle}>
+        High-value items with PNR verification and chain-of-custody logs.
+      </Text>
+      <View style={styles.cardBlock}>
+        <Text style={styles.cardTitle}>Priority Alerts</Text>
+        <Text style={styles.cardText}>PNR: 4528193021 • Passport + Visa</Text>
+        <Text style={styles.cardText}>Train: MS-EXP-204 • Coach B2</Text>
+        <Text style={styles.cardText}>Next stop: Guindy • ETA 9 mins</Text>
+        <TouchableOpacity style={styles.primaryButton} onPress={handleStaffConfirm}>
+          <Text style={styles.primaryButtonText}>Verify PNR & confirm</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderPoliceDashboard = () => (
+    <View>
+      <Text style={styles.sectionTitle}>Police Command Console</Text>
+      <Text style={styles.sectionSubtitle}>
+        Cross-jurisdiction recovery for medical, passport, and legal items.
+      </Text>
+      <View style={styles.cardBlock}>
+        <Text style={styles.cardTitle}>Jurisdiction Escalations</Text>
+        <Text style={styles.cardText}>Medical dossier flagged • Case ID 98-204</Text>
+        <Text style={styles.cardText}>Location: CMBT • Linked staff: RPF-114</Text>
+        <TouchableOpacity style={styles.primaryButton} onPress={handleStaffConfirm}>
+          <Text style={styles.primaryButtonText}>Dispatch unit</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderDashboard = () => {
+    if (role === "Passenger") {
+      return renderPassengerDashboard();
+    }
+    if (role === "TTR/RPF") {
+      return renderTtrDashboard();
+    }
+    if (role === "Police") {
+      return renderPoliceDashboard();
+    }
+    return renderStaffDashboard();
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.backgroundGlow} />
-      <View style={styles.card}>
-        <View style={styles.brandRow}>
-          <View>
-            <Text style={styles.title}>SafeRide Guardian</Text>
-            <Text style={styles.subtitle}>
-              AI-Powered Lost Item Recovery for Public Transport
-            </Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.card}>
+          <View style={styles.brandRow}>
+            <View>
+              <Text style={styles.title}>SafeRide Guardian</Text>
+              <Text style={styles.subtitle}>
+                AI-powered role-based recovery for buses, trains, cabs, autos.
+              </Text>
+            </View>
+            <View style={styles.statusPill}>
+              <View style={styles.statusDot} />
+              <Text style={styles.statusPillText}>Secure</Text>
+            </View>
           </View>
-          <View style={styles.statusPill}>
-            <View style={styles.statusDot} />
-            <Text style={styles.statusPillText}>Secure</Text>
-          </View>
-        </View>
-        <View style={styles.divider} />
+          <View style={styles.divider} />
 
-        {isAuthenticated ? (
-          <View style={styles.home}>
-            <Text style={styles.welcome}>Welcome back!</Text>
-            <Text style={styles.homeText}>
-              You are signed in and ready to track and recover lost items.
-            </Text>
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={handleLogout}
-            >
-              <Text style={styles.secondaryButtonText}>Log out</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View>
-            <Text style={styles.formTitle}>
-              {isRegister ? "Create your account" : "Sign in to continue"}
-            </Text>
+          {isAuthenticated ? (
+            <View style={styles.home}>
+              {renderDashboard()}
+              <TouchableOpacity
+                style={[styles.secondaryButton, styles.logoutButton]}
+                onPress={handleLogout}
+              >
+                <Text style={styles.secondaryButtonText}>Log out</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View>
+              <Text style={styles.formTitle}>
+                {isRegister ? "Create your account" : "Sign in to continue"}
+              </Text>
 
-            {isRegister && (
+              {isRegister && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Select role</Text>
+                  {renderRoleSelector()}
+                </View>
+              )}
+
+              {isRegister && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Full name</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your name"
+                    placeholderTextColor="#94A3B8"
+                    value={name}
+                    onChangeText={setName}
+                    autoCapitalize="words"
+                  />
+                </View>
+              )}
+
+              {isRegister && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Mobile number</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="+91 98765 43210"
+                    placeholderTextColor="#94A3B8"
+                    value={phone}
+                    onChangeText={setPhone}
+                    keyboardType="phone-pad"
+                  />
+                </View>
+              )}
+
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Full name</Text>
+                <Text style={styles.label}>Email address</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your name"
+                  placeholder="you@example.com"
                   placeholderTextColor="#94A3B8"
-                  value={name}
-                  onChangeText={setName}
-                  autoCapitalize="words"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
                 />
               </View>
-            )}
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email address</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="you@example.com"
-                placeholderTextColor="#94A3B8"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                placeholderTextColor="#94A3B8"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-              />
-            </View>
-
-            {isRegister && (
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Confirm password</Text>
+                <Text style={styles.label}>Password</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Re-enter your password"
+                  placeholder="Enter your password"
                   placeholderTextColor="#94A3B8"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
+                  value={password}
+                  onChangeText={setPassword}
                   secureTextEntry
                 />
               </View>
-            )}
 
-            {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
+              {isRegister && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Confirm password</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Re-enter your password"
+                    placeholderTextColor="#94A3B8"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry
+                  />
+                </View>
+              )}
 
-            <TouchableOpacity
-              style={[
-                styles.primaryButton,
-                !canSubmit && styles.buttonDisabled,
-              ]}
-              onPress={handleSubmit}
-              disabled={!canSubmit}
-            >
-              <Text style={styles.primaryButtonText}>
-                {isRegister ? "Create account" : "Log in"}
-              </Text>
-            </TouchableOpacity>
+              {isRegister && (
+                <View style={styles.verifyCard}>
+                  <Text style={styles.cardTitle}>OTP + Aadhaar verification</Text>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Aadhaar number</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="XXXX-XXXX-XXXX"
+                      placeholderTextColor="#94A3B8"
+                      value={aadhaar}
+                      onChangeText={setAadhaar}
+                      keyboardType="number-pad"
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>OTP</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="1234"
+                      placeholderTextColor="#94A3B8"
+                      value={otp}
+                      onChangeText={setOtp}
+                      keyboardType="number-pad"
+                    />
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.secondaryButton, !canVerify && styles.buttonDisabled]}
+                    onPress={handleVerify}
+                    disabled={!canVerify}
+                  >
+                    <Text style={styles.secondaryButtonText}>
+                      {isVerified ? "Verified ✅" : "Verify identity"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
 
-            <View style={styles.switchRow}>
-              <Text style={styles.switchText}>
-                {isRegister ? "Already have an account?" : "New here?"}
-              </Text>
-              <TouchableOpacity onPress={handleSwitchMode}>
-                <Text style={styles.switchLink}>
-                  {isRegister ? "Log in" : "Create one"}
+              {isRegister && role === "Passenger" && (
+                <View style={styles.cardBlock}>
+                  <Text style={styles.cardTitle}>Passenger travel details</Text>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Bus/Train number</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="TN-01-AB-1234"
+                      placeholderTextColor="#94A3B8"
+                      value={travelNumber}
+                      onChangeText={setTravelNumber}
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Route</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Velachery → CMBT"
+                      placeholderTextColor="#94A3B8"
+                      value={travelRoute}
+                      onChangeText={setTravelRoute}
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Timing</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="09:30AM - 11:45AM"
+                      placeholderTextColor="#94A3B8"
+                      value={travelTiming}
+                      onChangeText={setTravelTiming}
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Driver name (optional)</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Driver name"
+                      placeholderTextColor="#94A3B8"
+                      value={driverName}
+                      onChangeText={setDriverName}
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Conductor name (optional)</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Conductor name"
+                      placeholderTextColor="#94A3B8"
+                      value={conductorName}
+                      onChangeText={setConductorName}
+                    />
+                  </View>
+                </View>
+              )}
+
+              {isRegister && isStaffRole && (
+                <View style={styles.cardBlock}>
+                  <Text style={styles.cardTitle}>Daily duty roster</Text>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Vehicle number</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="TN-01-AB-1234"
+                      placeholderTextColor="#94A3B8"
+                      value={vehicleNumber}
+                      onChangeText={setVehicleNumber}
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Route</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Velachery → CMBT"
+                      placeholderTextColor="#94A3B8"
+                      value={dutyRoute}
+                      onChangeText={setDutyRoute}
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Shift timing</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="6AM - 2PM"
+                      placeholderTextColor="#94A3B8"
+                      value={shiftTiming}
+                      onChangeText={setShiftTiming}
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>From stop</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Velachery"
+                      placeholderTextColor="#94A3B8"
+                      value={fromStop}
+                      onChangeText={setFromStop}
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>To stop</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="CMBT"
+                      placeholderTextColor="#94A3B8"
+                      value={toStop}
+                      onChangeText={setToStop}
+                    />
+                  </View>
+                </View>
+              )}
+
+              {error.length > 0 && <Text style={styles.errorText}>{error}</Text>}
+
+              <TouchableOpacity
+                style={[styles.primaryButton, !canSubmit && styles.buttonDisabled]}
+                onPress={handleSubmit}
+                disabled={!canSubmit}
+              >
+                <Text style={styles.primaryButtonText}>
+                  {isRegister ? "Create account" : "Log in"}
                 </Text>
               </TouchableOpacity>
-            </View>
 
-            <View style={styles.footerRow}>
-              <Text style={styles.footerText}>
-                By continuing, you agree to our privacy policy.
-              </Text>
+              <View style={styles.switchRow}>
+                <Text style={styles.switchText}>
+                  {isRegister ? "Already have an account?" : "New here?"}
+                </Text>
+                <TouchableOpacity onPress={handleSwitchMode}>
+                  <Text style={styles.switchLink}>
+                    {isRegister ? "Log in" : "Create one"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.footerRow}>
+                <Text style={styles.footerText}>
+                  Multi-role recovery platform for public transport.
+                </Text>
+              </View>
             </View>
-          </View>
-        )}
-      </View>
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -380,16 +895,106 @@ const styles = StyleSheet.create({
   home: {
     marginTop: 6,
   },
-  welcome: {
-    fontSize: 20,
-    fontWeight: "600",
+  cardBlock: {
+    backgroundColor: "#0F172A",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#1E2A44",
+  },
+  verifyCard: {
+    backgroundColor: "#0F172A",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#1E2A44",
+  },
+  cardTitle: {
     color: "#F8FAFC",
+    fontWeight: "600",
+    marginBottom: 10,
+  },
+  cardText: {
+    color: "#CBD5F5",
     marginBottom: 6,
   },
-  homeText: {
-    color: "#CBD5F5",
-    marginBottom: 16,
-    lineHeight: 20,
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  statusDotLarge: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#22C55E",
+    marginRight: 8,
+  },
+  statusText: {
+    color: "#A7F3D0",
+    flex: 1,
+    lineHeight: 18,
+  },
+  timelineRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginTop: 10,
+  },
+  timelineDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#334155",
+    marginRight: 10,
+    marginTop: 4,
+  },
+  timelineDotActive: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#38BDF8",
+    marginRight: 10,
+    marginTop: 4,
+  },
+  timelineTitle: {
+    color: "#E2E8F0",
+    fontWeight: "600",
+  },
+  timelineSubtitle: {
+    color: "#94A3B8",
+    marginTop: 4,
+  },
+  queueItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1E2A44",
+  },
+  queueTitle: {
+    color: "#F8FAFC",
+    fontWeight: "600",
+  },
+  queueMeta: {
+    color: "#94A3B8",
+    marginTop: 4,
+  },
+  queueStatus: {
+    color: "#22C55E",
+    fontWeight: "700",
+  },
+  queueStatusAmber: {
+    color: "#F59E0B",
+    fontWeight: "700",
+  },
+  successText: {
+    color: "#34D399",
+    marginTop: 10,
+    fontWeight: "600",
   },
   secondaryButton: {
     borderWidth: 1,
@@ -401,6 +1006,9 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: "#38BDF8",
     fontWeight: "600",
+  },
+  logoutButton: {
+    marginTop: 8,
   },
 });
 
