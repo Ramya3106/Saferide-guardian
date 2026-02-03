@@ -392,17 +392,26 @@ const App = () => {
       {staffComplaintSubmitted && (
         <View style={styles.cardBlock}>
           <Text style={styles.cardTitle}>Complaint Status</Text>
-          <Text style={styles.successText}>✅ Complaint submitted successfully</Text>
-          <Text style={styles.cardText}>Complaint ID: SC-{Math.floor(Math.random() * 100000)}</Text>
+          <Text style={styles.successText}>
+            ✅ Complaint submitted successfully
+          </Text>
+          <Text style={styles.cardText}>
+            Complaint ID: SC-{Math.floor(Math.random() * 100000)}
+          </Text>
           <Text style={styles.cardText}>Status: Under Review</Text>
-          <Text style={styles.cardText}>Assigned to: Railway Grievance Cell</Text>
+          <Text style={styles.cardText}>
+            Assigned to: Railway Grievance Cell
+          </Text>
           <View style={styles.statusRow}>
             <View style={styles.statusDotLarge} />
             <Text style={styles.statusText}>
-              Your complaint has been forwarded to senior railway authorities. You will receive updates via SMS and email.
+              Your complaint has been forwarded to senior railway authorities.
+              You will receive updates via SMS and email.
             </Text>
           </View>
-          <Text style={styles.cardText}>Expected resolution: 7-10 working days</Text>
+          <Text style={styles.cardText}>
+            Expected resolution: 7-10 working days
+          </Text>
         </View>
       )}
     </View>
@@ -934,6 +943,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     color: "#F8FAFC",
+  },
+  textArea: {
+    minHeight: 100,
+    textAlignVertical: "top",
   },
   roleRow: {
     flexDirection: "row",
