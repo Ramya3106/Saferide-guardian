@@ -44,6 +44,11 @@ const App = () => {
   const [staffConfirmed, setStaffConfirmed] = useState(false);
   const [handoffComplete, setHandoffComplete] = useState(false);
 
+  const [staffComplaintType, setStaffComplaintType] = useState("");
+  const [staffComplaintTarget, setStaffComplaintTarget] = useState("");
+  const [staffComplaintDetails, setStaffComplaintDetails] = useState("");
+  const [staffComplaintSubmitted, setStaffComplaintSubmitted] = useState(false);
+
   const [error, setError] = useState("");
 
   const isRegister = mode === "register";
@@ -124,6 +129,10 @@ const App = () => {
     setShiftTiming("");
     setFromStop("");
     setToStop("");
+    setStaffComplaintType("");
+    setStaffComplaintTarget("");
+    setStaffComplaintDetails("");
+    setStaffComplaintSubmitted(false);
     setError("");
   };
 
@@ -153,6 +162,7 @@ const App = () => {
     setComplaintSubmitted(false);
     setStaffConfirmed(false);
     setHandoffComplete(false);
+    setStaffComplaintSubmitted(false);
     resetForm();
   };
 
@@ -187,6 +197,19 @@ const App = () => {
 
   const handleHandoffComplete = () => {
     setHandoffComplete(true);
+  };
+
+  const handleSubmitStaffComplaint = () => {
+    if (
+      staffComplaintType.trim().length < 2 ||
+      staffComplaintTarget.trim().length < 2 ||
+      staffComplaintDetails.trim().length < 6
+    ) {
+      setError("Please fill all complaint fields with valid information.");
+      return;
+    }
+    setError("");
+    setStaffComplaintSubmitted(true);
   };
 
   const renderRoleSelector = () => (
@@ -318,6 +341,68 @@ const App = () => {
               </Text>
             </View>
           </View>
+        </View>
+      )}
+
+      <View style={styles.cardBlock}>
+        <Text style={styles.cardTitle}>Complaint About TTR/TTE Staff</Text>
+        <Text style={styles.sectionSubtitle}>
+          Report misconduct or issues with railway staff members
+        </Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Complaint Type</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Misbehavior / Negligence / Corruption / Other"
+            placeholderTextColor="#94A3B8"
+            value={staffComplaintType}
+            onChangeText={setStaffComplaintType}
+          />
+        </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Staff Member (TTR/TTE)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Name / Badge Number / Physical description"
+            placeholderTextColor="#94A3B8"
+            value={staffComplaintTarget}
+            onChangeText={setStaffComplaintTarget}
+          />
+        </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Details of Incident</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Describe the incident in detail..."
+            placeholderTextColor="#94A3B8"
+            value={staffComplaintDetails}
+            onChangeText={setStaffComplaintDetails}
+            multiline
+            numberOfLines={4}
+          />
+        </View>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={handleSubmitStaffComplaint}
+        >
+          <Text style={styles.primaryButtonText}>Submit Staff Complaint</Text>
+        </TouchableOpacity>
+      </View>
+
+      {staffComplaintSubmitted && (
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Complaint Status</Text>
+          <Text style={styles.successText}>✅ Complaint submitted successfully</Text>
+          <Text style={styles.cardText}>Complaint ID: SC-{Math.floor(Math.random() * 100000)}</Text>
+          <Text style={styles.cardText}>Status: Under Review</Text>
+          <Text style={styles.cardText}>Assigned to: Railway Grievance Cell</Text>
+          <View style={styles.statusRow}>
+            <View style={styles.statusDotLarge} />
+            <Text style={styles.statusText}>
+              Your complaint has been forwarded to senior railway authorities. You will receive updates via SMS and email.
+            </Text>
+          </View>
+          <Text style={styles.cardText}>Expected resolution: 7-10 working days</Text>
         </View>
       )}
     </View>
