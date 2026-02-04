@@ -20,9 +20,9 @@ const App = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [aadhaar, setAadhaar] = useState("");
-  const [otp, setOtp] = useState("");
+  const [emailOtp, setEmailOtp] = useState("");
   const [isVerified, setIsVerified] = useState(false);
+  const [isOtpSent, setIsOtpSent] = useState(false);
 
   const [travelNumber, setTravelNumber] = useState("");
   const [travelRoute, setTravelRoute] = useState("");
@@ -55,8 +55,8 @@ const App = () => {
   const isStaffRole = role !== "Passenger";
 
   const canVerify = useMemo(() => {
-    return aadhaar.trim().length >= 8 && otp.trim().length >= 4;
-  }, [aadhaar, otp]);
+    return emailOtp.trim().length >= 4;
+  }, [emailOtp]);
 
   const canSubmit = useMemo(() => {
     if (isRegister) {
@@ -116,9 +116,9 @@ const App = () => {
     setEmail("");
     setPassword("");
     setConfirmPassword("");
-    setAadhaar("");
-    setOtp("");
+    setEmailOtp("");
     setIsVerified(false);
+    setIsOtpSent(false);
     setTravelNumber("");
     setTravelRoute("");
     setTravelTiming("");
@@ -166,13 +166,26 @@ const App = () => {
     resetForm();
   };
 
+  const handleSendOtp = () => {
+    if (email.trim().length < 5) {
+      setError("Enter a valid email address.");
+      return;
+    }
+    setError("");
+    setIsOtpSent(true);
+    // Here you would integrate with your backend to send OTP via email
+    console.log(`Sending OTP to ${email}`);
+  };
+
   const handleVerify = () => {
     if (!canVerify) {
-      setError("Enter valid Aadhaar and OTP to verify.");
+      setError("Enter valid OTP to verify.");
       return;
     }
     setError("");
     setIsVerified(true);
+    // Here you would integrate with your backend to verify the OTP
+    console.log(`Verifying OTP: ${emailOtp}`);
   };
 
   const handleSubmitComplaint = () => {
@@ -637,42 +650,60 @@ const App = () => {
               {isRegister && (
                 <View style={styles.verifyCard}>
                   <Text style={styles.cardTitle}>
-                    OTP + Aadhaar verification
+                    Email verification
                   </Text>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Aadhaar number</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="XXXX-XXXX-XXXX"
-                      placeholderTextColor="#94A3B8"
-                      value={aadhaar}
-                      onChangeText={setAadhaar}
-                      keyboardType="number-pad"
-                    />
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>OTP</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="1234"
-                      placeholderTextColor="#94A3B8"
-                      value={otp}
-                      onChangeText={setOtp}
-                      keyboardType="number-pad"
-                    />
-                  </View>
-                  <TouchableOpacity
-                    style={[
-                      styles.secondaryButton,
-                      !canVerify && styles.buttonDisabled,
-                    ]}
-                    onPress={handleVerify}
-                    disabled={!canVerify}
-                  >
-                    <Text style={styles.secondaryButtonText}>
-                      {isVerified ? "Verified ✅" : "Verify identity"}
-                    </Text>
-                  </TouchableOpacity>
+                  <Text style={styles.sectionSubtitle}>
+                    We'll send a verification code to your email address
+                  </Text>
+                  {!isOtpSent ? (
+                    <TouchableOpacity
+                      style={[
+                        styles.primaryButton,
+                        email.trim().length < 5 && styles.buttonDisabled,
+                      ]}
+                      onPress={handleSendOtp}
+                      disabled={email.trim().length < 5}
+                    >
+                      <Text style={styles.primaryButtonText}>
+                        Send verification code
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Verification code</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Enter 4-digit code"
+                          placeholderTextColor="#94A3B8"
+                          value={emailOtp}
+                          onChangeText={setEmailOtp}
+                          keyboardType="number-pad"
+                          maxLength={4}
+                        />
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.secondaryButton,
+                          !canVerify && styles.buttonDisabled,
+                        ]}
+                        onPress={handleVerify}
+                        disabled={!canVerify}
+                      >
+                        <Text style={styles.secondaryButtonText}>
+                          {isVerified ? "Verified ✅" : "Verify email"}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.textButton]}
+                        onPress={handleSendOtp}
+                      >
+                        <Text style={styles.switchLink}>
+                          Resend code
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
               )}
 
