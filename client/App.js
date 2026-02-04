@@ -649,9 +649,7 @@ const App = () => {
 
               {isRegister && (
                 <View style={styles.verifyCard}>
-                  <Text style={styles.cardTitle}>
-                    Email verification
-                  </Text>
+                  <Text style={styles.cardTitle}>Email verification</Text>
                   <Text style={styles.sectionSubtitle}>
                     We'll send a verification code to your email address
                   </Text>
@@ -698,9 +696,7 @@ const App = () => {
                         style={[styles.textButton]}
                         onPress={handleSendOtp}
                       >
-                        <Text style={styles.switchLink}>
-                          Resend code
-                        </Text>
+                        <Text style={styles.switchLink}>Resend code</Text>
                       </TouchableOpacity>
                     </>
                   )}
@@ -1167,6 +1163,10 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: "#38BDF8",
     fontWeight: "600",
+  },
+  textButton: {
+    marginTop: 12,
+    alignItems: "center",
   },
   logoutButton: {
     marginTop: 8,
