@@ -545,7 +545,12 @@ const App = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.backgroundGlow} />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          !isAuthenticated && styles.scrollContentCentered,
+        ]}
+      >
         <View style={styles.card}>
           <View style={styles.brandRow}>
             <View>
@@ -873,9 +878,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "center",
     padding: 24,
     paddingBottom: 40,
+  },
+  scrollContentCentered: {
+    justifyContent: "center",
   },
   card: {
     width: "100%",
