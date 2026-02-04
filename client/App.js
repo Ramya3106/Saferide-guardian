@@ -541,10 +541,6 @@ const App = () => {
                 AI-powered role-based recovery for buses, trains, cabs, autos.
               </Text>
             </View>
-            <View style={styles.statusPill}>
-              <View style={styles.statusDot} />
-              <Text style={styles.statusPillText}>Secure</Text>
-            </View>
           </View>
           <View style={styles.divider} />
 
@@ -836,32 +832,34 @@ const App = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0B1220",
+    backgroundColor: "#FFFFFF",
   },
   backgroundGlow: {
     position: "absolute",
     width: 320,
     height: 320,
     borderRadius: 160,
-    backgroundColor: "#1E3A8A",
-    opacity: 0.2,
+    backgroundColor: "#E0E7FF",
+    opacity: 0.3,
     top: 40,
     right: -80,
   },
   scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
     padding: 24,
     paddingBottom: 40,
   },
   card: {
     width: "100%",
-    backgroundColor: "#121B2E",
+    backgroundColor: "#FFFFFF",
     borderRadius: 20,
     padding: 24,
     borderWidth: 1,
-    borderColor: "#1E2A44",
+    borderColor: "#E2E8F0",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 20,
     elevation: 8,
   },
@@ -874,12 +872,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#F8FAFC",
+    color: "#1E293B",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: "#CBD5F5",
+    color: "#64748B",
     marginBottom: 20,
     lineHeight: 20,
   },
@@ -907,19 +905,19 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: "#1E2A44",
+    backgroundColor: "#E2E8F0",
     marginBottom: 18,
   },
   formTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#E2E8F0",
+    color: "#1E293B",
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#F8FAFC",
+    color: "#1E293B",
     marginBottom: 6,
   },
   sectionSubtitle: {
@@ -931,18 +929,19 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   label: {
-    color: "#94A3B8",
+    color: "#475569",
     fontSize: 12,
     marginBottom: 6,
+    fontWeight: "500",
   },
   input: {
-    backgroundColor: "#0B1220",
-    borderColor: "#1E2A44",
+    backgroundColor: "#F8FAFC",
+    borderColor: "#CBD5E1",
     borderWidth: 1,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    color: "#F8FAFC",
+    color: "#1E293B",
   },
   textArea: {
     minHeight: 100,
@@ -955,7 +954,8 @@ const styles = StyleSheet.create({
   },
   roleChip: {
     borderWidth: 1,
-    borderColor: "#1E2A44",
+    borderColor: "#CBD5E1",
+    backgroundColor: "#F8FAFC",
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 999,
@@ -965,7 +965,7 @@ const styles = StyleSheet.create({
     borderColor: "#2563EB",
   },
   roleChipText: {
-    color: "#CBD5F5",
+    color: "#475569",
     fontSize: 12,
   },
   roleChipTextActive: {
@@ -1003,18 +1003,18 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   switchText: {
-    color: "#94A3B8",
+    color: "#64748B",
     marginRight: 6,
   },
   switchLink: {
-    color: "#38BDF8",
+    color: "#2563EB",
     fontWeight: "600",
   },
   footerRow: {
     marginTop: 18,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: "#1E2A44",
+    borderTopColor: "#E2E8F0",
   },
   footerText: {
     color: "#64748B",
@@ -1026,28 +1026,28 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   cardBlock: {
-    backgroundColor: "#0F172A",
+    backgroundColor: "#F8FAFC",
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#1E2A44",
+    borderColor: "#E2E8F0",
   },
   verifyCard: {
-    backgroundColor: "#0F172A",
+    backgroundColor: "#F8FAFC",
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#1E2A44",
+    borderColor: "#E2E8F0",
   },
   cardTitle: {
-    color: "#F8FAFC",
+    color: "#1E293B",
     fontWeight: "600",
     marginBottom: 10,
   },
   cardText: {
-    color: "#CBD5F5",
+    color: "#475569",
     marginBottom: 6,
   },
   statusRow: {
