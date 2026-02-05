@@ -91,7 +91,6 @@ const App = () => {
 
     return email.trim().length >= 5 && password.trim().length >= 6;
   }, [
-    aadhaar,
     confirmPassword,
     dutyRoute,
     email,
