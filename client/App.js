@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import {
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -10,6 +11,10 @@ import {
 } from "react-native";
 
 const ROLES = ["Passenger", "Driver", "Conductor", "TTR/RPF", "Police"];
+const API_BASE =
+  Platform.OS === "android"
+    ? "http://10.0.2.2:5000/api"
+    : "http://localhost:5000/api";
 
 const App = () => {
   const [mode, setMode] = useState("login");
@@ -55,7 +60,7 @@ const App = () => {
   const isStaffRole = role !== "Passenger";
 
   const canVerify = useMemo(() => {
-    return emailOtp.trim().length >= 4;
+    return /^\d{6}$/.test(emailOtp.trim());
   }, [emailOtp]);
 
   const canSubmit = useMemo(() => {
@@ -165,26 +170,68 @@ const App = () => {
     resetForm();
   };
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     if (email.trim().length < 5) {
       setError("Enter a valid email address.");
       return;
     }
+
     setError("");
-    setIsOtpSent(true);
-    // Here you would integrate with your backend to send OTP via email
-    console.log(`Sending OTP to ${email}`);
+    setIsVerified(false);
+    setIsOtpSent(false);
+    setEmailOtp("");
+
+    try {
+      const response = await fetch(`${API_BASE}/auth/send-verify-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setError(payload.message || "Unable to send verification code.");
+        return;
+      }
+
+      setIsOtpSent(true);
+    } catch (err) {
+      setError("Network error while sending verification code.");
+    }
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (!canVerify) {
       setError("Enter valid OTP to verify.");
       return;
     }
+
     setError("");
-    setIsVerified(true);
-    // Here you would integrate with your backend to verify the OTP
-    console.log(`Verifying OTP: ${emailOtp}`);
+
+    try {
+      const response = await fetch(`${API_BASE}/auth/verify-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          code: emailOtp.trim(),
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setIsVerified(false);
+        setError(payload.message || "Unable to verify code.");
+        return;
+      }
+
+      setIsVerified(true);
+    } catch (err) {
+      setIsVerified(false);
+      setError("Network error while verifying code.");
+    }
   };
 
   const handleSubmitComplaint = () => {
@@ -676,12 +723,12 @@ const App = () => {
                         <Text style={styles.label}>Verification code</Text>
                         <TextInput
                           style={styles.input}
-                          placeholder="Enter 4-digit code"
+                          placeholder="Enter 6-digit code"
                           placeholderTextColor="#94A3B8"
                           value={emailOtp}
                           onChangeText={setEmailOtp}
                           keyboardType="number-pad"
-                          maxLength={4}
+                          maxLength={6}
                         />
                       </View>
                       <TouchableOpacity
