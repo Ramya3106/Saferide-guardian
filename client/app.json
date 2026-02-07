@@ -1,13 +1,4 @@
 {
-  "expo": {
-    "name": "SafeRide Guardian",
-    "slug": "saferide-guardian",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "userInterfaceStyle": "light",
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {}
-  }
+  "name": "SafeRideGuardian",
+  "displayName": "SafeRide Guardian"
 }
