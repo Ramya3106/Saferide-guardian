@@ -24,17 +24,13 @@ const shouldReturnCode =
 
 const buildTransporter = () => {
   const user = process.env.EMAIL_USER || DEFAULT_EMAIL_FROM;
-  const pass = process.env.EMAIL_PASS;
+  const pass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
   if (!user || !pass) return null;
   return nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
+    service: "gmail",
     auth: { user, pass },
   });
 };
-
-const transporter = buildTransporter();
 
 router.post("/send-verify-code", async (req, res) => {
   const email = normalizeEmail(req.body?.email);
@@ -43,6 +39,12 @@ router.post("/send-verify-code", async (req, res) => {
     return res.status(400).json({ message: "Enter a valid email address." });
   }
 
+  const code = generateCode();
+  const expiresAt = Date.now() + VERIFY_CODE_TTL_MS;
+
+  verificationStore.set(email, { code, expiresAt, attempts: 0 });
+
+  const transporter = buildTransporter();
   if (!transporter) {
     if (shouldReturnCode) {
       return res.status(200).json({
@@ -51,16 +53,12 @@ router.post("/send-verify-code", async (req, res) => {
         message: "Email service not configured. Using dev verification code.",
       });
     }
+    verificationStore.delete(email);
     return res.status(500).json({
       message:
         "Email service is not configured. Set EMAIL_USER and EMAIL_PASS.",
     });
   }
-
-  const code = generateCode();
-  const expiresAt = Date.now() + VERIFY_CODE_TTL_MS;
-
-  verificationStore.set(email, { code, expiresAt, attempts: 0 });
 
   try {
     await transporter.sendMail({
