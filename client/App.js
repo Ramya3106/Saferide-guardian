@@ -718,9 +718,7 @@ const App = () => {
                     />
                     <TouchableOpacity
                       style={styles.eyeButton}
-                      onPress={() =>
-                        setShowConfirmPassword((prev) => !prev)
-                      }
+                      onPress={() => setShowConfirmPassword((prev) => !prev)}
                       accessibilityLabel={
                         showConfirmPassword
                           ? "Hide confirm password"
