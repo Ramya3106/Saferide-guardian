@@ -17,7 +17,6 @@ const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const generateCode = () => String(Math.floor(100000 + Math.random() * 900000));
 
-
 let cachedTransporter = null;
 
 const buildTransporter = async () => {
@@ -63,8 +62,7 @@ router.post("/send-verify-code", async (req, res) => {
       return res.status(200).json({
         sent: false,
         devCode: code,
-        message:
-          "Email service not configured. Using dev response with code.",
+        message: "Email service not configured. Using dev response with code.",
       });
     }
 
