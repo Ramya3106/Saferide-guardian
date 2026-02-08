@@ -812,20 +812,9 @@ const App = () => {
                 </View>
               )}
 
-              {isRegister && role === "Passenger" && (
-                <View
-                  style={[
-                    styles.cardBlock,
-                    !isVerified && styles.cardBlockBlurred,
-                  ]}
-                  pointerEvents={!isVerified ? "none" : "auto"}
-                >
+              {isRegister && role === "Passenger" && isVerified && (
+                <View style={styles.cardBlock}>
                   <Text style={styles.cardTitle}>Passenger travel details</Text>
-                  {!isVerified && (
-                    <Text style={styles.lockedHintText}>
-                      Verify your email to unlock this section.
-                    </Text>
-                  )}
                   <View style={styles.inputGroup}>
                     <Text style={styles.label}>Bus/Train number</Text>
                     <TextInput
