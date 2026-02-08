@@ -32,6 +32,8 @@ const App = () => {
   const [emailOtp, setEmailOtp] = useState("");
   const [isVerified, setIsVerified] = useState(false);
   const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [devOtpHint, setDevOtpHint] = useState("");
 
   const [travelNumber, setTravelNumber] = useState("");
   const [travelRoute, setTravelRoute] = useState("");
@@ -129,6 +131,8 @@ const App = () => {
     setEmailOtp("");
     setIsVerified(false);
     setIsOtpSent(false);
+    setIsSendingOtp(false);
+    setDevOtpHint("");
     setTravelNumber("");
     setTravelRoute("");
     setTravelTiming("");
@@ -186,6 +190,8 @@ const App = () => {
     setIsVerified(false);
     setIsOtpSent(false);
     setEmailOtp("");
+    setDevOtpHint("");
+    setIsSendingOtp(true);
 
     try {
       const response = await fetch(`${API_BASE}/auth/send-verify-code`, {
@@ -202,8 +208,13 @@ const App = () => {
       }
 
       setIsOtpSent(true);
+      if (payload.code) {
+        setDevOtpHint(`Dev code: ${payload.code}`);
+      }
     } catch (err) {
       setError("Network error while sending verification code.");
+    } finally {
+      setIsSendingOtp(false);
     }
   };
 
@@ -234,6 +245,7 @@ const App = () => {
       }
 
       setIsVerified(true);
+      setDevOtpHint("");
     } catch (err) {
       setIsVerified(false);
       setError("Network error while verifying code.");
@@ -746,13 +758,17 @@ const App = () => {
                     <TouchableOpacity
                       style={[
                         styles.primaryButton,
-                        email.trim().length < 5 && styles.buttonDisabled,
+                        (email.trim().length < 5 || isSendingOtp) &&
+                          styles.buttonDisabled,
                       ]}
                       onPress={handleSendOtp}
-                      disabled={email.trim().length < 5}
+                      disabled={email.trim().length < 5 || isSendingOtp}
+                      activeOpacity={0.9}
                     >
                       <Text style={styles.primaryButtonText}>
-                        Send verification code
+                        {isSendingOtp
+                          ? "Sending verification code..."
+                          : "Send verification code"}
                       </Text>
                     </TouchableOpacity>
                   ) : (
@@ -784,9 +800,13 @@ const App = () => {
                       <TouchableOpacity
                         style={[styles.textButton]}
                         onPress={handleSendOtp}
+                        activeOpacity={0.85}
                       >
                         <Text style={styles.switchLink}>Resend code</Text>
                       </TouchableOpacity>
+                      {devOtpHint.length > 0 && (
+                        <Text style={styles.devHintText}>{devOtpHint}</Text>
+                      )}
                     </>
                   )}
                 </View>
@@ -1108,6 +1128,12 @@ const styles = StyleSheet.create({
   errorText: {
     color: "#F87171",
     marginBottom: 12,
+  },
+  devHintText: {
+    color: "#F59E0B",
+    marginTop: 10,
+    fontSize: 12,
+    textAlign: "center",
   },
   primaryButton: {
     backgroundColor: "#2563EB",
