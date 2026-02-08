@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import {
   Platform,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
