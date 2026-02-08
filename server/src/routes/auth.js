@@ -74,8 +74,10 @@ router.post("/send-verify-code", async (req, res) => {
   }
 
   try {
+    const fromAddress = process.env.EMAIL_FROM || process.env.EMAIL_USER || "";
+
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER || "",
+      from: fromAddress,
       to: email,
       subject: "SafeRide Guardian verification code",
       text: `Your verification code is ${code}. It expires in 10 minutes.`,
@@ -86,6 +88,14 @@ router.post("/send-verify-code", async (req, res) => {
     if (process.env.NODE_ENV !== "production") {
       console.error("[mail] sendMail failed:", error?.message || error);
     }
+
+    const smtpCode = Number(error?.responseCode);
+    if (smtpCode === 550) {
+      return res.status(400).json({
+        message: "Recipient address not found. Please double-check the email.",
+      });
+    }
+
     return res.status(500).json({
       message: "Unable to send verification email right now.",
     });
