@@ -1,132 +1,106 @@
 const express = require("express");
 const nodemailer = require("nodemailer");
-
 const router = express.Router();
 
-const VERIFY_CODE_TTL_MS = 10 * 60 * 1000;
+const VERIFY_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 5;
-
 const verificationStore = new Map();
 
-const normalizeEmail = (email) =>
-  String(email || "")
-    .trim()
-    .toLowerCase();
+// Email config
+const DEFAULT_EMAIL_FROM = '"SafeRide Guardian" <divyadharshana3@gmail.com>';
 
-const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const createTransporter = () => {
+  const user = process.env.EMAIL_USER || DEFAULT_EMAIL_FROM;
+  const pass = process.env.EMAIL_PASS;
 
-const generateCode = () => String(Math.floor(100000 + Math.random() * 900000));
-
-let cachedTransporter = null;
-
-const buildTransporter = async () => {
-  if (cachedTransporter) return cachedTransporter;
-
-  const user = process.env.EMAIL_USER || "";
-  const pass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
   if (!user || !pass) return null;
 
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: { user, pass },
+  return nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false, // true for 465, false for other ports
+    auth: {
+      user,
+      pass,
+    },
   });
-
-  if (process.env.NODE_ENV !== "production") {
-    try {
-      await transporter.verify();
-      console.info("[mail] Transporter verified: ready to send emails");
-    } catch (e) {
-      console.error("[mail] Transporter verification failed:", e?.message || e);
-    }
-  }
-
-  cachedTransporter = transporter;
-  return cachedTransporter;
 };
 
+// Generate 6-digit code
+const generateCode = () => String(Math.floor(100000 + Math.random() * 900000));
+
+// Email validation
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
 router.post("/send-verify-code", async (req, res) => {
-  const email = normalizeEmail(req.body?.email);
+  const email = (req.body?.email || "").trim().toLowerCase();
 
   if (!isValidEmail(email)) {
     return res.status(400).json({ message: "Enter a valid email address." });
   }
 
-  const code = generateCode();
-  const expiresAt = Date.now() + VERIFY_CODE_TTL_MS;
-
-  verificationStore.set(email, { code, expiresAt, attempts: 0 });
-
-  const transporter = await buildTransporter();
+  const transporter = createTransporter();
   if (!transporter) {
-    if (process.env.NODE_ENV !== "production") {
-      return res.status(200).json({
-        sent: false,
-        devCode: code,
-        message: "Email service not configured. Using dev response with code.",
-      });
-    }
-
-    verificationStore.delete(email);
-    return res.status(503).json({
-      message:
-        "Email service is not configured. Set EMAIL_USER and EMAIL_PASS.",
+    return res.status(500).json({
+      message: "Email service not configured. Contact support.",
     });
   }
 
-  try {
-    const fromAddress = process.env.EMAIL_FROM || process.env.EMAIL_USER || "";
+  const code = generateCode();
+  const expiresAt = Date.now() + VERIFY_CODE_TTL_MS;
 
-    const info = await transporter.sendMail({
-      from: fromAddress,
+  // Store code
+  verificationStore.set(email, { code, expiresAt, attempts: 0 });
+
+  // SEND EMAIL
+  try {
+    await transporter.sendMail({
+      from: DEFAULT_EMAIL_FROM,
       to: email,
-      subject: "SafeRide Guardian verification code",
-      text: `Your verification code is ${code}. It expires in 10 minutes.`,
+      subject: "SafeRide Guardian - Verification Code",
+      text: `Your SafeRide verification code is: ${code}\n\nIt expires in 10 minutes.\n\nSafeRide Team`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+          <h2>🛡️ SafeRide Guardian</h2>
+          <p>Your verification code is:</p>
+          <div style="background: #f0f0f0; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
+            ${code}
+          </div>
+          <p>This code expires in <strong>10 minutes</strong>.</p>
+          <hr>
+          <p>Thank you for using SafeRide Guardian!</p>
+        </div>
+      `,
     });
 
-    if (process.env.NODE_ENV !== "production") {
-      return res.status(200).json({
-        sent: true,
-        messageId: info?.messageId,
-        response: info?.response,
-      });
-    }
-
+    console.log(`✅ Verification code sent to ${email}`);
     return res.status(200).json({ sent: true });
   } catch (error) {
-    if (process.env.NODE_ENV !== "production") {
-      console.error("[mail] sendMail failed:", error?.message || error);
-    }
-
-    const smtpCode = Number(error?.responseCode);
-    if (smtpCode === 550) {
-      return res.status(400).json({
-        message: "Recipient address not found. Please double-check the email.",
-      });
-    }
-
+    console.error("❌ Email error:", error);
+    verificationStore.delete(email); // Cleanup on fail
     return res.status(500).json({
-      message: "Unable to send verification email right now.",
+      message: "Failed to send verification email.",
     });
   }
 });
 
+// Verify code endpoint
 router.post("/verify-code", (req, res) => {
-  const email = normalizeEmail(req.body?.email);
+  const email = (req.body?.email || "").trim().toLowerCase();
   const code = String(req.body?.code || "").trim();
 
   if (!isValidEmail(email) || code.length !== 6) {
-    return res.status(400).json({ message: "Invalid verification request." });
+    return res.status(400).json({ message: "Invalid email or code." });
   }
 
   const record = verificationStore.get(email);
-
   if (!record) {
-    return res.status(400).json({ message: "Verification code not found." });
+    return res.status(400).json({ message: "No verification code found." });
   }
 
   if (Date.now() > record.expiresAt) {
     verificationStore.delete(email);
-    return res.status(400).json({ message: "Verification code expired." });
+    return res.status(400).json({ message: "Code expired. Resend new code." });
   }
 
   if (record.attempts >= MAX_ATTEMPTS) {
@@ -137,10 +111,12 @@ router.post("/verify-code", (req, res) => {
   if (record.code !== code) {
     record.attempts += 1;
     verificationStore.set(email, record);
-    return res.status(400).json({ message: "Incorrect verification code." });
+    return res.status(400).json({ message: "Incorrect code." });
   }
 
+  // SUCCESS
   verificationStore.delete(email);
+  console.log(`✅ Email verified: ${email}`);
   return res.status(200).json({ verified: true });
 });
 
