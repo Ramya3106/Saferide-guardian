@@ -18,6 +18,9 @@ const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const generateCode = () => String(Math.floor(100000 + Math.random() * 900000));
 
 const DEFAULT_EMAIL_FROM = "divyadharshana3@gmail.com";
+const shouldReturnCode =
+  process.env.RETURN_VERIFY_CODE === "true" &&
+  process.env.NODE_ENV !== "production";
 
 const buildTransporter = () => {
   const user = process.env.EMAIL_USER || DEFAULT_EMAIL_FROM;
@@ -41,8 +44,17 @@ router.post("/send-verify-code", async (req, res) => {
   }
 
   if (!transporter) {
+    if (shouldReturnCode) {
+      return res.status(200).json({
+        sent: false,
+        code,
+        message:
+          "Email service not configured. Using dev verification code.",
+      });
+    }
     return res.status(500).json({
-      message: "Email service is not configured on the server.",
+      message:
+        "Email service is not configured. Set EMAIL_USER and EMAIL_PASS.",
     });
   }
 
@@ -62,6 +74,13 @@ router.post("/send-verify-code", async (req, res) => {
 
     return res.status(200).json({ sent: true });
   } catch (error) {
+    if (shouldReturnCode) {
+      return res.status(200).json({
+        sent: false,
+        code,
+        message: "Email send failed. Using dev verification code.",
+      });
+    }
     return res.status(500).json({
       message: "Unable to send verification email right now.",
     });
