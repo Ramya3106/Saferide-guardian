@@ -76,12 +76,20 @@ router.post("/send-verify-code", async (req, res) => {
   try {
     const fromAddress = process.env.EMAIL_FROM || process.env.EMAIL_USER || "";
 
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: fromAddress,
       to: email,
       subject: "SafeRide Guardian verification code",
       text: `Your verification code is ${code}. It expires in 10 minutes.`,
     });
+
+    if (process.env.NODE_ENV !== "production") {
+      return res.status(200).json({
+        sent: true,
+        messageId: info?.messageId,
+        response: info?.response,
+      });
+    }
 
     return res.status(200).json({ sent: true });
   } catch (error) {
