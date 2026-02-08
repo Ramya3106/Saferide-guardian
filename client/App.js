@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -73,6 +73,8 @@ const App = () => {
   const [staffComplaintSubmitted, setStaffComplaintSubmitted] = useState(false);
 
   const [error, setError] = useState("");
+  const [apiStatus, setApiStatus] = useState("checking");
+  const [apiError, setApiError] = useState("");
 
   const isRegister = mode === "register";
   const isStaffRole = role !== "Passenger";
@@ -131,6 +133,38 @@ const App = () => {
     travelTiming,
     vehicleNumber,
   ]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkHealth = async () => {
+      try {
+        const { data } = await axios.get(`${API_BASE}/health`);
+        if (!isMounted) {
+          return;
+        }
+        if (data?.status === "ok") {
+          setApiStatus("online");
+        } else {
+          setApiStatus("degraded");
+        }
+      } catch (err) {
+        if (!isMounted) {
+          return;
+        }
+        setApiStatus("offline");
+        setApiError(
+          err?.response?.data?.message || "Backend health check failed."
+        );
+      }
+    };
+
+    checkHealth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const resetForm = () => {
     setName("");
@@ -613,6 +647,29 @@ const App = () => {
               <Text style={styles.subtitle}>
                 AI-powered role-based recovery for buses, trains, cabs, autos.
               </Text>
+              <View style={styles.statusBadgeRow}>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    apiStatus === "online"
+                      ? styles.statusBadgeOnline
+                      : apiStatus === "offline"
+                      ? styles.statusBadgeOffline
+                      : styles.statusBadgeChecking,
+                  ]}
+                >
+                  <Text style={styles.statusBadgeText}>
+                    {apiStatus === "online"
+                      ? "Backend online"
+                      : apiStatus === "offline"
+                      ? "Backend offline"
+                      : "Checking backend..."}
+                  </Text>
+                </View>
+              </View>
+              {apiStatus === "offline" && apiError.length > 0 && (
+                <Text style={styles.apiErrorText}>{apiError}</Text>
+              )}
             </View>
           </View>
           <View style={styles.divider} />
