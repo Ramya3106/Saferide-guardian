@@ -207,9 +207,13 @@ const App = () => {
 
     try {
       const { data } = await sendCode(email.trim());
-      setIsOtpSent(true);
-      if (data?.code) {
-        setDevOtpHint(`Dev code: ${data.code}`);
+      const sent = Boolean(data?.sent || data?.devCode);
+      setIsOtpSent(sent);
+      if (!sent && data?.message) {
+        setError(data.message);
+      }
+      if (data?.devCode) {
+        setDevOtpHint(`Dev code: ${data.devCode}`);
       }
     } catch (err) {
       const message =
