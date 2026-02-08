@@ -17,18 +17,13 @@ const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const generateCode = () => String(Math.floor(100000 + Math.random() * 900000));
 
-const DEFAULT_EMAIL_FROM = "divyadharshana3@gmail.com";
-const shouldReturnCode =
-  process.env.RETURN_VERIFY_CODE === "true" &&
-  process.env.NODE_ENV !== "production";
 
 let cachedTransporter = null;
-let transporterVerified = false;
 
 const buildTransporter = async () => {
   if (cachedTransporter) return cachedTransporter;
 
-  const user = process.env.EMAIL_USER || DEFAULT_EMAIL_FROM;
+  const user = process.env.EMAIL_USER || "";
   const pass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
   if (!user || !pass) return null;
 
@@ -40,7 +35,6 @@ const buildTransporter = async () => {
   if (process.env.NODE_ENV !== "production") {
     try {
       await transporter.verify();
-      transporterVerified = true;
       console.info("[mail] Transporter verified: ready to send emails");
     } catch (e) {
       console.error("[mail] Transporter verification failed:", e?.message || e);
@@ -65,13 +59,6 @@ router.post("/send-verify-code", async (req, res) => {
 
   const transporter = await buildTransporter();
   if (!transporter) {
-    if (shouldReturnCode) {
-      return res.status(200).json({
-        sent: false,
-        code,
-        message: "Email service not configured. Using dev verification code.",
-      });
-    }
     verificationStore.delete(email);
     return res.status(500).json({
       message:
@@ -81,8 +68,7 @@ router.post("/send-verify-code", async (req, res) => {
 
   try {
     await transporter.sendMail({
-      from:
-        process.env.EMAIL_FROM || process.env.EMAIL_USER || DEFAULT_EMAIL_FROM,
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER || "",
       to: email,
       subject: "SafeRide Guardian verification code",
       text: `Your verification code is ${code}. It expires in 10 minutes.`,
@@ -92,13 +78,6 @@ router.post("/send-verify-code", async (req, res) => {
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       console.error("[mail] sendMail failed:", error?.message || error);
-    }
-    if (shouldReturnCode) {
-      return res.status(200).json({
-        sent: false,
-        code,
-        message: "Email send failed. Using dev verification code.",
-      });
     }
     return res.status(500).json({
       message: "Unable to send verification email right now.",
