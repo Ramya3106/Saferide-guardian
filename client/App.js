@@ -880,8 +880,19 @@ const App = () => {
               )}
 
               {isRegister && isStaffRole && (
-                <View style={styles.cardBlock}>
+                <View
+                  style={[
+                    styles.cardBlock,
+                    !isVerified && styles.cardBlockBlurred,
+                  ]}
+                  pointerEvents={!isVerified ? "none" : "auto"}
+                >
                   <Text style={styles.cardTitle}>Daily duty roster</Text>
+                  {!isVerified && (
+                    <Text style={styles.lockedHintText}>
+                      Verify your email to unlock this section.
+                    </Text>
+                  )}
                   <View style={styles.inputGroup}>
                     <Text style={styles.label}>Vehicle number</Text>
                     <TextInput
