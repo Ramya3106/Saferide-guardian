@@ -14,8 +14,10 @@ const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const generateCode = () => String(Math.floor(100000 + Math.random() * 900000));
 
+const DEFAULT_EMAIL_FROM = "divyadharshana3@gmail.com";
+
 const buildTransporter = () => {
-  const user = process.env.EMAIL_USER || process.env.EMAIL_FROM;
+  const user = process.env.EMAIL_USER || process.env.EMAIL_FROM || DEFAULT_EMAIL_FROM;
   const pass = process.env.EMAIL_PASS;
 
   if (!user || !pass) {
@@ -53,7 +55,7 @@ router.post("/send-verify-code", async (req, res) => {
 
   try {
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER || DEFAULT_EMAIL_FROM,
       to: email,
       subject: "SafeRide Guardian verification code",
       text: `Your verification code is ${code}. It expires in 10 minutes.`,
