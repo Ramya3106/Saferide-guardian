@@ -154,7 +154,7 @@ const App = () => {
         }
         setApiStatus("offline");
         setApiError(
-          err?.response?.data?.message || "Backend health check failed."
+          err?.response?.data?.message || "Backend health check failed.",
         );
       }
     };
@@ -654,16 +654,16 @@ const App = () => {
                     apiStatus === "online"
                       ? styles.statusBadgeOnline
                       : apiStatus === "offline"
-                      ? styles.statusBadgeOffline
-                      : styles.statusBadgeChecking,
+                        ? styles.statusBadgeOffline
+                        : styles.statusBadgeChecking,
                   ]}
                 >
                   <Text style={styles.statusBadgeText}>
                     {apiStatus === "online"
                       ? "Backend online"
                       : apiStatus === "offline"
-                      ? "Backend offline"
-                      : "Checking backend..."}
+                        ? "Backend offline"
+                        : "Checking backend..."}
                   </Text>
                 </View>
               </View>
@@ -1034,6 +1034,34 @@ const styles = StyleSheet.create({
     opacity: 0.3,
     top: 40,
     right: -80,
+  },
+  statusBadgeRow: {
+    marginTop: 12,
+  },
+  statusBadge: {
+    alignSelf: "flex-start",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+  },
+  statusBadgeChecking: {
+    backgroundColor: "#E2E8F0",
+  },
+  statusBadgeOnline: {
+    backgroundColor: "#DCFCE7",
+  },
+  statusBadgeOffline: {
+    backgroundColor: "#FEE2E2",
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#1F2937",
+  },
+  apiErrorText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: "#DC2626",
   },
   scrollContent: {
     flexGrow: 1,
