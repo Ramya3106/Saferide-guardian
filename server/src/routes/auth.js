@@ -48,8 +48,7 @@ router.post("/send-verify-code", async (req, res) => {
       return res.status(200).json({
         sent: false,
         code,
-        message:
-          "Email service not configured. Using dev verification code.",
+        message: "Email service not configured. Using dev verification code.",
       });
     }
     return res.status(500).json({
