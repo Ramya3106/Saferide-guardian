@@ -20,20 +20,14 @@ const generateCode = () => String(Math.floor(100000 + Math.random() * 900000));
 const DEFAULT_EMAIL_FROM = "divyadharshana3@gmail.com";
 
 const buildTransporter = () => {
-  const user =
-    process.env.EMAIL_USER || process.env.EMAIL_FROM || DEFAULT_EMAIL_FROM;
+  const user = process.env.EMAIL_USER || DEFAULT_EMAIL_FROM;
   const pass = process.env.EMAIL_PASS;
-
-  if (!user || !pass) {
-    return null;
-  }
-
+  if (!user || !pass) return null;
   return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user,
-      pass,
-    },
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: { user, pass },
   });
 };
 
