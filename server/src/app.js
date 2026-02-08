@@ -13,7 +13,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api", healthRoutes);
 
 app.get("/api/test", (req, res) => {
-	res.json({ message: "API working! SafeRide ready" });
+  res.json({ message: "API working! SafeRide ready" });
 });
 
 module.exports = app;
