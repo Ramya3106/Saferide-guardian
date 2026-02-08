@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import axios from "axios";
 import { Ionicons } from "@expo/vector-icons";
 import {
   Platform,
@@ -17,6 +18,17 @@ const API_BASE =
   (Platform.OS === "android"
     ? "http://10.0.2.2:5000/api"
     : "http://localhost:5000/api");
+
+const sendCode = (emailAddress) =>
+  axios.post(`${API_BASE}/auth/send-verify-code`, {
+    email: emailAddress,
+  });
+
+const verifyCode = (emailAddress, code) =>
+  axios.post(`${API_BASE}/auth/verify-code`, {
+    email: emailAddress,
+    code,
+  });
 
 const App = () => {
   const [mode, setMode] = useState("login");
@@ -194,25 +206,15 @@ const App = () => {
     setIsSendingOtp(true);
 
     try {
-      const response = await fetch(`${API_BASE}/auth/send-verify-code`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-
-      const payload = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        setError(payload.message || "Unable to send verification code.");
-        return;
-      }
-
+      const { data } = await sendCode(email.trim());
       setIsOtpSent(true);
-      if (payload.code) {
-        setDevOtpHint(`Dev code: ${payload.code}`);
+      if (data?.code) {
+        setDevOtpHint(`Dev code: ${data.code}`);
       }
     } catch (err) {
-      setError("Network error while sending verification code.");
+      const message =
+        err?.response?.data?.message || "Unable to send verification code.";
+      setError(message);
     } finally {
       setIsSendingOtp(false);
     }
@@ -227,28 +229,13 @@ const App = () => {
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE}/auth/verify-code`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          code: emailOtp.trim(),
-        }),
-      });
-
-      const payload = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        setIsVerified(false);
-        setError(payload.message || "Unable to verify code.");
-        return;
-      }
-
+      await verifyCode(email.trim(), emailOtp.trim());
       setIsVerified(true);
       setDevOtpHint("");
     } catch (err) {
+      const message = err?.response?.data?.message || "Unable to verify code.";
       setIsVerified(false);
-      setError("Network error while verifying code.");
+      setError(message);
     }
   };
 
