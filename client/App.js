@@ -13,9 +13,10 @@ import {
 
 const ROLES = ["Passenger", "Driver", "Conductor", "TTR/RPF", "Police"];
 const API_BASE =
-  Platform.OS === "android"
+  process.env.EXPO_PUBLIC_API_BASE ||
+  (Platform.OS === "android"
     ? "http://10.0.2.2:5000/api"
-    : "http://localhost:5000/api";
+    : "http://localhost:5000/api");
 
 const App = () => {
   const [mode, setMode] = useState("login");
