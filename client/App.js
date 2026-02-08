@@ -812,63 +812,70 @@ const App = () => {
                 </View>
               )}
 
-              {isRegister && role === "Passenger" && isVerified && (
-                <View style={styles.cardBlock}>
-                  <Text style={styles.cardTitle}>Passenger travel details</Text>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Bus/Train number</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="TN-01-AB-1234"
-                      placeholderTextColor="#94A3B8"
-                      value={travelNumber}
-                      onChangeText={setTravelNumber}
-                    />
+              {isRegister &&
+                role === "Passenger" &&
+                isOtpSent &&
+                isVerified && (
+                  <View style={styles.cardBlock}>
+                    <Text style={styles.cardTitle}>
+                      Passenger travel details
+                    </Text>
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>Bus/Train number</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="TN-01-AB-1234"
+                        placeholderTextColor="#94A3B8"
+                        value={travelNumber}
+                        onChangeText={setTravelNumber}
+                      />
+                    </View>
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>Route</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Velachery → CMBT"
+                        placeholderTextColor="#94A3B8"
+                        value={travelRoute}
+                        onChangeText={setTravelRoute}
+                      />
+                    </View>
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>Timing</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="09:30AM - 11:45AM"
+                        placeholderTextColor="#94A3B8"
+                        value={travelTiming}
+                        onChangeText={setTravelTiming}
+                      />
+                    </View>
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>Driver name (optional)</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Driver name"
+                        placeholderTextColor="#94A3B8"
+                        value={driverName}
+                        onChangeText={setDriverName}
+                      />
+                    </View>
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>
+                        Conductor name (optional)
+                      </Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Conductor name"
+                        placeholderTextColor="#94A3B8"
+                        value={conductorName}
+                        onChangeText={setConductorName}
+                      />
+                    </View>
                   </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Route</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Velachery → CMBT"
-                      placeholderTextColor="#94A3B8"
-                      value={travelRoute}
-                      onChangeText={setTravelRoute}
-                    />
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Timing</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="09:30AM - 11:45AM"
-                      placeholderTextColor="#94A3B8"
-                      value={travelTiming}
-                      onChangeText={setTravelTiming}
-                    />
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Driver name (optional)</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Driver name"
-                      placeholderTextColor="#94A3B8"
-                      value={driverName}
-                      onChangeText={setDriverName}
-                    />
-                  </View>
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Conductor name (optional)</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Conductor name"
-                      placeholderTextColor="#94A3B8"
-                      value={conductorName}
-                      onChangeText={setConductorName}
-                    />
-                  </View>
-                </View>
-              )}
+                )}
 
-              {isRegister && isStaffRole && isVerified && (
+              {isRegister && isStaffRole && isOtpSent && isVerified && (
                 <View style={styles.cardBlock}>
                   <Text style={styles.cardTitle}>Daily duty roster</Text>
                   <View style={styles.inputGroup}>
