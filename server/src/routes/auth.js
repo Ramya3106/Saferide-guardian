@@ -59,8 +59,17 @@ router.post("/send-verify-code", async (req, res) => {
 
   const transporter = await buildTransporter();
   if (!transporter) {
+    if (process.env.NODE_ENV !== "production") {
+      return res.status(200).json({
+        sent: false,
+        devCode: code,
+        message:
+          "Email service not configured. Using dev response with code.",
+      });
+    }
+
     verificationStore.delete(email);
-    return res.status(500).json({
+    return res.status(503).json({
       message:
         "Email service is not configured. Set EMAIL_USER and EMAIL_PASS.",
     });
