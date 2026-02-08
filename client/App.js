@@ -813,8 +813,19 @@ const App = () => {
               )}
 
               {isRegister && role === "Passenger" && (
-                <View style={styles.cardBlock}>
+                <View
+                  style={[
+                    styles.cardBlock,
+                    !isVerified && styles.cardBlockBlurred,
+                  ]}
+                  pointerEvents={!isVerified ? "none" : "auto"}
+                >
                   <Text style={styles.cardTitle}>Passenger travel details</Text>
+                  {!isVerified && (
+                    <Text style={styles.lockedHintText}>
+                      Verify your email to unlock this section.
+                    </Text>
+                  )}
                   <View style={styles.inputGroup}>
                     <Text style={styles.label}>Bus/Train number</Text>
                     <TextInput
@@ -1192,6 +1203,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
+  cardBlockBlurred: {
+    opacity: 0.5,
+  },
   verifyCard: {
     backgroundColor: "#F8FAFC",
     borderRadius: 16,
@@ -1208,6 +1222,11 @@ const styles = StyleSheet.create({
   cardText: {
     color: "#475569",
     marginBottom: 6,
+  },
+  lockedHintText: {
+    color: "#F59E0B",
+    fontSize: 12,
+    marginBottom: 10,
   },
   statusRow: {
     flexDirection: "row",
