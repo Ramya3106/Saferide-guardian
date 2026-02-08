@@ -1,4 +1,7 @@
 {
-  "name": "SafeRideGuardian",
-  "displayName": "SafeRide Guardian"
+  "expo": {
+    "name": "SafeRide Guardian",
+    "slug": "saferide-guardian",
+    "version": "1.0.0"
+  }
 }
