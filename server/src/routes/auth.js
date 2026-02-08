@@ -22,14 +22,33 @@ const shouldReturnCode =
   process.env.RETURN_VERIFY_CODE === "true" &&
   process.env.NODE_ENV !== "production";
 
-const buildTransporter = () => {
+let cachedTransporter = null;
+let transporterVerified = false;
+
+const buildTransporter = async () => {
+  if (cachedTransporter) return cachedTransporter;
+
   const user = process.env.EMAIL_USER || DEFAULT_EMAIL_FROM;
   const pass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
   if (!user || !pass) return null;
-  return nodemailer.createTransport({
+
+  const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: { user, pass },
   });
+
+  if (process.env.NODE_ENV !== "production") {
+    try {
+      await transporter.verify();
+      transporterVerified = true;
+      console.info("[mail] Transporter verified: ready to send emails");
+    } catch (e) {
+      console.error("[mail] Transporter verification failed:", e?.message || e);
+    }
+  }
+
+  cachedTransporter = transporter;
+  return cachedTransporter;
 };
 
 router.post("/send-verify-code", async (req, res) => {
@@ -44,7 +63,7 @@ router.post("/send-verify-code", async (req, res) => {
 
   verificationStore.set(email, { code, expiresAt, attempts: 0 });
 
-  const transporter = buildTransporter();
+  const transporter = await buildTransporter();
   if (!transporter) {
     if (shouldReturnCode) {
       return res.status(200).json({
@@ -71,6 +90,9 @@ router.post("/send-verify-code", async (req, res) => {
 
     return res.status(200).json({ sent: true });
   } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[mail] sendMail failed:", error?.message || error);
+    }
     if (shouldReturnCode) {
       return res.status(200).json({
         sent: false,
