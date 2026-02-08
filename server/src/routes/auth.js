@@ -1,18 +1,17 @@
 const express = require("express");
 const nodemailer = require("nodemailer");
 const router = express.Router();
+const dotenv = require("dotenv");
+
+dotenv.config();
 
 const VERIFY_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 5;
 const verificationStore = new Map();
-
-// Email config
-const DEFAULT_EMAIL_FROM = '"SafeRide Guardian" <divyadharshana3@gmail.com>';
+const user = process.env.EMAIL_USER || "";
+const pass = process.env.EMAIL_PASS || "";
 
 const createTransporter = () => {
-  const user = process.env.EMAIL_USER || DEFAULT_EMAIL_FROM;
-  const pass = process.env.EMAIL_PASS;
-
   if (!user || !pass) return null;
 
   return nodemailer.createTransport({
@@ -55,7 +54,7 @@ router.post("/send-verify-code", async (req, res) => {
   // SEND EMAIL
   try {
     await transporter.sendMail({
-      from: DEFAULT_EMAIL_FROM,
+      from: user,
       to: email,
       subject: "SafeRide Guardian - Verification Code",
       text: `Your SafeRide verification code is: ${code}\n\nIt expires in 10 minutes.\n\nSafeRide Team`,
