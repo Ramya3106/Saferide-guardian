@@ -12,6 +12,8 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api", healthRoutes);
 
-app.get("/api/test", (req, res) => res.json({ working: true }));
+app.get("/api/test", (req, res) => {
+	res.json({ message: "API working! SafeRide ready" });
+});
 
 module.exports = app;
