@@ -343,6 +343,10 @@ const App = () => {
   };
 
   const handleSendOtp = async () => {
+    if (isOfficialRole) {
+      setError("Officials sign in with Professional ID and password.");
+      return;
+    }
     if (email.trim().length < 5) {
       setError("Enter a valid email address.");
       return;
