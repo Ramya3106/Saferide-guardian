@@ -13,6 +13,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/passenger", passengerRoutes);
 app.use("/api", healthRoutes);
+app.use("/", healthRoutes);
 
 app.get("/api/test", (req, res) => {
   res.json({ message: "API working! SafeRide ready" });

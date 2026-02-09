@@ -1,7 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { Ionicons } from "@expo/vector-icons";
 import {
+  Animated,
+  Easing,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -76,6 +78,8 @@ const App = () => {
   const [error, setError] = useState("");
   const [apiStatus, setApiStatus] = useState("checking");
   const [apiError, setApiError] = useState("");
+
+  const formAnim = useRef(new Animated.Value(0)).current;
 
   const isRegister = mode === "register";
   const isStaffRole = role !== "Passenger";
@@ -166,6 +170,20 @@ const App = () => {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      return;
+    }
+
+    formAnim.setValue(0);
+    Animated.timing(formAnim, {
+      toValue: 1,
+      duration: 520,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [formAnim, isAuthenticated, mode]);
 
   const resetForm = () => {
     setName("");
@@ -634,71 +652,62 @@ const App = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {isAuthenticated && role === "Passenger" ? (
-        <PassengerDashboard
-          userEmail={email}
-          userName={name}
-          userPhone={phone}
-          onLogout={handleLogout}
-        />
-      ) : (
-        <>
-          <View style={styles.backgroundGlow} />
-          <ScrollView
-            contentContainerStyle={[
-              styles.scrollContent,
-              !isAuthenticated && styles.scrollContentCentered,
-            ]}
-          >
-            <View style={styles.card}>
-              <View style={styles.brandRow}>
-                <View>
-                  <Text style={styles.title}>SafeRide Guardian</Text>
-                  <Text style={styles.subtitle}>
-                    AI-powered role-based recovery for buses, trains, cabs, autos.
+      <View style={styles.backgroundGlow} />
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          !isAuthenticated && styles.scrollContentCentered,
+        ]}
+      >
+        <View style={styles.card}>
+          <View style={styles.brandRow}>
+            <View>
+              <Text style={styles.title}>SafeRide Guardian</Text>
+              <Text style={styles.subtitle}>
+                AI-powered role-based recovery for buses, trains, cabs, autos.
+              </Text>
+              <View style={styles.statusBadgeRow}>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    apiStatus === "online"
+                      ? styles.statusBadgeOnline
+                      : apiStatus === "offline"
+                        ? styles.statusBadgeOffline
+                        : styles.statusBadgeChecking,
+                  ]}
+                >
+                  <Text style={styles.statusBadgeText}>
+                    {apiStatus === "online"
+                      ? "Backend online"
+                      : apiStatus === "offline"
+                        ? "Backend offline"
+                        : "Checking backend..."}
                   </Text>
-                  <View style={styles.statusBadgeRow}>
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        apiStatus === "online"
-                          ? styles.statusBadgeOnline
-                          : apiStatus === "offline"
-                            ? styles.statusBadgeOffline
-                            : styles.statusBadgeChecking,
-                      ]}
-                    >
-                      <Text style={styles.statusBadgeText}>
-                        {apiStatus === "online"
-                          ? "Backend online"
-                          : apiStatus === "offline"
-                            ? "Backend offline"
-                            : "Checking backend..."}
-                      </Text>
-                    </View>
-                  </View>
-                  {apiStatus === "offline" && apiError.length > 0 && (
-                    <Text style={styles.apiErrorText}>{apiError}</Text>
-                  )}
                 </View>
               </View>
-              <View style={styles.divider} />
+              {apiStatus === "offline" && apiError.length > 0 && (
+                <Text style={styles.apiErrorText}>{apiError}</Text>
+              )}
+            </View>
+          </View>
+          <View style={styles.divider} />
 
-              {isAuthenticated ? (
-                <View style={styles.home}>
-                  {renderDashboard()}
-                  <TouchableOpacity
-                    style={[styles.secondaryButton, styles.logoutButton]}
-                    onPress={handleLogout}
-                  >
-                    <Text style={styles.secondaryButtonText}>Log out</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View>
-                  <Text style={styles.formTitle}>
-                    {isRegister ? "Create your account" : "Sign in to continue"}
-                  </Text>
+          {isAuthenticated ? (
+            <View style={styles.home}>
+              {renderDashboard()}
+              <TouchableOpacity
+                style={[styles.secondaryButton, styles.logoutButton]}
+                onPress={handleLogout}
+              >
+                <Text style={styles.secondaryButtonText}>Log out</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View>
+              <Text style={styles.formTitle}>
+                {isRegister ? "Create your account" : "Sign in to continue"}
+              </Text>
 
               {isRegister && (
                 <View style={styles.inputGroup}>
@@ -1022,7 +1031,7 @@ const App = () => {
                   Multi-role recovery platform for public transport.
                 </Text>
               </View>
-            </View>
+            </Animated.View>
           )}
             </View>
           </ScrollView>

@@ -1,18 +1,19 @@
 const express = require("express");
 const nodemailer = require("nodemailer");
 const router = express.Router();
+const dotenv = require("dotenv");
+
+dotenv.config();
 
 const VERIFY_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 5;
 const verificationStore = new Map();
-
-// Email config
-const DEFAULT_EMAIL_FROM = '"SafeRide Guardian" <divyadharshana3@gmail.com>';
+const user = (process.env.EMAIL_USER || "").trim();
+const pass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
+const returnDevCode =
+  String(process.env.RETURN_VERIFY_CODE || "").toLowerCase() === "true";
 
 const createTransporter = () => {
-  const user = process.env.EMAIL_USER || DEFAULT_EMAIL_FROM;
-  const pass = process.env.EMAIL_PASS;
-
   if (!user || !pass) return null;
 
   return nodemailer.createTransport({
@@ -41,6 +42,17 @@ router.post("/send-verify-code", async (req, res) => {
 
   const transporter = createTransporter();
   if (!transporter) {
+    if (returnDevCode) {
+      const code = generateCode();
+      const expiresAt = Date.now() + VERIFY_CODE_TTL_MS;
+      verificationStore.set(email, { code, expiresAt, attempts: 0 });
+      return res.status(200).json({
+        sent: false,
+        devCode: code,
+        message: "Email service not configured. Using dev code.",
+      });
+    }
+
     return res.status(500).json({
       message: "Email service not configured. Contact support.",
     });
@@ -55,7 +67,7 @@ router.post("/send-verify-code", async (req, res) => {
   // SEND EMAIL
   try {
     await transporter.sendMail({
-      from: DEFAULT_EMAIL_FROM,
+      from: user,
       to: email,
       subject: "SafeRide Guardian - Verification Code",
       text: `Your SafeRide verification code is: ${code}\n\nIt expires in 10 minutes.\n\nSafeRide Team`,
@@ -74,10 +86,28 @@ router.post("/send-verify-code", async (req, res) => {
     });
 
     console.log(`✅ Verification code sent to ${email}`);
-    return res.status(200).json({ sent: true });
+    return res.status(200).json({
+      sent: true,
+      ...(returnDevCode ? { devCode: code } : {}),
+    });
   } catch (error) {
     console.error("❌ Email error:", error);
     verificationStore.delete(email); // Cleanup on fail
+    if (returnDevCode) {
+      const fallbackCode = generateCode();
+      const expiresAt = Date.now() + VERIFY_CODE_TTL_MS;
+      verificationStore.set(email, {
+        code: fallbackCode,
+        expiresAt,
+        attempts: 0,
+      });
+      return res.status(200).json({
+        sent: false,
+        devCode: fallbackCode,
+        message: "Email failed. Using dev code.",
+      });
+    }
+
     return res.status(500).json({
       message: "Failed to send verification email.",
     });
