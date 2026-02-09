@@ -17,6 +17,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    professionalId: {
+      type: String,
+      index: true,
+    },
+    officialEmail: {
+      type: String,
+      lowercase: true,
+    },
     role: {
       type: String,
       required: true,
@@ -32,14 +40,25 @@ const userSchema = new mongoose.Schema(
     travelTiming: String,
     driverName: String,
     conductorName: String,
-    
+
     // Staff specific
     vehicleNumber: String,
     dutyRoute: String,
     shiftTiming: String,
     fromStop: String,
     toStop: String,
-    
+
+    // Official duty details
+    pnrRange: String,
+    jurisdiction: String,
+
+    approvalStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "approved",
+    },
+    approvalRequestedAt: Date,
+
     isVerified: {
       type: Boolean,
       default: false,
@@ -51,7 +70,7 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 module.exports = mongoose.model("User", userSchema);
