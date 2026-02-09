@@ -1,7 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { Ionicons } from "@expo/vector-icons";
 import {
+  Animated,
+  Easing,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -75,6 +77,8 @@ const App = () => {
   const [error, setError] = useState("");
   const [apiStatus, setApiStatus] = useState("checking");
   const [apiError, setApiError] = useState("");
+
+  const formAnim = useRef(new Animated.Value(0)).current;
 
   const isRegister = mode === "register";
   const isStaffRole = role !== "Passenger";
@@ -165,6 +169,20 @@ const App = () => {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      return;
+    }
+
+    formAnim.setValue(0);
+    Animated.timing(formAnim, {
+      toValue: 1,
+      duration: 520,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [formAnim, isAuthenticated, mode]);
 
   const resetForm = () => {
     setName("");
@@ -640,7 +658,25 @@ const App = () => {
           !isAuthenticated && styles.scrollContentCentered,
         ]}
       >
-        <View style={styles.card}>
+        <View
+          style={
+            isAuthenticated
+              ? styles.card
+              : [
+                  styles.card,
+                  {
+                    transform: [
+                      {
+                        scale: formAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.98, 1],
+                        }),
+                      },
+                    ],
+                  },
+                ]
+          }
+        >
           <View style={styles.brandRow}>
             <View>
               <Text style={styles.title}>SafeRide Guardian</Text>
@@ -685,7 +721,19 @@ const App = () => {
               </TouchableOpacity>
             </View>
           ) : (
-            <View>
+            <Animated.View
+              style={{
+                opacity: formAnim,
+                transform: [
+                  {
+                    translateY: formAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [16, 0],
+                    }),
+                  },
+                ],
+              }}
+            >
               <Text style={styles.formTitle}>
                 {isRegister ? "Create your account" : "Sign in to continue"}
               </Text>
@@ -1012,7 +1060,7 @@ const App = () => {
                   Multi-role recovery platform for public transport.
                 </Text>
               </View>
-            </View>
+            </Animated.View>
           )}
         </View>
       </ScrollView>
