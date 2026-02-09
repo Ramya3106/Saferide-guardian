@@ -126,16 +126,30 @@ const App = () => {
   }, [emailOtp]);
 
   const canSubmit = useMemo(() => {
-    if (isRegister) {
-      const baseReady =
-        name.trim().length >= 2 &&
-        phone.trim().length >= 8 &&
-        email.trim().length >= 5 &&
-        password.trim().length >= 6 &&
-        confirmPassword.trim().length >= 6 &&
-        isVerified;
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+    const baseRegisterReady =
+      name.trim().length >= 2 &&
+      phone.trim().length >= 8 &&
+      trimmedPassword.length >= 6 &&
+      confirmPassword.trim().length >= 6;
 
-      if (!baseReady) {
+    if (isRegister) {
+      if (!baseRegisterReady) {
+        return false;
+      }
+
+      if (isOfficialRole) {
+        return (
+          isProfessionalIdValid(role, professionalId) &&
+          isOfficialEmailValid(role, officialEmail) &&
+          pnrRange.trim().length >= 5 &&
+          jurisdiction.trim().length >= 3
+        );
+      }
+
+      const emailReady = trimmedEmail.length >= 5 && isVerified;
+      if (!emailReady) {
         return false;
       }
 
@@ -156,17 +170,33 @@ const App = () => {
       );
     }
 
-    return email.trim().length >= 5 && password.trim().length >= 6;
+    if (isOfficialRole) {
+      return (
+        isProfessionalIdValid(role, professionalId) && trimmedPassword.length >= 6
+      );
+    }
+
+    if (loginWithOtp) {
+      return trimmedEmail.length >= 5 && isVerified;
+    }
+
+    return trimmedEmail.length >= 5 && trimmedPassword.length >= 6;
   }, [
     confirmPassword,
     dutyRoute,
     email,
     fromStop,
+    isOfficialRole,
     isRegister,
     isVerified,
+    jurisdiction,
+    loginWithOtp,
     name,
+    officialEmail,
     password,
     phone,
+    pnrRange,
+    professionalId,
     role,
     shiftTiming,
     toStop,
