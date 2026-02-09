@@ -639,7 +639,20 @@ const App = () => {
 
   const renderDashboard = () => {
     if (role === "Passenger") {
-      return renderPassengerDashboard();
+      const trimmedEmail = email.trim();
+      const displayName =
+        name.trim() ||
+        (trimmedEmail ? trimmedEmail.split("@")[0] : "Passenger");
+      const displayPhone = phone.trim() || "Not set";
+
+      return (
+        <PassengerDashboard
+          userEmail={trimmedEmail}
+          userName={displayName}
+          userPhone={displayPhone}
+          onLogout={handleLogout}
+        />
+      );
     }
     if (role === "TTR/RPF") {
       return renderTtrDashboard();
@@ -696,12 +709,14 @@ const App = () => {
           {isAuthenticated ? (
             <View style={styles.home}>
               {renderDashboard()}
-              <TouchableOpacity
-                style={[styles.secondaryButton, styles.logoutButton]}
-                onPress={handleLogout}
-              >
-                <Text style={styles.secondaryButtonText}>Log out</Text>
-              </TouchableOpacity>
+              {role !== "Passenger" && (
+                <TouchableOpacity
+                  style={[styles.secondaryButton, styles.logoutButton]}
+                  onPress={handleLogout}
+                >
+                  <Text style={styles.secondaryButtonText}>Log out</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             <View>
