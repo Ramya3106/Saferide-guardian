@@ -321,6 +321,17 @@ const App = () => {
     resetForm();
   };
 
+  const handleRoleChange = (nextRole) => {
+    setRole(nextRole);
+    setEmailOtp("");
+    setIsVerified(false);
+    setIsOtpSent(false);
+    setIsSendingOtp(false);
+    setDevOtpHint("");
+    setLoginWithOtp(false);
+    setError("");
+  };
+
   const handleLogout = () => {
     setIsAuthenticated(false);
     setMode("login");
