@@ -172,7 +172,8 @@ const App = () => {
 
     if (isOfficialRole) {
       return (
-        isProfessionalIdValid(role, professionalId) && trimmedPassword.length >= 6
+        isProfessionalIdValid(role, professionalId) &&
+        trimmedPassword.length >= 6
       );
     }
 
@@ -306,9 +307,7 @@ const App = () => {
     if (isRegister && isOfficialRole) {
       setPendingApproval(true);
       setMode("login");
-      setError(
-        "Registration submitted. Admin approval takes up to 24 hours.",
-      );
+      setError("Registration submitted. Admin approval takes up to 24 hours.");
       return;
     }
 
@@ -329,6 +328,7 @@ const App = () => {
     setIsSendingOtp(false);
     setDevOtpHint("");
     setLoginWithOtp(false);
+    setPendingApproval(false);
     setError("");
   };
 
@@ -879,9 +879,7 @@ const App = () => {
                   <TextInput
                     style={styles.input}
                     placeholder={
-                      role === "Police"
-                        ? "TNPolice-45678"
-                        : "TTR-SR-12345"
+                      role === "Police" ? "TNPolice-45678" : "TTR-SR-12345"
                     }
                     placeholderTextColor="#94A3B8"
                     value={professionalId}
@@ -972,9 +970,7 @@ const App = () => {
               {!isRegister && !isOfficialRole && (
                 <View style={styles.otpToggleRow}>
                   <Text style={styles.helperText}>
-                    {loginWithOtp
-                      ? "Signing in with OTP"
-                      : "Forgot password?"}
+                    {loginWithOtp ? "Signing in with OTP" : "Forgot password?"}
                   </Text>
                   <TouchableOpacity
                     onPress={() => {
@@ -1394,6 +1390,11 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     fontWeight: "500",
   },
+  helperText: {
+    color: "#64748B",
+    fontSize: 12,
+    marginTop: 6,
+  },
   input: {
     backgroundColor: "#F8FAFC",
     borderColor: "#CBD5E1",
@@ -1483,6 +1484,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 14,
   },
+  otpToggleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
   switchText: {
     color: "#64748B",
     marginRight: 6,
@@ -1524,6 +1531,23 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#E2E8F0",
+  },
+  noticeCard: {
+    backgroundColor: "#FFF7ED",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#FDBA74",
+  },
+  noticeTitle: {
+    color: "#9A3412",
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  noticeText: {
+    color: "#9A3412",
+    lineHeight: 18,
   },
   cardTitle: {
     color: "#1E293B",
