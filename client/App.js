@@ -256,6 +256,8 @@ const App = () => {
     setName("");
     setPhone("");
     setEmail("");
+    setOfficialEmail("");
+    setProfessionalId("");
     setPassword("");
     setConfirmPassword("");
     setShowPassword(false);
@@ -265,6 +267,7 @@ const App = () => {
     setIsOtpSent(false);
     setIsSendingOtp(false);
     setDevOtpHint("");
+    setLoginWithOtp(false);
     setTravelNumber("");
     setTravelRoute("");
     setTravelTiming("");
@@ -275,6 +278,8 @@ const App = () => {
     setShiftTiming("");
     setFromStop("");
     setToStop("");
+    setPnrRange("");
+    setJurisdiction("");
     setStaffComplaintType("");
     setStaffComplaintTarget("");
     setStaffComplaintDetails("");
