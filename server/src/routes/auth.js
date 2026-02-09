@@ -72,12 +72,20 @@ const consumeVerificationCode = (email, code) => {
 
   if (Date.now() > record.expiresAt) {
     verificationStore.delete(email);
-    return { ok: false, status: 400, message: "Code expired. Resend new code." };
+    return {
+      ok: false,
+      status: 400,
+      message: "Code expired. Resend new code.",
+    };
   }
 
   if (record.attempts >= MAX_ATTEMPTS) {
     verificationStore.delete(email);
-    return { ok: false, status: 429, message: "Too many attempts. Resend code." };
+    return {
+      ok: false,
+      status: 429,
+      message: "Too many attempts. Resend code.",
+    };
   }
 
   if (record.code !== code) {
@@ -235,7 +243,9 @@ router.post("/register", async (req, res) => {
     }
 
     if (isOfficialRole(role)) {
-      const existingProfessional = await User.findOne({ professionalId }).lean();
+      const existingProfessional = await User.findOne({
+        professionalId,
+      }).lean();
       if (existingProfessional) {
         return res
           .status(409)
@@ -271,7 +281,11 @@ router.post("/register", async (req, res) => {
     };
 
     if (role === "Passenger") {
-      if (!payload.travelNumber || !payload.travelRoute || !payload.travelTiming) {
+      if (
+        !payload.travelNumber ||
+        !payload.travelRoute ||
+        !payload.travelTiming
+      ) {
         return res
           .status(400)
           .json({ message: "Passenger travel details required." });
@@ -286,9 +300,7 @@ router.post("/register", async (req, res) => {
         !payload.fromStop ||
         !payload.toStop
       ) {
-        return res
-          .status(400)
-          .json({ message: "Duty details required." });
+        return res.status(400).json({ message: "Duty details required." });
       }
     }
 
