@@ -858,18 +858,56 @@ const App = () => {
                 </View>
               )}
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email address</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="you@example.com"
-                  placeholderTextColor="#94A3B8"
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                />
-              </View>
+              {!isOfficialRole && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Email address</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="you@example.com"
+                    placeholderTextColor="#94A3B8"
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
+                </View>
+              )}
+
+              {isOfficialRole && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Professional ID</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={
+                      role === "Police"
+                        ? "TNPolice-45678"
+                        : "TTR-SR-12345"
+                    }
+                    placeholderTextColor="#94A3B8"
+                    value={professionalId}
+                    onChangeText={setProfessionalId}
+                    autoCapitalize="characters"
+                  />
+                </View>
+              )}
+
+              {isRegister && isOfficialRole && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Official email</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={`name@${getOfficialDomain(role)}`}
+                    placeholderTextColor="#94A3B8"
+                    value={officialEmail}
+                    onChangeText={setOfficialEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
+                  <Text style={styles.helperText}>
+                    Use your {getOfficialDomain(role)} mailbox for approval.
+                  </Text>
+                </View>
+              )}
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Password</Text>
