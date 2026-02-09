@@ -992,11 +992,15 @@ const App = () => {
                 </View>
               )}
 
-              {isRegister && (
+              {isOtpContext && (
                 <View style={styles.verifyCard}>
-                  <Text style={styles.cardTitle}>Email verification</Text>
+                  <Text style={styles.cardTitle}>
+                    {isRegister ? "Email verification" : "OTP sign-in"}
+                  </Text>
                   <Text style={styles.sectionSubtitle}>
-                    We'll send a verification code to your email address
+                    {isRegister
+                      ? "We'll send a verification code to your email address"
+                      : "We'll send a one-time code to your email"}
                   </Text>
                   {!isOtpSent ? (
                     <TouchableOpacity
