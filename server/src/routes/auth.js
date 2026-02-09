@@ -14,6 +14,7 @@ const user = (process.env.EMAIL_USER || "").trim();
 const pass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
 const returnDevCode =
   String(process.env.RETURN_VERIFY_CODE || "").toLowerCase() === "true";
+const ROLES = ["Passenger", "Driver", "Conductor", "TTR/RPF", "Police"];
 const OFFICIAL_DOMAINS = {
   "TTR/RPF": "railnet.gov.in",
   Police: "tnpolice.gov.in",
