@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import PassengerDashboard from "./PassengerDashboard";
 
 const ROLES = ["Passenger", "Driver", "Conductor", "TTR/RPF", "Police"];
 const API_BASE =
@@ -633,62 +634,71 @@ const App = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.backgroundGlow} />
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          !isAuthenticated && styles.scrollContentCentered,
-        ]}
-      >
-        <View style={styles.card}>
-          <View style={styles.brandRow}>
-            <View>
-              <Text style={styles.title}>SafeRide Guardian</Text>
-              <Text style={styles.subtitle}>
-                AI-powered role-based recovery for buses, trains, cabs, autos.
-              </Text>
-              <View style={styles.statusBadgeRow}>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    apiStatus === "online"
-                      ? styles.statusBadgeOnline
-                      : apiStatus === "offline"
-                        ? styles.statusBadgeOffline
-                        : styles.statusBadgeChecking,
-                  ]}
-                >
-                  <Text style={styles.statusBadgeText}>
-                    {apiStatus === "online"
-                      ? "Backend online"
-                      : apiStatus === "offline"
-                        ? "Backend offline"
-                        : "Checking backend..."}
+      {isAuthenticated && role === "Passenger" ? (
+        <PassengerDashboard
+          userEmail={email}
+          userName={name}
+          userPhone={phone}
+          onLogout={handleLogout}
+        />
+      ) : (
+        <>
+          <View style={styles.backgroundGlow} />
+          <ScrollView
+            contentContainerStyle={[
+              styles.scrollContent,
+              !isAuthenticated && styles.scrollContentCentered,
+            ]}
+          >
+            <View style={styles.card}>
+              <View style={styles.brandRow}>
+                <View>
+                  <Text style={styles.title}>SafeRide Guardian</Text>
+                  <Text style={styles.subtitle}>
+                    AI-powered role-based recovery for buses, trains, cabs, autos.
                   </Text>
+                  <View style={styles.statusBadgeRow}>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        apiStatus === "online"
+                          ? styles.statusBadgeOnline
+                          : apiStatus === "offline"
+                            ? styles.statusBadgeOffline
+                            : styles.statusBadgeChecking,
+                      ]}
+                    >
+                      <Text style={styles.statusBadgeText}>
+                        {apiStatus === "online"
+                          ? "Backend online"
+                          : apiStatus === "offline"
+                            ? "Backend offline"
+                            : "Checking backend..."}
+                      </Text>
+                    </View>
+                  </View>
+                  {apiStatus === "offline" && apiError.length > 0 && (
+                    <Text style={styles.apiErrorText}>{apiError}</Text>
+                  )}
                 </View>
               </View>
-              {apiStatus === "offline" && apiError.length > 0 && (
-                <Text style={styles.apiErrorText}>{apiError}</Text>
-              )}
-            </View>
-          </View>
-          <View style={styles.divider} />
+              <View style={styles.divider} />
 
-          {isAuthenticated ? (
-            <View style={styles.home}>
-              {renderDashboard()}
-              <TouchableOpacity
-                style={[styles.secondaryButton, styles.logoutButton]}
-                onPress={handleLogout}
-              >
-                <Text style={styles.secondaryButtonText}>Log out</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View>
-              <Text style={styles.formTitle}>
-                {isRegister ? "Create your account" : "Sign in to continue"}
-              </Text>
+              {isAuthenticated ? (
+                <View style={styles.home}>
+                  {renderDashboard()}
+                  <TouchableOpacity
+                    style={[styles.secondaryButton, styles.logoutButton]}
+                    onPress={handleLogout}
+                  >
+                    <Text style={styles.secondaryButtonText}>Log out</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View>
+                  <Text style={styles.formTitle}>
+                    {isRegister ? "Create your account" : "Sign in to continue"}
+                  </Text>
 
               {isRegister && (
                 <View style={styles.inputGroup}>
@@ -1014,8 +1024,10 @@ const App = () => {
               </View>
             </View>
           )}
-        </View>
-      </ScrollView>
+            </View>
+          </ScrollView>
+        </>
+      )}
     </SafeAreaView>
   );
 };
