@@ -1031,12 +1031,10 @@ const App = () => {
                   Multi-role recovery platform for public transport.
                 </Text>
               </View>
-            </Animated.View>
-          )}
             </View>
-          </ScrollView>
-        </>
-      )}
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
