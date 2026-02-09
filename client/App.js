@@ -298,6 +298,20 @@ const App = () => {
       return;
     }
 
+    if (!isRegister && isOfficialRole && pendingApproval) {
+      setError("Your account is pending admin approval. Please try later.");
+      return;
+    }
+
+    if (isRegister && isOfficialRole) {
+      setPendingApproval(true);
+      setMode("login");
+      setError(
+        "Registration submitted. Admin approval takes up to 24 hours.",
+      );
+      return;
+    }
+
     setError("");
     setIsAuthenticated(true);
   };
