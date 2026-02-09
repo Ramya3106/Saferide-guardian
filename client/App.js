@@ -1179,6 +1179,45 @@ const App = () => {
                 </View>
               )}
 
+              {isRegister && isOfficialRole && (
+                <View style={styles.cardBlock}>
+                  <Text style={styles.cardTitle}>Official duty details</Text>
+                  <Text style={styles.sectionSubtitle}>
+                    Admin approval required within 24 hours.
+                  </Text>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Train PNR range</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="4528193000-4528193999"
+                      placeholderTextColor="#94A3B8"
+                      value={pnrRange}
+                      onChangeText={setPnrRange}
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Jurisdiction</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Chennai Central Division"
+                      placeholderTextColor="#94A3B8"
+                      value={jurisdiction}
+                      onChangeText={setJurisdiction}
+                    />
+                  </View>
+                </View>
+              )}
+
+              {pendingApproval && !isRegister && isOfficialRole && (
+                <View style={styles.noticeCard}>
+                  <Text style={styles.noticeTitle}>Approval pending</Text>
+                  <Text style={styles.noticeText}>
+                    Your registration is under admin review. Check your official
+                    inbox for approval within 24 hours.
+                  </Text>
+                </View>
+              )}
+
               {error.length > 0 && (
                 <Text style={styles.errorText}>{error}</Text>
               )}
