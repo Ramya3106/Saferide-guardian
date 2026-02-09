@@ -440,7 +440,7 @@ const App = () => {
         <TouchableOpacity
           key={item}
           style={[styles.roleChip, role === item && styles.roleChipActive]}
-          onPress={() => setRole(item)}
+          onPress={() => handleRoleChange(item)}
         >
           <Text
             style={[
@@ -825,12 +825,10 @@ const App = () => {
                 {isRegister ? "Create your account" : "Sign in to continue"}
               </Text>
 
-              {isRegister && (
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Select role</Text>
-                  {renderRoleSelector()}
-                </View>
-              )}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Select role</Text>
+                {renderRoleSelector()}
+              </View>
 
               {isRegister && (
                 <View style={styles.inputGroup}>
