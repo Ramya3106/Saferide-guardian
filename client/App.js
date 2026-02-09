@@ -1123,7 +1123,7 @@ const App = () => {
                   </View>
                 )}
 
-              {isRegister && isStaffRole && isOtpSent && isVerified && (
+              {isRegister && isOperationalStaff && isOtpSent && isVerified && (
                 <View style={styles.cardBlock}>
                   <Text style={styles.cardTitle}>Daily duty roster</Text>
                   <View style={styles.inputGroup}>
