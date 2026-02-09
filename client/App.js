@@ -92,7 +92,34 @@ const App = () => {
   const formAnim = useRef(new Animated.Value(0)).current;
 
   const isRegister = mode === "register";
-  const isStaffRole = role !== "Passenger";
+  const isOfficialRole = role === "TTR/RPF" || role === "Police";
+  const isOperationalStaff = role === "Driver" || role === "Conductor";
+  const isOtpContext =
+    !isOfficialRole &&
+    ((isRegister && mode === "register") || (!isRegister && loginWithOtp));
+
+  const getOfficialDomain = (selectedRole) =>
+    OFFICIAL_DOMAINS[selectedRole] || "railnet.gov.in";
+
+  const isProfessionalIdValid = (selectedRole, idValue) => {
+    const normalized = idValue.trim().toUpperCase();
+    if (selectedRole === "Police") {
+      return /^TNPOLICE-\d{4,6}$/.test(normalized);
+    }
+    if (selectedRole === "TTR/RPF") {
+      return /^(TTR|RPF)-[A-Z]{2,3}-\d{4,6}$/.test(normalized);
+    }
+    return normalized.length >= 6;
+  };
+
+  const isOfficialEmailValid = (selectedRole, emailValue) => {
+    const trimmed = emailValue.trim().toLowerCase();
+    const domain = getOfficialDomain(selectedRole);
+    if (!trimmed || !domain) {
+      return false;
+    }
+    return trimmed.endsWith(`@${domain}`);
+  };
 
   const canVerify = useMemo(() => {
     return /^\d{6}$/.test(emailOtp.trim());
