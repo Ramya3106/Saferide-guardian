@@ -16,6 +16,10 @@ import {
 import PassengerDashboard from "./PassengerDashboard";
 
 const ROLES = ["Passenger", "Driver", "Conductor", "TTR/RPF", "Police"];
+const OFFICIAL_DOMAINS = {
+  "TTR/RPF": "railnet.gov.in",
+  Police: "tnpolice.gov.in",
+};
 const API_BASE =
   process.env.EXPO_PUBLIC_API_BASE ||
   (Platform.OS === "android"
@@ -40,6 +44,8 @@ const App = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [officialEmail, setOfficialEmail] = useState("");
+  const [professionalId, setProfessionalId] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -49,6 +55,8 @@ const App = () => {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [devOtpHint, setDevOtpHint] = useState("");
+  const [loginWithOtp, setLoginWithOtp] = useState(false);
+  const [pendingApproval, setPendingApproval] = useState(false);
 
   const [travelNumber, setTravelNumber] = useState("");
   const [travelRoute, setTravelRoute] = useState("");
@@ -61,6 +69,8 @@ const App = () => {
   const [shiftTiming, setShiftTiming] = useState("");
   const [fromStop, setFromStop] = useState("");
   const [toStop, setToStop] = useState("");
+  const [pnrRange, setPnrRange] = useState("");
+  const [jurisdiction, setJurisdiction] = useState("");
 
   const [complaintItem, setComplaintItem] = useState("");
   const [complaintDesc, setComplaintDesc] = useState("");
