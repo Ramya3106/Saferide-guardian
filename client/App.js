@@ -969,6 +969,29 @@ const App = () => {
                 </View>
               )}
 
+              {!isRegister && !isOfficialRole && (
+                <View style={styles.otpToggleRow}>
+                  <Text style={styles.helperText}>
+                    {loginWithOtp
+                      ? "Signing in with OTP"
+                      : "Forgot password?"}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setLoginWithOtp((prev) => !prev);
+                      setEmailOtp("");
+                      setIsVerified(false);
+                      setIsOtpSent(false);
+                      setDevOtpHint("");
+                    }}
+                  >
+                    <Text style={styles.switchLink}>
+                      {loginWithOtp ? "Use password" : "Use OTP"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
               {isRegister && (
                 <View style={styles.verifyCard}>
                   <Text style={styles.cardTitle}>Email verification</Text>
