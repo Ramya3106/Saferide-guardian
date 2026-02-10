@@ -286,6 +286,9 @@ const App = () => {
     setTravelType("");
     setTravelNumber("");
     setTravelName("");
+    setBusDeparture("");
+    setBusArrival("");
+    setBusStartTime("");
     setTravelRoute("");
     setTravelTiming("");
     setDriverName("");
