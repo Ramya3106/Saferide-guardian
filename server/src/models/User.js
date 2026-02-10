@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ["Passenger", "Driver", "Conductor", "TTR/RPF", "Police"],
+      enum: ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"],
     },
     password: {
       type: String,
