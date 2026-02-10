@@ -19,8 +19,7 @@ const getDevHost = () => {
 
 const getApiBase = () => {
   const configuredBase = process.env.EXPO_PUBLIC_API_BASE;
-  const forceConfigured =
-    process.env.EXPO_PUBLIC_API_BASE_FORCE === "true";
+  const forceConfigured = process.env.EXPO_PUBLIC_API_BASE_FORCE === "true";
 
   if (typeof __DEV__ !== "undefined" && __DEV__) {
     const host = getDevHost();
