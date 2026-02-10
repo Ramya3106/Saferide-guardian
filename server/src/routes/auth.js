@@ -15,12 +15,12 @@ const pass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
 const fromAddress = (process.env.EMAIL_FROM || user).trim();
 const returnDevCode =
   String(process.env.RETURN_VERIFY_CODE || "").toLowerCase() === "true";
-const ROLES = ["Passenger", "Driver", "Conductor", "TTR/RPF", "Police"];
+const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
 const OFFICIAL_DOMAINS = {
-  "TTR/RPF": "railnet.gov.in",
-  Police: "tnpolice.gov.in",
+  "TTR/RPF/Police": ["railnet.gov.in", "tnpolice.gov.in"],
 };
-const OFFICIAL_ROLES = new Set(["TTR/RPF", "Police"]);
+const OFFICIAL_ROLES = new Set(["TTR/RPF/Police"]);
+const OPERATIONAL_ROLES = new Set(["Driver/Conductor", "Cab/Auto"]);
 
 const createTransporter = () => {
   if (!user || !pass) return null;
@@ -42,23 +42,25 @@ const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const isOfficialRole = (role) => OFFICIAL_ROLES.has(role);
 
-const getOfficialDomain = (role) => OFFICIAL_DOMAINS[role] || "railnet.gov.in";
+const getOfficialDomains = (role) => OFFICIAL_DOMAINS[role] || [];
 
 const isValidOfficialEmail = (role, emailValue) => {
   const trimmed = (emailValue || "").trim().toLowerCase();
   if (!isValidEmail(trimmed)) {
     return false;
   }
-  return trimmed.endsWith(`@${getOfficialDomain(role)}`);
+  return getOfficialDomains(role).some((domain) =>
+    trimmed.endsWith(`@${domain}`),
+  );
 };
 
 const isValidProfessionalId = (role, idValue) => {
   const normalized = (idValue || "").trim().toUpperCase();
-  if (role === "Police") {
-    return /^TNPOLICE-\d{4,6}$/.test(normalized);
-  }
-  if (role === "TTR/RPF") {
-    return /^(TTR|RPF)-[A-Z]{2,3}-\d{4,6}$/.test(normalized);
+  if (role === "TTR/RPF/Police") {
+    return (
+      /^TNPOLICE-\d{4,6}$/.test(normalized) ||
+      /^(TTR|RPF)-[A-Z]{2,3}-\d{4,6}$/.test(normalized)
+    );
   }
   return normalized.length >= 6;
 };
