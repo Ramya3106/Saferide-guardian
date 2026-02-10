@@ -16,10 +16,14 @@ import {
 } from "react-native";
 import PassengerDashboard from "./PassengerDashboard";
 
-const ROLES = ["Passenger", "Driver", "Conductor", "TTR/RPF", "Police"];
+const ROLES = [
+  "Passenger",
+  "Driver/Conductor",
+  "Cab/Auto",
+  "TTR/RPF/Police",
+];
 const OFFICIAL_DOMAINS = {
-  "TTR/RPF": "railnet.gov.in",
-  Police: "tnpolice.gov.in",
+  "TTR/RPF/Police": ["railnet.gov.in", "tnpolice.gov.in"],
 };
 const API_BASE = getApiBase();
 
@@ -93,17 +97,29 @@ const App = () => {
   const formAnim = useRef(new Animated.Value(0)).current;
 
   const isRegister = mode === "register";
-  const isOfficialRole = role === "TTR/RPF" || role === "Police";
-  const isOperationalStaff = role === "Driver" || role === "Conductor";
+  const isOfficialRole = role === "TTR/RPF/Police";
+  const isOperationalStaff =
+    role === "Driver/Conductor" || role === "Cab/Auto";
   const isOtpContext =
     !isOfficialRole &&
     ((isRegister && mode === "register") || (!isRegister && loginWithOtp));
 
-  const getOfficialDomain = (selectedRole) =>
-    OFFICIAL_DOMAINS[selectedRole] || "railnet.gov.in";
+  const getOfficialDomain = (selectedRole) => {
+    const domains = OFFICIAL_DOMAINS[selectedRole];
+    if (Array.isArray(domains)) {
+      return domains.join(" or ");
+    }
+    return domains || "railnet.gov.in";
+  };
 
   const isProfessionalIdValid = (selectedRole, idValue) => {
     const normalized = idValue.trim().toUpperCase();
+    if (selectedRole === "TTR/RPF/Police") {
+      return (
+        /^TNPOLICE-\d{4,6}$/.test(normalized) ||
+        /^(TTR|RPF)-[A-Z]{2,3}-\d{4,6}$/.test(normalized)
+      );
+    }
     if (selectedRole === "Police") {
       return /^TNPOLICE-\d{4,6}$/.test(normalized);
     }
@@ -115,11 +131,14 @@ const App = () => {
 
   const isOfficialEmailValid = (selectedRole, emailValue) => {
     const trimmed = emailValue.trim().toLowerCase();
-    const domain = getOfficialDomain(selectedRole);
-    if (!trimmed || !domain) {
+    const domains = OFFICIAL_DOMAINS[selectedRole];
+    if (!trimmed || !domains) {
       return false;
     }
-    return trimmed.endsWith(`@${domain}`);
+    if (Array.isArray(domains)) {
+      return domains.some((domain) => trimmed.endsWith(`@${domain}`));
+    }
+    return trimmed.endsWith(`@${domains}`);
   };
 
   const canVerify = useMemo(() => {
