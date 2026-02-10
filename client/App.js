@@ -114,12 +114,6 @@ const App = () => {
         /^(TTR|RPF)-[A-Z]{2,3}-\d{4,6}$/.test(normalized)
       );
     }
-    if (selectedRole === "Police") {
-      return /^TNPOLICE-\d{4,6}$/.test(normalized);
-    }
-    if (selectedRole === "TTR/RPF") {
-      return /^(TTR|RPF)-[A-Z]{2,3}-\d{4,6}$/.test(normalized);
-    }
     return normalized.length >= 6;
   };
 
@@ -186,13 +180,17 @@ const App = () => {
         );
       }
 
-      return (
-        vehicleNumber.trim().length >= 5 &&
-        dutyRoute.trim().length >= 3 &&
-        shiftTiming.trim().length >= 3 &&
-        fromStop.trim().length >= 2 &&
-        toStop.trim().length >= 2
-      );
+      if (isOperationalStaff) {
+        return (
+          vehicleNumber.trim().length >= 5 &&
+          dutyRoute.trim().length >= 3 &&
+          shiftTiming.trim().length >= 3 &&
+          fromStop.trim().length >= 2 &&
+          toStop.trim().length >= 2
+        );
+      }
+
+      return false;
     }
 
     if (isOfficialRole) {
