@@ -295,7 +295,7 @@ router.post("/register", async (req, res) => {
       }
     }
 
-    if (role === "Driver" || role === "Conductor") {
+    if (OPERATIONAL_ROLES.has(role)) {
       if (
         !payload.vehicleNumber ||
         !payload.dutyRoute ||
