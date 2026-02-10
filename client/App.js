@@ -51,7 +51,6 @@ const App = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [devOtpHint, setDevOtpHint] = useState("");
   const [loginWithOtp, setLoginWithOtp] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
 
@@ -264,7 +263,6 @@ const App = () => {
     setIsVerified(false);
     setIsOtpSent(false);
     setIsSendingOtp(false);
-    setDevOtpHint("");
     setLoginWithOtp(false);
     setTravelNumber("");
     setTravelRoute("");
@@ -323,7 +321,6 @@ const App = () => {
     setIsVerified(false);
     setIsOtpSent(false);
     setIsSendingOtp(false);
-    setDevOtpHint("");
     setLoginWithOtp(false);
     setPendingApproval(false);
     setError("");
@@ -353,7 +350,6 @@ const App = () => {
     setIsVerified(false);
     setIsOtpSent(false);
     setEmailOtp("");
-    setDevOtpHint("");
     setIsSendingOtp(true);
 
     try {
@@ -362,9 +358,6 @@ const App = () => {
       setIsOtpSent(sent);
       if (!sent && data?.message) {
         setError(data.message);
-      }
-      if (data?.devCode) {
-        setDevOtpHint(`Dev code: ${data.devCode}`);
       }
     } catch (err) {
       const message =
@@ -386,7 +379,6 @@ const App = () => {
     try {
       await verifyCode(email.trim(), emailOtp.trim());
       setIsVerified(true);
-      setDevOtpHint("");
     } catch (err) {
       const message = err?.response?.data?.message || "Unable to verify code.";
       setIsVerified(false);
@@ -975,7 +967,6 @@ const App = () => {
                       setEmailOtp("");
                       setIsVerified(false);
                       setIsOtpSent(false);
-                      setDevOtpHint("");
                     }}
                   >
                     <Text style={styles.switchLink}>
@@ -1045,9 +1036,6 @@ const App = () => {
                       >
                         <Text style={styles.switchLink}>Resend code</Text>
                       </TouchableOpacity>
-                      {devOtpHint.length > 0 && (
-                        <Text style={styles.devHintText}>{devOtpHint}</Text>
-                      )}
                     </>
                   )}
                 </View>
