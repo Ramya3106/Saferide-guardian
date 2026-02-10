@@ -36,6 +36,7 @@ const userSchema = new mongoose.Schema(
     },
     // Passenger specific
     travelNumber: String,
+    travelName: String,
     travelRoute: String,
     travelTiming: String,
     driverName: String,
