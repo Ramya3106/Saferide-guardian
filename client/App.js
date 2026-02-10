@@ -1101,7 +1101,9 @@ const App = () => {
                       </View>
                     </View>
                     <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Bus/Train number</Text>
+                      <Text style={styles.label}>
+                        {travelType === "Bus" ? "Bus" : "Train"} number
+                      </Text>
                       <TextInput
                         style={styles.input}
                         placeholder="TN-01-AB-1234"
@@ -1122,26 +1124,63 @@ const App = () => {
                         onChangeText={setTravelName}
                       />
                     </View>
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Route</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Velachery → CMBT"
-                        placeholderTextColor="#94A3B8"
-                        value={travelRoute}
-                        onChangeText={setTravelRoute}
-                      />
-                    </View>
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Timing</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="09:30AM - 11:45AM"
-                        placeholderTextColor="#94A3B8"
-                        value={travelTiming}
-                        onChangeText={setTravelTiming}
-                      />
-                    </View>
+                    {travelType === "Bus" ? (
+                      <>
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.label}>Departure stop</Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Velachery"
+                            placeholderTextColor="#94A3B8"
+                            value={busDeparture}
+                            onChangeText={setBusDeparture}
+                          />
+                        </View>
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.label}>Arrival stop</Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="CMBT"
+                            placeholderTextColor="#94A3B8"
+                            value={busArrival}
+                            onChangeText={setBusArrival}
+                          />
+                        </View>
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.label}>Bus start timing</Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="09:30AM"
+                            placeholderTextColor="#94A3B8"
+                            value={busStartTime}
+                            onChangeText={setBusStartTime}
+                          />
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.label}>Route</Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Velachery → CMBT"
+                            placeholderTextColor="#94A3B8"
+                            value={travelRoute}
+                            onChangeText={setTravelRoute}
+                          />
+                        </View>
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.label}>Timing</Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="09:30AM - 11:45AM"
+                            placeholderTextColor="#94A3B8"
+                            value={travelTiming}
+                            onChangeText={setTravelTiming}
+                          />
+                        </View>
+                      </>
+                    )}
                     <View style={styles.inputGroup}>
                       <Text style={styles.label}>Driver name (optional)</Text>
                       <TextInput
