@@ -1058,7 +1058,9 @@ const App = () => {
                         onPress={handleSendOtp}
                         activeOpacity={0.85}
                       >
-                        <Text style={styles.switchLink}>Resend code</Text>
+                        {!isVerified && (
+                          <Text style={styles.switchLink}>Resend code</Text>
+                        )}
                       </TouchableOpacity>
                     </>
                   )}
