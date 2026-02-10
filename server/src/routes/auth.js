@@ -12,6 +12,7 @@ const MAX_ATTEMPTS = 5;
 const verificationStore = new Map();
 const user = (process.env.EMAIL_USER || "").trim();
 const pass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
+const fromAddress = (process.env.EMAIL_FROM || user).trim();
 const returnDevCode =
   String(process.env.RETURN_VERIFY_CODE || "").toLowerCase() === "true";
 const ROLES = ["Passenger", "Driver", "Conductor", "TTR/RPF", "Police"];
@@ -25,9 +26,7 @@ const createTransporter = () => {
   if (!user || !pass) return null;
 
   return nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false, // true for 465, false for other ports
+    service: "gmail",
     auth: {
       user,
       pass,
@@ -132,7 +131,7 @@ router.post("/send-verify-code", async (req, res) => {
   // SEND EMAIL
   try {
     await transporter.sendMail({
-      from: user,
+      from: fromAddress || user,
       to: email,
       subject: "SafeRide Guardian - Verification Code",
       text: `Your SafeRide verification code is: ${code}\n\nIt expires in 10 minutes.\n\nSafeRide Team`,
