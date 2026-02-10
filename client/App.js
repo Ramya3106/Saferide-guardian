@@ -16,12 +16,7 @@ import {
 } from "react-native";
 import PassengerDashboard from "./PassengerDashboard";
 
-const ROLES = [
-  "Passenger",
-  "Driver/Conductor",
-  "Cab/Auto",
-  "TTR/RPF/Police",
-];
+const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
 const OFFICIAL_DOMAINS = {
   "TTR/RPF/Police": ["railnet.gov.in", "tnpolice.gov.in"],
 };
@@ -98,8 +93,7 @@ const App = () => {
 
   const isRegister = mode === "register";
   const isOfficialRole = role === "TTR/RPF/Police";
-  const isOperationalStaff =
-    role === "Driver/Conductor" || role === "Cab/Auto";
+  const isOperationalStaff = role === "Driver/Conductor" || role === "Cab/Auto";
   const isOtpContext =
     !isOfficialRole &&
     ((isRegister && mode === "register") || (!isRegister && loginWithOtp));
