@@ -155,6 +155,15 @@ const App = () => {
       }
 
       if (role === "Passenger") {
+        if (travelType === "Bus") {
+          return (
+            travelNumber.trim().length >= 5 &&
+            busDeparture.trim().length >= 2 &&
+            busArrival.trim().length >= 2 &&
+            busStartTime.trim().length >= 3
+          );
+        }
+
         return (
           travelType.trim().length > 0 &&
           travelNumber.trim().length >= 5 &&
@@ -186,6 +195,9 @@ const App = () => {
     return trimmedEmail.length >= 5 && trimmedPassword.length >= 6;
   }, [
     confirmPassword,
+    busArrival,
+    busDeparture,
+    busStartTime,
     dutyRoute,
     email,
     fromStop,
