@@ -1056,6 +1056,31 @@ const App = () => {
                       Passenger travel details
                     </Text>
                     <View style={styles.inputGroup}>
+                      <Text style={styles.label}>Travel mode</Text>
+                      <View style={styles.roleRow}>
+                        {["Bus", "Train"].map((item) => (
+                          <TouchableOpacity
+                            key={item}
+                            style={[
+                              styles.roleChip,
+                              travelType === item && styles.roleChipActive,
+                            ]}
+                            onPress={() => setTravelType(item)}
+                          >
+                            <Text
+                              style={[
+                                styles.roleChipText,
+                                travelType === item &&
+                                  styles.roleChipTextActive,
+                              ]}
+                            >
+                              {item}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+                    <View style={styles.inputGroup}>
                       <Text style={styles.label}>Bus/Train number</Text>
                       <TextInput
                         style={styles.input}
@@ -1063,6 +1088,18 @@ const App = () => {
                         placeholderTextColor="#94A3B8"
                         value={travelNumber}
                         onChangeText={setTravelNumber}
+                      />
+                    </View>
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>
+                        Bus/Train name (optional)
+                      </Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="MTC 27B / MS-EXP-204"
+                        placeholderTextColor="#94A3B8"
+                        value={travelName}
+                        onChangeText={setTravelName}
                       />
                     </View>
                     <View style={styles.inputGroup}>
