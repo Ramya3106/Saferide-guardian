@@ -153,6 +153,7 @@ const App = () => {
 
       if (role === "Passenger") {
         return (
+          travelType.trim().length > 0 &&
           travelNumber.trim().length >= 5 &&
           travelRoute.trim().length >= 3 &&
           travelTiming.trim().length >= 4
@@ -202,6 +203,7 @@ const App = () => {
     travelNumber,
     travelRoute,
     travelTiming,
+    travelType,
     vehicleNumber,
   ]);
 
