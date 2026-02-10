@@ -268,7 +268,9 @@ const App = () => {
     setIsOtpSent(false);
     setIsSendingOtp(false);
     setLoginWithOtp(false);
+    setTravelType("");
     setTravelNumber("");
+    setTravelName("");
     setTravelRoute("");
     setTravelTiming("");
     setDriverName("");
