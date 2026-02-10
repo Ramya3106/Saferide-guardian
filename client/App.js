@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import {
   Animated,
   Easing,
@@ -20,11 +21,30 @@ const OFFICIAL_DOMAINS = {
   "TTR/RPF": "railnet.gov.in",
   Police: "tnpolice.gov.in",
 };
+const getDevHost = () => {
+  const hostUri =
+    Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
+
+  if (!hostUri) {
+    return null;
+  }
+
+  const withoutScheme = hostUri.includes("://")
+    ? hostUri.split("://")[1]
+    : hostUri;
+
+  const host = withoutScheme.split(":")[0];
+  return host || null;
+};
+
 const API_BASE =
   process.env.EXPO_PUBLIC_API_BASE ||
   (Platform.OS === "android"
     ? "http://10.0.2.2:5000/api"
-    : "http://localhost:5000/api");
+    : (() => {
+        const host = getDevHost();
+        return host ? `http://${host}:5000/api` : "http://localhost:5000/api";
+      })());
 
 const sendCode = (emailAddress) =>
   axios.post(`${API_BASE}/auth/send-verify-code`, {
