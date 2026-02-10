@@ -54,7 +54,9 @@ const App = () => {
   const [loginWithOtp, setLoginWithOtp] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
 
+  const [travelType, setTravelType] = useState("");
   const [travelNumber, setTravelNumber] = useState("");
+  const [travelName, setTravelName] = useState("");
   const [travelRoute, setTravelRoute] = useState("");
   const [travelTiming, setTravelTiming] = useState("");
   const [driverName, setDriverName] = useState("");
