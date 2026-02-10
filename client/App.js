@@ -94,9 +94,9 @@ const App = () => {
   const isRegister = mode === "register";
   const isOfficialRole = role === "TTR/RPF/Police";
   const isOperationalStaff = role === "Driver/Conductor" || role === "Cab/Auto";
+  const otpEmail = (isOfficialRole ? officialEmail : email).trim();
   const isOtpContext =
-    !isOfficialRole &&
-    ((isRegister && mode === "register") || (!isRegister && loginWithOtp));
+    (isRegister && !isOfficialRole) || (!isRegister && loginWithOtp);
 
   const getOfficialDomain = (selectedRole) => {
     const domains = OFFICIAL_DOMAINS[selectedRole];
@@ -201,7 +201,7 @@ const App = () => {
     }
 
     if (loginWithOtp) {
-      return trimmedEmail.length >= 5 && isVerified;
+      return otpEmail.length >= 5 && isVerified;
     }
 
     return trimmedEmail.length >= 5 && trimmedPassword.length >= 6;
@@ -219,6 +219,7 @@ const App = () => {
     jurisdiction,
     loginWithOtp,
     name,
+    otpEmail,
     officialEmail,
     password,
     phone,
