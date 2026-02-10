@@ -340,8 +340,20 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "Role is required." });
     }
 
+    const isOtp = method === "otp";
     let user;
-    if (isOfficialRole(role)) {
+    if (isOtp) {
+      if (isOfficialRole(role)) {
+        if (!isValidOfficialEmail(role, email)) {
+          return res
+            .status(400)
+            .json({ message: "Official email domain required." });
+        }
+      } else if (!isValidEmail(email)) {
+        return res.status(400).json({ message: "Enter a valid email." });
+      }
+      user = await User.findOne({ email, role });
+    } else if (isOfficialRole(role)) {
       if (!isValidProfessionalId(role, professionalId)) {
         return res
           .status(400)
@@ -363,7 +375,7 @@ router.post("/login", async (req, res) => {
       return res.status(403).json({ message: "Account pending approval." });
     }
 
-    if (isOfficialRole(role)) {
+    if (isOfficialRole(role) && !isOtp) {
       if (password.length < 6) {
         return res.status(400).json({ message: "Password required." });
       }
@@ -371,7 +383,7 @@ router.post("/login", async (req, res) => {
       if (!matches) {
         return res.status(401).json({ message: "Invalid credentials." });
       }
-    } else if (method === "otp") {
+    } else if (isOtp) {
       const code = String(req.body?.otpCode || "").trim();
       if (!code || code.length !== 6) {
         return res.status(400).json({ message: "OTP code required." });
