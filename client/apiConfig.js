@@ -17,13 +17,25 @@ const getDevHost = () => {
   return host || null;
 };
 
-const getApiBase = () =>
-  process.env.EXPO_PUBLIC_API_BASE ||
-  (Platform.OS === "android"
+const getApiBase = () => {
+  const configuredBase = process.env.EXPO_PUBLIC_API_BASE;
+  const forceConfigured =
+    process.env.EXPO_PUBLIC_API_BASE_FORCE === "true";
+
+  if (typeof __DEV__ !== "undefined" && __DEV__) {
+    const host = getDevHost();
+    if (host && !forceConfigured) {
+      return `http://${host}:5000/api`;
+    }
+  }
+
+  if (configuredBase) {
+    return configuredBase;
+  }
+
+  return Platform.OS === "android"
     ? "http://10.0.2.2:5000/api"
-    : (() => {
-        const host = getDevHost();
-        return host ? `http://${host}:5000/api` : "http://localhost:5000/api";
-      })());
+    : "http://localhost:5000/api";
+};
 
 export { getApiBase };
