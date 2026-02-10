@@ -94,9 +94,9 @@ const App = () => {
   const isRegister = mode === "register";
   const isOfficialRole = role === "TTR/RPF/Police";
   const isOperationalStaff = role === "Driver/Conductor" || role === "Cab/Auto";
-  const otpEmail = (isOfficialRole ? officialEmail : email).trim();
   const isOtpContext =
-    (isRegister && !isOfficialRole) || (!isRegister && loginWithOtp);
+    !isOfficialRole &&
+    ((isRegister && mode === "register") || (!isRegister && loginWithOtp));
 
   const getOfficialDomain = (selectedRole) => {
     const domains = OFFICIAL_DOMAINS[selectedRole];
@@ -201,7 +201,7 @@ const App = () => {
     }
 
     if (loginWithOtp) {
-      return otpEmail.length >= 5 && isVerified;
+      return trimmedEmail.length >= 5 && isVerified;
     }
 
     return trimmedEmail.length >= 5 && trimmedPassword.length >= 6;
@@ -219,7 +219,6 @@ const App = () => {
     jurisdiction,
     loginWithOtp,
     name,
-    otpEmail,
     officialEmail,
     password,
     phone,
@@ -934,7 +933,7 @@ const App = () => {
                 </View>
               )}
 
-              {(!loginWithOtp || isRegister || isOfficialRole) && (
+              {(!loginWithOtp || isRegister) && (
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Password</Text>
                   <View style={styles.passwordRow}>
@@ -994,7 +993,7 @@ const App = () => {
                 </View>
               )}
 
-              {!isRegister && !isOfficialRole && (
+              {!isRegister && (
                 <View style={styles.otpToggleRow}>
                   <Text style={styles.helperText}>
                     {loginWithOtp ? "Signing in with OTP" : "Forgot password?"}
@@ -1014,6 +1013,21 @@ const App = () => {
                 </View>
               )}
 
+              {!isRegister && isOfficialRole && loginWithOtp && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Official email</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={`name@${getOfficialDomain(role)}`}
+                    placeholderTextColor="#94A3B8"
+                    value={officialEmail}
+                    onChangeText={setOfficialEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
+                </View>
+              )}
+
               {isOtpContext && (
                 <View style={styles.verifyCard}>
                   <Text style={styles.cardTitle}>
@@ -1028,11 +1042,11 @@ const App = () => {
                     <TouchableOpacity
                       style={[
                         styles.primaryButton,
-                        (email.trim().length < 5 || isSendingOtp) &&
+                        (otpEmail.length < 5 || isSendingOtp) &&
                           styles.buttonDisabled,
                       ]}
                       onPress={handleSendOtp}
-                      disabled={email.trim().length < 5 || isSendingOtp}
+                      disabled={otpEmail.length < 5 || isSendingOtp}
                       activeOpacity={0.9}
                     >
                       <Text style={styles.primaryButtonText}>
