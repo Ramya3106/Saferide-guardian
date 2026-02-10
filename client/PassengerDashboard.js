@@ -11,9 +11,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
+import { getApiBase } from "./apiConfig";
 
-const API_BASE =
-  process.env.EXPO_PUBLIC_API_BASE || "http://10.0.2.2:5000/api";
+const API_BASE = getApiBase();
 
 const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
   // State management
