@@ -1114,7 +1114,9 @@ const App = () => {
                     </View>
                     <View style={styles.inputGroup}>
                       <Text style={styles.label}>
-                        Bus/Train name (optional)
+                        {travelType === "Bus"
+                          ? "Bus name (optional)"
+                          : "Train name"}
                       </Text>
                       <TextInput
                         style={styles.input}
@@ -1181,28 +1183,34 @@ const App = () => {
                         </View>
                       </>
                     )}
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Driver name (optional)</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Driver name"
-                        placeholderTextColor="#94A3B8"
-                        value={driverName}
-                        onChangeText={setDriverName}
-                      />
-                    </View>
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>
-                        Conductor name (optional)
-                      </Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Conductor name"
-                        placeholderTextColor="#94A3B8"
-                        value={conductorName}
-                        onChangeText={setConductorName}
-                      />
-                    </View>
+                    {travelType === "Bus" && (
+                      <>
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.label}>
+                            Driver name (optional)
+                          </Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Driver name"
+                            placeholderTextColor="#94A3B8"
+                            value={driverName}
+                            onChangeText={setDriverName}
+                          />
+                        </View>
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.label}>
+                            Conductor name (optional)
+                          </Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Conductor name"
+                            placeholderTextColor="#94A3B8"
+                            value={conductorName}
+                            onChangeText={setConductorName}
+                          />
+                        </View>
+                      </>
+                    )}
                   </View>
                 )}
 
