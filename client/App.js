@@ -57,6 +57,9 @@ const App = () => {
   const [travelType, setTravelType] = useState("");
   const [travelNumber, setTravelNumber] = useState("");
   const [travelName, setTravelName] = useState("");
+  const [busDeparture, setBusDeparture] = useState("");
+  const [busArrival, setBusArrival] = useState("");
+  const [busStartTime, setBusStartTime] = useState("");
   const [travelRoute, setTravelRoute] = useState("");
   const [travelTiming, setTravelTiming] = useState("");
   const [driverName, setDriverName] = useState("");
