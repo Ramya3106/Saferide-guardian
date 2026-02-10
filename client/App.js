@@ -167,6 +167,7 @@ const App = () => {
         return (
           travelType.trim().length > 0 &&
           travelNumber.trim().length >= 5 &&
+          travelName.trim().length >= 2 &&
           travelRoute.trim().length >= 3 &&
           travelTiming.trim().length >= 4
         );
@@ -216,6 +217,7 @@ const App = () => {
     shiftTiming,
     toStop,
     travelNumber,
+    travelName,
     travelRoute,
     travelTiming,
     travelType,
