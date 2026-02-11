@@ -1263,6 +1263,8 @@ const App = () => {
                   <TouchableOpacity
                     onPress={() => {
                       setForgotPasswordMode(true);
+                      setIsResetCodeSent(false);
+                      setResetCode("");
                       setError("");
                     }}
                   >
@@ -1275,24 +1277,11 @@ const App = () => {
                 <View style={styles.verifyCard}>
                   <Text style={styles.cardTitle}>Reset Password</Text>
                   <Text style={styles.sectionSubtitle}>
-                    Enter your professional ID and official email to receive a reset code
+                    We'll send a verification code to your registered official email
                   </Text>
                   
                   {!isResetCodeSent ? (
                     <>
-                      <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Professional ID</Text>
-                        <TextInput
-                          style={styles.input}
-                          placeholder={
-                            role === "Police" ? "TNPolice-45678" : "TTR-SR-12345"
-                          }
-                          placeholderTextColor="#94A3B8"
-                          value={professionalId}
-                          onChangeText={setProfessionalId}
-                          autoCapitalize="characters"
-                        />
-                      </View>
                       <View style={styles.inputGroup}>
                         <Text style={styles.label}>Official Email</Text>
                         <TextInput
@@ -1308,22 +1297,20 @@ const App = () => {
                       <TouchableOpacity
                         style={[
                           styles.primaryButton,
-                          (!isProfessionalIdValid(role, professionalId) ||
-                            !isOfficialEmailValid(role, officialEmail) ||
+                          (!isOfficialEmailValid(role, officialEmail) ||
                             isSendingResetCode) &&
                             styles.buttonDisabled,
                         ]}
                         onPress={handleSendResetCode}
                         disabled={
-                          !isProfessionalIdValid(role, professionalId) ||
                           !isOfficialEmailValid(role, officialEmail) ||
                           isSendingResetCode
                         }
                       >
                         <Text style={styles.primaryButtonText}>
                           {isSendingResetCode
-                            ? "Sending reset code..."
-                            : "Send reset code"}
+                            ? "Sending verification code..."
+                            : "Send verification code"}
                         </Text>
                       </TouchableOpacity>
                     </>
@@ -1339,7 +1326,7 @@ const App = () => {
                   ) : (
                     <>
                       <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Reset Code</Text>
+                        <Text style={styles.label}>Verification Code</Text>
                         <TextInput
                           style={styles.input}
                           placeholder="Enter 6-digit code"
