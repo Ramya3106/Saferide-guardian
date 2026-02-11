@@ -1427,7 +1427,25 @@ const App = () => {
 
               {!isRegister && isOfficialRole && forgotPasswordMode && (
                 <View style={styles.verifyCard}>
-                  <Text style={styles.cardTitle}>Reset Password</Text>
+                  <View style={styles.backButtonRow}>
+                    <TouchableOpacity
+                      style={styles.backButton}
+                      onPress={() => {
+                        setForgotPasswordMode(false);
+                        setResetCode("");
+                        setNewPassword("");
+                        setConfirmNewPassword("");
+                        setIsResetCodeSent(false);
+                        setResetSuccess(false);
+                        setOfficialEmail("");
+                        setError("");
+                      }}
+                    >
+                      <Ionicons name="arrow-back" size={24} color="#2563EB" />
+                    </TouchableOpacity>
+                    <Text style={styles.cardTitle}>Reset Password</Text>
+                    <View style={{ width: 24 }} />
+                  </View>
                   <Text style={styles.sectionSubtitle}>
                     We'll send a verification code to your registered official email
                   </Text>
