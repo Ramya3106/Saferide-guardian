@@ -18,6 +18,7 @@ import {
   View,
 } from "react-native";
 import PassengerDashboard from "./PassengerDashboard";
+import CarAutoDashboard from "./CarAutoDashboard";
 
 const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
 const OFFICIAL_DOMAINS = {
@@ -1220,6 +1221,15 @@ const App = () => {
           userEmail={trimmedEmail}
           userName={displayName}
           userPhone={displayPhone}
+          onLogout={handleLogout}
+        />
+      );
+    }
+
+    // Handle Cab/Auto Driver
+    if (role === "Cab/Auto") {
+      return (
+        <CarAutoDashboard
           onLogout={handleLogout}
         />
       );
