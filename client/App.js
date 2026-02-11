@@ -864,50 +864,136 @@ const App = () => {
     </View>
   );
 
-  const renderTtrDashboard = () => (
-    <View>
-      <Text style={styles.sectionTitle}>TTR/RPF Escalations</Text>
-      <Text style={styles.sectionSubtitle}>
-        High-value items with PNR verification and chain-of-custody logs.
-      </Text>
-      <View style={styles.cardBlock}>
-        <Text style={styles.cardTitle}>Priority Alerts</Text>
-        <Text style={styles.cardText}>PNR: 4528193021 • Passport + Visa</Text>
-        <Text style={styles.cardText}>Train: MS-EXP-204 • Coach B2</Text>
-        <Text style={styles.cardText}>Next stop: Guindy • ETA 9 mins</Text>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={handleStaffConfirm}
-        >
-          <Text style={styles.primaryButtonText}>Verify PNR & confirm</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+  const renderTtrDashboard = () => {
+    const displayName = name.trim() || "Officer";
+    const displayEmail = officialEmail.trim() || "Not set";
+    const displayProfessionalId = professionalId.trim() || "Not set";
+    const displayRole = specificRole || "TTR/RPF";
+    const displayJurisdiction = jurisdiction.trim() || "Not set";
+    const displayPnrRange = pnrRange.trim() || "Not set";
 
-  const renderPoliceDashboard = () => (
-    <View>
-      <Text style={styles.sectionTitle}>Police Command Console</Text>
-      <Text style={styles.sectionSubtitle}>
-        Cross-jurisdiction recovery for medical, passport, and legal items.
-      </Text>
-      <View style={styles.cardBlock}>
-        <Text style={styles.cardTitle}>Jurisdiction Escalations</Text>
-        <Text style={styles.cardText}>
-          Medical dossier flagged • Case ID 98-204
+    return (
+      <View>
+        {/* Professional Profile Card */}
+        <View style={styles.profileCard}>
+          <View style={styles.profileHeader}>
+            <View style={styles.profileAvatar}>
+              <Text style={styles.profileAvatarText}>
+                {displayName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{displayName}</Text>
+              <Text style={styles.profileRole}>{displayRole} Officer</Text>
+            </View>
+          </View>
+          
+          <View style={styles.profileDetails}>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Professional ID:</Text>
+              <Text style={styles.profileDetailValue}>{displayProfessionalId}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Official Email:</Text>
+              <Text style={styles.profileDetailValue}>{displayEmail}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Jurisdiction:</Text>
+              <Text style={styles.profileDetailValue}>{displayJurisdiction}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>PNR Range:</Text>
+              <Text style={styles.profileDetailValue}>{displayPnrRange}</Text>
+            </View>
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>TTR/RPF Escalations</Text>
+        <Text style={styles.sectionSubtitle}>
+          High-value items with PNR verification and chain-of-custody logs.
         </Text>
-        <Text style={styles.cardText}>
-          Location: CMBT • Linked staff: RPF-114
-        </Text>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={handleStaffConfirm}
-        >
-          <Text style={styles.primaryButtonText}>Dispatch unit</Text>
-        </TouchableOpacity>
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Priority Alerts</Text>
+          <Text style={styles.cardText}>PNR: 4528193021 • Passport + Visa</Text>
+          <Text style={styles.cardText}>Train: MS-EXP-204 • Coach B2</Text>
+          <Text style={styles.cardText}>Next stop: Guindy • ETA 9 mins</Text>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={handleStaffConfirm}
+          >
+            <Text style={styles.primaryButtonText}>Verify PNR & confirm</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
+
+  const renderPoliceDashboard = () => {
+    const displayName = name.trim() || "Officer";
+    const displayEmail = officialEmail.trim() || "Not set";
+    const displayProfessionalId = professionalId.trim() || "Not set";
+    const displayRole = specificRole || "Police";
+    const displayJurisdiction = jurisdiction.trim() || "Not set";
+    const displayPnrRange = pnrRange.trim() || "Not set";
+
+    return (
+      <View>
+        {/* Professional Profile Card */}
+        <View style={styles.profileCard}>
+          <View style={styles.profileHeader}>
+            <View style={styles.profileAvatar}>
+              <Text style={styles.profileAvatarText}>
+                {displayName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{displayName}</Text>
+              <Text style={styles.profileRole}>{displayRole} Officer</Text>
+            </View>
+          </View>
+          
+          <View style={styles.profileDetails}>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Professional ID:</Text>
+              <Text style={styles.profileDetailValue}>{displayProfessionalId}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Official Email:</Text>
+              <Text style={styles.profileDetailValue}>{displayEmail}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Jurisdiction:</Text>
+              <Text style={styles.profileDetailValue}>{displayJurisdiction}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>PNR Range:</Text>
+              <Text style={styles.profileDetailValue}>{displayPnrRange}</Text>
+            </View>
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>Police Command Console</Text>
+        <Text style={styles.sectionSubtitle}>
+          Cross-jurisdiction recovery for medical, passport, and legal items.
+        </Text>
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Jurisdiction Escalations</Text>
+          <Text style={styles.cardText}>
+            Medical dossier flagged • Case ID 98-204
+          </Text>
+          <Text style={styles.cardText}>
+            Location: CMBT • Linked staff: RPF-114
+          </Text>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={handleStaffConfirm}
+          >
+            <Text style={styles.primaryButtonText}>Dispatch unit</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   const renderDashboard = () => {
     if (role === "Passenger") {
