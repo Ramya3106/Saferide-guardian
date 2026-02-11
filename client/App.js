@@ -366,6 +366,8 @@ const App = () => {
     setIsResetCodeSent(false);
     setIsSendingResetCode(false);
     setResetSuccess(false);
+    setShowRoleSelection(false);
+    setSpecificRole("");
     setError("");
   };
 
