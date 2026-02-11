@@ -1067,12 +1067,19 @@ const App = () => {
         />
       );
     }
-    if (role === "TTR/RPF") {
+    
+    // Handle TTR/RPF/Police based on specific role selection
+    if (role === "TTR/RPF/Police") {
+      if (specificRole === "TTR" || specificRole === "RPF") {
+        return renderTtrDashboard();
+      }
+      if (specificRole === "Police") {
+        return renderPoliceDashboard();
+      }
+      // Default to TTR dashboard if no specific role selected yet
       return renderTtrDashboard();
     }
-    if (role === "Police") {
-      return renderPoliceDashboard();
-    }
+    
     return renderStaffDashboard();
   };
 
