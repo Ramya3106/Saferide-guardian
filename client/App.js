@@ -1150,7 +1150,20 @@ const App = () => {
             </View>
           ) : showRoleSelection ? (
             <View>
-              <Text style={styles.formTitle}>Select Your Specific Role</Text>
+              <View style={styles.backButtonRow}>
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={() => {
+                    setShowRoleSelection(false);
+                    setSpecificRole("");
+                    setError("");
+                  }}
+                >
+                  <Ionicons name="arrow-back" size={24} color="#2563EB" />
+                </TouchableOpacity>
+                <Text style={styles.formTitle}>Select Your Specific Role</Text>
+                <View style={{ width: 24 }} />
+              </View>
               <Text style={styles.sectionSubtitle}>
                 Please specify which department you belong to
               </Text>
@@ -1228,17 +1241,6 @@ const App = () => {
                 disabled={!specificRole}
               >
                 <Text style={styles.primaryButtonText}>Continue</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.textButton]}
-                onPress={() => {
-                  setShowRoleSelection(false);
-                  setSpecificRole("");
-                  setError("");
-                }}
-              >
-                <Text style={styles.switchLink}>Back to login</Text>
               </TouchableOpacity>
             </View>
           ) : (
