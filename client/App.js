@@ -437,6 +437,8 @@ const App = () => {
     setStaffConfirmed(false);
     setHandoffComplete(false);
     setStaffComplaintSubmitted(false);
+    setShowRoleSelection(false);
+    setSpecificRole("");
     resetForm();
   };
 
