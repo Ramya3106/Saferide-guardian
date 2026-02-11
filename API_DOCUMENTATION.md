@@ -528,7 +528,7 @@ X-User-Email: user@example.com
 
 ---
 
-### 17. POST `/api/passenger/journey`
+### 18. POST `/api/passenger/journey`
 Create a new journey record when passenger starts a trip.
 
 **Headers:**
