@@ -2381,6 +2381,76 @@ const styles = StyleSheet.create({
   logoutButton: {
     marginTop: 8,
   },
+  profileCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  profileHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+  },
+  profileAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#2563EB",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+  },
+  profileAvatarText: {
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: "700",
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginBottom: 4,
+  },
+  profileRole: {
+    fontSize: 14,
+    color: "#64748B",
+    fontWeight: "500",
+  },
+  profileDetails: {
+    gap: 12,
+  },
+  profileDetailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  profileDetailLabel: {
+    fontSize: 14,
+    color: "#64748B",
+    fontWeight: "500",
+    flex: 1,
+  },
+  profileDetailValue: {
+    fontSize: 14,
+    color: "#1E293B",
+    fontWeight: "600",
+    flex: 2,
+    textAlign: "right",
+  },
 });
 
 export default App;
