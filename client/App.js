@@ -569,6 +569,76 @@ const App = () => {
     }
   };
 
+  const handleSendResetCodeUser = async () => {
+    const trimmedEmail = email.trim().toLowerCase();
+    
+    // Basic email validation
+    if (trimmedEmail.length < 5 || !trimmedEmail.includes('@')) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
+    setError("");
+    setIsResetCodeSent(false);
+    setResetCode("");
+    setIsSendingResetCode(true);
+
+    try {
+      const { data } = await sendCode(trimmedEmail);
+      const sent = Boolean(data?.sent || data?.devCode);
+      setIsResetCodeSent(sent);
+      if (!sent && data?.message) {
+        setError(data.message);
+      }
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || "Unable to send verification code.";
+      setError(message);
+    } finally {
+      setIsSendingResetCode(false);
+    }
+  };
+
+  const handleResetPasswordUser = async () => {
+    if (resetCode.trim().length !== 6) {
+      setError("Enter valid 6-digit verification code.");
+      return;
+    }
+    if (newPassword.trim().length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setError("");
+
+    try {
+      await axios.post(`${API_BASE}/auth/reset-password-user`, {
+        email: email.trim().toLowerCase(),
+        otpCode: resetCode.trim(),
+        newPassword: newPassword.trim(),
+      });
+      
+      setResetSuccess(true);
+      setError("");
+      setTimeout(() => {
+        setForgotPasswordMode(false);
+        setResetSuccess(false);
+        setResetCode("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setIsResetCodeSent(false);
+        setEmail("");
+      }, 2000);
+    } catch (err) {
+      const message = err?.response?.data?.message || "Unable to verify code or reset password.";
+      setError(message);
+    }
+  };
+
   const handleSubmitComplaint = () => {
     if (
       complaintItem.trim().length < 2 ||
