@@ -104,6 +104,10 @@ const App = () => {
   const [isSendingResetCode, setIsSendingResetCode] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
 
+  // Specific role selection for TTR/RPF/Police
+  const [showRoleSelection, setShowRoleSelection] = useState(false);
+  const [specificRole, setSpecificRole] = useState("");
+
   const formAnim = useRef(new Animated.Value(0)).current;
 
   const isRegister = mode === "register";
