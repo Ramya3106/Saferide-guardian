@@ -1140,6 +1140,192 @@ const App = () => {
                 </View>
               )}
 
+              {!isRegister && isOfficialRole && !forgotPasswordMode && (
+                <View style={styles.otpToggleRow}>
+                  <Text style={styles.helperText}>Forgot password?</Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setForgotPasswordMode(true);
+                      setError("");
+                    }}
+                  >
+                    <Text style={styles.switchLink}>Reset password</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {!isRegister && isOfficialRole && forgotPasswordMode && (
+                <View style={styles.verifyCard}>
+                  <Text style={styles.cardTitle}>Reset Password</Text>
+                  <Text style={styles.sectionSubtitle}>
+                    Enter your professional ID and official email to receive a reset code
+                  </Text>
+                  
+                  {!isResetCodeSent ? (
+                    <>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Professional ID</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder={
+                            role === "Police" ? "TNPolice-45678" : "TTR-SR-12345"
+                          }
+                          placeholderTextColor="#94A3B8"
+                          value={professionalId}
+                          onChangeText={setProfessionalId}
+                          autoCapitalize="characters"
+                        />
+                      </View>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Official Email</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder={`name@${getOfficialDomain(role)}`}
+                          placeholderTextColor="#94A3B8"
+                          value={officialEmail}
+                          onChangeText={setOfficialEmail}
+                          autoCapitalize="none"
+                          keyboardType="email-address"
+                        />
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.primaryButton,
+                          (!isProfessionalIdValid(role, professionalId) ||
+                            !isOfficialEmailValid(role, officialEmail) ||
+                            isSendingResetCode) &&
+                            styles.buttonDisabled,
+                        ]}
+                        onPress={handleSendResetCode}
+                        disabled={
+                          !isProfessionalIdValid(role, professionalId) ||
+                          !isOfficialEmailValid(role, officialEmail) ||
+                          isSendingResetCode
+                        }
+                      >
+                        <Text style={styles.primaryButtonText}>
+                          {isSendingResetCode
+                            ? "Sending reset code..."
+                            : "Send reset code"}
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : resetSuccess ? (
+                    <View style={styles.successCard}>
+                      <Text style={styles.successText}>
+                        ✅ Password reset successful!
+                      </Text>
+                      <Text style={styles.cardText}>
+                        You can now login with your new password.
+                      </Text>
+                    </View>
+                  ) : (
+                    <>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Reset Code</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Enter 6-digit code"
+                          placeholderTextColor="#94A3B8"
+                          value={resetCode}
+                          onChangeText={setResetCode}
+                          keyboardType="number-pad"
+                          maxLength={6}
+                        />
+                      </View>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>New Password</Text>
+                        <View style={styles.passwordRow}>
+                          <TextInput
+                            style={[styles.input, styles.passwordInput]}
+                            placeholder="Enter new password"
+                            placeholderTextColor="#94A3B8"
+                            value={newPassword}
+                            onChangeText={setNewPassword}
+                            secureTextEntry={!showNewPassword}
+                          />
+                          <TouchableOpacity
+                            style={styles.eyeButton}
+                            onPress={() => setShowNewPassword((prev) => !prev)}
+                          >
+                            <Ionicons
+                              name={showNewPassword ? "eye-off" : "eye"}
+                              size={20}
+                              color="#64748B"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Confirm New Password</Text>
+                        <View style={styles.passwordRow}>
+                          <TextInput
+                            style={[styles.input, styles.passwordInput]}
+                            placeholder="Re-enter new password"
+                            placeholderTextColor="#94A3B8"
+                            value={confirmNewPassword}
+                            onChangeText={setConfirmNewPassword}
+                            secureTextEntry={!showConfirmNewPassword}
+                          />
+                          <TouchableOpacity
+                            style={styles.eyeButton}
+                            onPress={() =>
+                              setShowConfirmNewPassword((prev) => !prev)
+                            }
+                          >
+                            <Ionicons
+                              name={showConfirmNewPassword ? "eye-off" : "eye"}
+                              size={20}
+                              color="#64748B"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.primaryButton,
+                          (resetCode.trim().length !== 6 ||
+                            newPassword.trim().length < 6 ||
+                            confirmNewPassword.trim().length < 6) &&
+                            styles.buttonDisabled,
+                        ]}
+                        onPress={handleResetPassword}
+                        disabled={
+                          resetCode.trim().length !== 6 ||
+                          newPassword.trim().length < 6 ||
+                          confirmNewPassword.trim().length < 6
+                        }
+                      >
+                        <Text style={styles.primaryButtonText}>
+                          Reset Password
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.textButton]}
+                        onPress={handleSendResetCode}
+                      >
+                        <Text style={styles.switchLink}>Resend code</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                  
+                  <TouchableOpacity
+                    style={[styles.textButton]}
+                    onPress={() => {
+                      setForgotPasswordMode(false);
+                      setResetCode("");
+                      setNewPassword("");
+                      setConfirmNewPassword("");
+                      setIsResetCodeSent(false);
+                      setResetSuccess(false);
+                      setError("");
+                    }}
+                  >
+                    <Text style={styles.switchLink}>Back to login</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
               {isOtpContext && (
                 <View style={styles.verifyCard}>
                   <Text style={styles.cardTitle}>
