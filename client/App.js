@@ -1928,7 +1928,7 @@ const App = () => {
                 </Text>
               </View>
             </View>
-          ) : null}
+          )}
         </View>
       </ScrollView>
       </TouchableWithoutFeedback>
