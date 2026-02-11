@@ -996,6 +996,99 @@ const App = () => {
                 </TouchableOpacity>
               )}
             </View>
+          ) : showRoleSelection ? (
+            <View>
+              <Text style={styles.formTitle}>Select Your Specific Role</Text>
+              <Text style={styles.sectionSubtitle}>
+                Please specify which department you belong to
+              </Text>
+
+              <View style={styles.cardBlock}>
+                <View style={styles.roleRow}>
+                  {["TTR", "RPF", "Police"].map((item) => (
+                    <TouchableOpacity
+                      key={item}
+                      style={[
+                        styles.roleChipLarge,
+                        specificRole === item && styles.roleChipActive,
+                      ]}
+                      onPress={() => setSpecificRole(item)}
+                    >
+                      <Text
+                        style={[
+                          styles.roleChipTextLarge,
+                          specificRole === item && styles.roleChipTextActive,
+                        ]}
+                      >
+                        {item}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <View style={styles.roleDescriptions}>
+                  {specificRole === "TTR" && (
+                    <View style={styles.roleDescCard}>
+                      <Text style={styles.roleDescTitle}>
+                        🚂 Travelling Ticket Examiner (TTR)
+                      </Text>
+                      <Text style={styles.roleDescText}>
+                        Responsible for ticket checking, passenger assistance,
+                        and onboard security in trains.
+                      </Text>
+                    </View>
+                  )}
+                  {specificRole === "RPF" && (
+                    <View style={styles.roleDescCard}>
+                      <Text style={styles.roleDescTitle}>
+                        🛡️ Railway Protection Force (RPF)
+                      </Text>
+                      <Text style={styles.roleDescText}>
+                        Railway security force responsible for protecting
+                        railway property, passengers, and freight.
+                      </Text>
+                    </View>
+                  )}
+                  {specificRole === "Police" && (
+                    <View style={styles.roleDescCard}>
+                      <Text style={styles.roleDescTitle}>
+                        👮 Police Department
+                      </Text>
+                      <Text style={styles.roleDescText}>
+                        Law enforcement officers handling criminal cases,
+                        investigations, and public safety.
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {error.length > 0 && (
+                <Text style={styles.errorText}>{error}</Text>
+              )}
+
+              <TouchableOpacity
+                style={[
+                  styles.primaryButton,
+                  !specificRole && styles.buttonDisabled,
+                ]}
+                onPress={handleSpecificRoleSelection}
+                disabled={!specificRole}
+              >
+                <Text style={styles.primaryButtonText}>Continue</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.textButton]}
+                onPress={() => {
+                  setShowRoleSelection(false);
+                  setSpecificRole("");
+                  setError("");
+                }}
+              >
+                <Text style={styles.switchLink}>Back to login</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <View>
               <Text style={styles.formTitle}>
