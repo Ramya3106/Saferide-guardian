@@ -5,6 +5,7 @@ import { getApiBase } from "./apiConfig";
 import {
   Animated,
   Easing,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -13,6 +14,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import PassengerDashboard from "./PassengerDashboard";
@@ -89,6 +91,7 @@ const App = () => {
   const [error, setError] = useState("");
   const [apiStatus, setApiStatus] = useState("checking");
   const [apiError, setApiError] = useState("");
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const formAnim = useRef(new Animated.Value(0)).current;
 
@@ -282,6 +285,26 @@ const App = () => {
       useNativeDriver: true,
     }).start();
   }, [formAnim, isAuthenticated, mode]);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   const resetForm = () => {
     setName("");
@@ -797,18 +820,20 @@ const App = () => {
       <View style={styles.backgroundGlow} />
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        enabled={Platform.OS === "ios"}
       >
-        <ScrollView
-          contentContainerStyle={[
-            styles.scrollContent,
-            !isAuthenticated && styles.scrollContentCentered,
-          ]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={true}
-        >
-          <View style={styles.card}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            contentContainerStyle={[
+              styles.scrollContent,
+              !isAuthenticated && !keyboardVisible && styles.scrollContentCentered,
+            ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={true}
+            bounces={true}
+          >
+            <View style={styles.card}>
           <View style={styles.brandRow}>
             <View>
               <Text style={styles.title}>SafeRide Guardian</Text>
@@ -1365,9 +1390,10 @@ const App = () => {
                 </Text>
               </View>
             </View>
-          )}
-        </View>
-      </ScrollView>
+            )}
+          </View>
+        </ScrollView>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -1426,7 +1452,6 @@ const styles = StyleSheet.create({
   },
   scrollContentCentered: {
     justifyContent: "center",
-    minHeight: "100%",
   },
   card: {
     width: "100%",
