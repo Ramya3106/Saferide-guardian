@@ -810,59 +810,114 @@ const App = () => {
     </View>
   );
 
-  const renderStaffDashboard = () => (
-    <View>
-      <Text style={styles.sectionTitle}>{role} Duty Dashboard</Text>
-      <Text style={styles.sectionSubtitle}>
-        Live queue, QR handoffs, and custody logs for your duty roster.
-      </Text>
+  const renderStaffDashboard = () => {
+    const displayName = name.trim() || "Staff Member";
+    const displayEmail = email.trim() || "Not set";
+    const displayPhone = phone.trim() || "Not set";
+    const displayVehicleNumber = vehicleNumber.trim() || "Not set";
+    const displayRoute = dutyRoute.trim() || "Not set";
+    const displayShift = shiftTiming.trim() || "Not set";
+    const displayFromStop = fromStop.trim() || "Not set";
+    const displayToStop = toStop.trim() || "Not set";
 
-      <View style={styles.cardBlock}>
-        <Text style={styles.cardTitle}>Active Complaint Queue</Text>
-        <View style={styles.queueItem}>
-          <View>
-            <Text style={styles.queueTitle}>Black backpack</Text>
-            <Text style={styles.queueMeta}>
-              TN-01-AB-1234 • Stop: Medavakkam
-            </Text>
+    return (
+      <View>
+        {/* Staff Profile Card */}
+        <View style={styles.profileCard}>
+          <View style={styles.profileHeader}>
+            <View style={styles.profileAvatar}>
+              <Text style={styles.profileAvatarText}>
+                {displayName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{displayName}</Text>
+              <Text style={styles.profileRole}>{role}</Text>
+            </View>
           </View>
-          <Text style={styles.queueStatus}>NEW</Text>
-        </View>
-        <View style={styles.queueItem}>
-          <View>
-            <Text style={styles.queueTitle}>Passport pouch</Text>
-            <Text style={styles.queueMeta}>Route: Velachery → CMBT</Text>
+          
+          <View style={styles.profileDetails}>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Email:</Text>
+              <Text style={styles.profileDetailValue}>{displayEmail}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Phone:</Text>
+              <Text style={styles.profileDetailValue}>{displayPhone}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Vehicle:</Text>
+              <Text style={styles.profileDetailValue}>{displayVehicleNumber}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Route:</Text>
+              <Text style={styles.profileDetailValue}>{displayRoute}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Shift:</Text>
+              <Text style={styles.profileDetailValue}>{displayShift}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Stops:</Text>
+              <Text style={styles.profileDetailValue}>
+                {displayFromStop} → {displayToStop}
+              </Text>
+            </View>
           </View>
-          <Text style={styles.queueStatusAmber}>HIGH</Text>
         </View>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={handleStaffConfirm}
-        >
-          <Text style={styles.primaryButtonText}>Mark item SAFE</Text>
-        </TouchableOpacity>
-      </View>
 
-      {staffConfirmed && (
+        <Text style={styles.sectionTitle}>{role} Duty Dashboard</Text>
+        <Text style={styles.sectionSubtitle}>
+          Live queue, QR handoffs, and custody logs for your duty roster.
+        </Text>
+
         <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Custody & Handoff</Text>
-          <Text style={styles.cardText}>Item tagged: QR-8721</Text>
-          <Text style={styles.cardText}>Pickup window: 10:15AM @ Guindy</Text>
+          <Text style={styles.cardTitle}>Active Complaint Queue</Text>
+          <View style={styles.queueItem}>
+            <View>
+              <Text style={styles.queueTitle}>Black backpack</Text>
+              <Text style={styles.queueMeta}>
+                TN-01-AB-1234 • Stop: Medavakkam
+              </Text>
+            </View>
+            <Text style={styles.queueStatus}>NEW</Text>
+          </View>
+          <View style={styles.queueItem}>
+            <View>
+              <Text style={styles.queueTitle}>Passport pouch</Text>
+              <Text style={styles.queueMeta}>Route: Velachery → CMBT</Text>
+            </View>
+            <Text style={styles.queueStatusAmber}>HIGH</Text>
+          </View>
           <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={handleHandoffComplete}
+            style={styles.primaryButton}
+            onPress={handleStaffConfirm}
           >
-            <Text style={styles.secondaryButtonText}>Scan QR handoff</Text>
+            <Text style={styles.primaryButtonText}>Mark item SAFE</Text>
           </TouchableOpacity>
-          {handoffComplete && (
-            <Text style={styles.successText}>
-              Handoff complete. Custody log updated.
-            </Text>
-          )}
         </View>
-      )}
-    </View>
-  );
+
+        {staffConfirmed && (
+          <View style={styles.cardBlock}>
+            <Text style={styles.cardTitle}>Custody & Handoff</Text>
+            <Text style={styles.cardText}>Item tagged: QR-8721</Text>
+            <Text style={styles.cardText}>Pickup window: 10:15AM @ Guindy</Text>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={handleHandoffComplete}
+            >
+              <Text style={styles.secondaryButtonText}>Scan QR handoff</Text>
+            </TouchableOpacity>
+            {handoffComplete && (
+              <Text style={styles.successText}>
+                Handoff complete. Custody log updated.
+              </Text>
+            )}
+          </View>
+        )}
+      </View>
+    );
+  };
 
   const renderTtrDashboard = () => {
     const displayName = name.trim() || "Officer";
