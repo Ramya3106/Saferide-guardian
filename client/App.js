@@ -2438,12 +2438,13 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   profileDetails: {
-    gap: 12,
+    marginTop: 0,
   },
   profileDetailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 12,
   },
   profileDetailLabel: {
     fontSize: 14,
