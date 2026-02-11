@@ -1436,18 +1436,19 @@ const App = () => {
                           autoCapitalize="none"
                           keyboardType="email-address"
                         />
+                        <Text style={styles.helperText}>
+                          Enter your registered {getOfficialDomain(role)} email
+                        </Text>
                       </View>
                       <TouchableOpacity
                         style={[
                           styles.primaryButton,
-                          (!isOfficialEmailValid(role, officialEmail) ||
-                            isSendingResetCode) &&
+                          (officialEmail.trim().length < 5 || isSendingResetCode) &&
                             styles.buttonDisabled,
                         ]}
                         onPress={handleSendResetCode}
                         disabled={
-                          !isOfficialEmailValid(role, officialEmail) ||
-                          isSendingResetCode
+                          officialEmail.trim().length < 5 || isSendingResetCode
                         }
                       >
                         <Text style={styles.primaryButtonText}>
