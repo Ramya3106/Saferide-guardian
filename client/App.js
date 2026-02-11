@@ -1958,6 +1958,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
+  successCard: {
+    backgroundColor: "#DCFCE7",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#86EFAC",
+  },
   noticeCard: {
     backgroundColor: "#FFF7ED",
     borderRadius: 16,
