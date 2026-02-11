@@ -1026,7 +1026,7 @@ const App = () => {
                 </View>
               )}
 
-              {isOfficialRole && (
+              {isOfficialRole && !forgotPasswordMode && (
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Professional ID</Text>
                   <TextInput
