@@ -667,3 +667,52 @@ router.post("/reset-password-otp", async (req, res) => {
     return res.status(500).json({ message: "Unable to reset password." });
   }
 });
+
+// Password Reset with OTP - For non-official roles (Passenger, Driver/Conductor, Cab/Auto)
+router.post("/reset-password-user", async (req, res) => {
+  try {
+    const email = (req.body?.email || "").trim().toLowerCase();
+    const otpCode = String(req.body?.otpCode || "").trim();
+    const newPassword = String(req.body?.newPassword || "").trim();
+
+    if (!isValidEmail(email) || otpCode.length !== 6) {
+      return res.status(400).json({ 
+        message: "Invalid email or verification code." 
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        message: "Password must be at least 6 characters." 
+      });
+    }
+
+    // Verify OTP code
+    const result = consumeVerificationCode(email, otpCode);
+    if (!result.ok) {
+      return res.status(result.status).json({ message: result.message });
+    }
+
+    // Find user by email (for non-official roles)
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ 
+        message: "No account found with this email." 
+      });
+    }
+
+    // Update password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    console.log(`✅ Password reset successful via OTP for: ${email}`);
+    return res.status(200).json({ 
+      success: true,
+      message: "Password reset successful. You can now login." 
+    });
+  } catch (error) {
+    console.error("Reset password user error:", error.message);
+    return res.status(500).json({ message: "Unable to reset password." });
+  }
+});
