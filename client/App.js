@@ -2122,9 +2122,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     margin: 4,
   },
-    paddingHorizontal: 10,
-    borderRadius: 999,
-  },
   roleChipActive: {
     backgroundColor: "#2563EB",
     borderColor: "#2563EB",
