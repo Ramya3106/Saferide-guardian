@@ -493,8 +493,17 @@ const App = () => {
   };
 
   const handleSendResetCode = async () => {
+    const trimmedEmail = officialEmail.trim().toLowerCase();
+    
+    // Basic email validation
+    if (trimmedEmail.length < 5 || !trimmedEmail.includes('@')) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
+    // Check if it's an official domain (but don't block if not - let backend validate)
     if (!isOfficialEmailValid(role, officialEmail)) {
-      setError("Enter a valid official email address.");
+      setError(`Please use your official ${getOfficialDomain(role)} email address.`);
       return;
     }
 
@@ -504,7 +513,7 @@ const App = () => {
     setIsSendingResetCode(true);
 
     try {
-      const { data } = await sendCode(officialEmail.trim().toLowerCase());
+      const { data } = await sendCode(trimmedEmail);
       const sent = Boolean(data?.sent || data?.devCode);
       setIsResetCodeSent(sent);
       if (!sent && data?.message) {
