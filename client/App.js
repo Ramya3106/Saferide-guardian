@@ -5,6 +5,7 @@ import { getApiBase } from "./apiConfig";
 import {
   Animated,
   Easing,
+  KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -794,13 +795,20 @@ const App = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.backgroundGlow} />
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          !isAuthenticated && styles.scrollContentCentered,
-        ]}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        <View style={styles.card}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            !isAuthenticated && styles.scrollContentCentered,
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={true}
+        >
+          <View style={styles.card}>
           <View style={styles.brandRow}>
             <View>
               <Text style={styles.title}>SafeRide Guardian</Text>
@@ -1360,6 +1368,7 @@ const App = () => {
           )}
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -1368,6 +1377,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   backgroundGlow: {
     position: "absolute",
@@ -1414,6 +1426,7 @@ const styles = StyleSheet.create({
   },
   scrollContentCentered: {
     justifyContent: "center",
+    minHeight: "100%",
   },
   card: {
     width: "100%",
