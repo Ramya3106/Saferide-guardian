@@ -2392,6 +2392,15 @@ const styles = StyleSheet.create({
     marginTop: 12,
     alignItems: "center",
   },
+  backButtonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 8,
+  },
   logoutButton: {
     marginTop: 8,
   },
