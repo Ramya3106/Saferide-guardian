@@ -93,6 +93,17 @@ const App = () => {
   const [apiError, setApiError] = useState("");
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
+  // Forgot password states
+  const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+  const [isResetCodeSent, setIsResetCodeSent] = useState(false);
+  const [isSendingResetCode, setIsSendingResetCode] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+
   const formAnim = useRef(new Animated.Value(0)).current;
 
   const isRegister = mode === "register";
