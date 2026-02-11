@@ -468,6 +468,79 @@ const App = () => {
     }
   };
 
+  const handleSendResetCode = async () => {
+    if (!isProfessionalIdValid(role, professionalId)) {
+      setError("Enter a valid professional ID.");
+      return;
+    }
+    if (!isOfficialEmailValid(role, officialEmail)) {
+      setError("Enter a valid official email address.");
+      return;
+    }
+
+    setError("");
+    setIsResetCodeSent(false);
+    setResetCode("");
+    setIsSendingResetCode(true);
+
+    try {
+      const { data } = await axios.post(`${API_BASE}/auth/forgot-password`, {
+        role,
+        professionalId: professionalId.trim(),
+        officialEmail: officialEmail.trim().toLowerCase(),
+      });
+      const sent = Boolean(data?.sent || data?.devCode);
+      setIsResetCodeSent(sent);
+      if (!sent && data?.message) {
+        setError(data.message);
+      }
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || "Unable to send reset code.";
+      setError(message);
+    } finally {
+      setIsSendingResetCode(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (resetCode.trim().length !== 6) {
+      setError("Enter valid 6-digit reset code.");
+      return;
+    }
+    if (newPassword.trim().length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setError("");
+
+    try {
+      await axios.post(`${API_BASE}/auth/reset-password`, {
+        officialEmail: officialEmail.trim().toLowerCase(),
+        resetCode: resetCode.trim(),
+        newPassword: newPassword.trim(),
+      });
+      setResetSuccess(true);
+      setError("");
+      setTimeout(() => {
+        setForgotPasswordMode(false);
+        setResetSuccess(false);
+        setResetCode("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setIsResetCodeSent(false);
+      }, 2000);
+    } catch (err) {
+      const message = err?.response?.data?.message || "Unable to reset password.";
+      setError(message);
+    }
+  };
+
   const handleSubmitComplaint = () => {
     if (
       complaintItem.trim().length < 2 ||
