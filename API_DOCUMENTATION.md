@@ -450,7 +450,7 @@ X-User-Email: user@example.com
 
 ---
 
-### 14. POST `/api/passenger/qr-code/:complaintId`
+### 15. POST `/api/passenger/qr-code/:complaintId`
 Verify QR code and mark item as collected.
 
 **Headers:**
