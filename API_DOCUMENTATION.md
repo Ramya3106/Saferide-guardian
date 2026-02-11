@@ -273,7 +273,7 @@ X-User-Name: Passenger Name
 
 ---
 
-### 9. GET `/api/passenger/complaints`
+### 10. GET `/api/passenger/complaints`
 Get all complaints for the logged-in passenger.
 
 **Headers:**
@@ -310,7 +310,7 @@ X-User-Email: user@example.com
 
 ---
 
-### 10. GET `/api/passenger/complaints/:id`
+### 11. GET `/api/passenger/complaints/:id`
 Get specific complaint details.
 
 **Headers:**
