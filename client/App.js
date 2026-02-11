@@ -1595,6 +1595,167 @@ const App = () => {
                 </View>
               )}
 
+              {!isRegister && !isOfficialRole && forgotPasswordMode && (
+                <View style={styles.verifyCard}>
+                  <View style={styles.backButtonRow}>
+                    <TouchableOpacity
+                      style={styles.backButton}
+                      onPress={() => {
+                        setForgotPasswordMode(false);
+                        setResetCode("");
+                        setNewPassword("");
+                        setConfirmNewPassword("");
+                        setIsResetCodeSent(false);
+                        setResetSuccess(false);
+                        setEmail("");
+                        setError("");
+                      }}
+                    >
+                      <Ionicons name="arrow-back" size={24} color="#2563EB" />
+                    </TouchableOpacity>
+                    <Text style={styles.cardTitle}>Reset Password</Text>
+                    <View style={{ width: 24 }} />
+                  </View>
+                  <Text style={styles.sectionSubtitle}>
+                    We'll send a verification code to your registered email
+                  </Text>
+                  
+                  {!isResetCodeSent ? (
+                    <>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Email</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Enter your email"
+                          placeholderTextColor="#94A3B8"
+                          value={email}
+                          onChangeText={setEmail}
+                          autoCapitalize="none"
+                          keyboardType="email-address"
+                        />
+                        <Text style={styles.helperText}>
+                          Enter your registered email address
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.primaryButton,
+                          (email.trim().length < 5 || isSendingResetCode) &&
+                            styles.buttonDisabled,
+                        ]}
+                        onPress={handleSendResetCodeUser}
+                        disabled={
+                          email.trim().length < 5 || isSendingResetCode
+                        }
+                      >
+                        <Text style={styles.primaryButtonText}>
+                          {isSendingResetCode
+                            ? "Sending verification code..."
+                            : "Send verification code"}
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : resetSuccess ? (
+                    <View style={styles.successCard}>
+                      <Text style={styles.successText}>
+                        ✅ Password reset successful!
+                      </Text>
+                      <Text style={styles.cardText}>
+                        You can now login with your new password.
+                      </Text>
+                    </View>
+                  ) : (
+                    <>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Verification Code</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Enter 6-digit code"
+                          placeholderTextColor="#94A3B8"
+                          value={resetCode}
+                          onChangeText={setResetCode}
+                          keyboardType="number-pad"
+                          maxLength={6}
+                        />
+                      </View>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>New Password</Text>
+                        <View style={styles.passwordRow}>
+                          <TextInput
+                            style={[styles.input, styles.passwordInput]}
+                            placeholder="Enter new password"
+                            placeholderTextColor="#94A3B8"
+                            value={newPassword}
+                            onChangeText={setNewPassword}
+                            secureTextEntry={!showNewPassword}
+                          />
+                          <TouchableOpacity
+                            style={styles.eyeButton}
+                            onPress={() => setShowNewPassword((prev) => !prev)}
+                          >
+                            <Ionicons
+                              name={showNewPassword ? "eye-off" : "eye"}
+                              size={20}
+                              color="#64748B"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Confirm New Password</Text>
+                        <View style={styles.passwordRow}>
+                          <TextInput
+                            style={[styles.input, styles.passwordInput]}
+                            placeholder="Re-enter new password"
+                            placeholderTextColor="#94A3B8"
+                            value={confirmNewPassword}
+                            onChangeText={setConfirmNewPassword}
+                            secureTextEntry={!showConfirmNewPassword}
+                          />
+                          <TouchableOpacity
+                            style={styles.eyeButton}
+                            onPress={() =>
+                              setShowConfirmNewPassword((prev) => !prev)
+                            }
+                          >
+                            <Ionicons
+                              name={showConfirmNewPassword ? "eye-off" : "eye"}
+                              size={20}
+                              color="#64748B"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.primaryButton,
+                          (resetCode.trim().length !== 6 ||
+                            newPassword.trim().length < 6 ||
+                            confirmNewPassword.trim().length < 6) &&
+                            styles.buttonDisabled,
+                        ]}
+                        onPress={handleResetPasswordUser}
+                        disabled={
+                          resetCode.trim().length !== 6 ||
+                          newPassword.trim().length < 6 ||
+                          confirmNewPassword.trim().length < 6
+                        }
+                      >
+                        <Text style={styles.primaryButtonText}>
+                          Reset Password
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.textButton]}
+                        onPress={handleSendResetCodeUser}
+                      >
+                        <Text style={styles.switchLink}>Resend code</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              )}
+
               {isOtpContext && (
                 <View style={styles.verifyCard}>
                   <Text style={styles.cardTitle}>
