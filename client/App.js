@@ -1928,13 +1928,13 @@ const App = () => {
                 </Text>
               </View>
             </View>
-            )}
-          </View>
-        </ScrollView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-  );
+          ) : null}
+        </View>
+      </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
+  </SafeAreaView>
+);
 };
 
 const styles = StyleSheet.create({
