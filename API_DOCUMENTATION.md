@@ -419,7 +419,7 @@ X-User-Email: user@example.com
 
 ---
 
-### 13. POST `/api/passenger/messages/:complaintId`
+### 14. POST `/api/passenger/messages/:complaintId`
 Send a message to staff about the complaint.
 
 **Headers:**
