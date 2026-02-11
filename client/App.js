@@ -2069,7 +2069,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   successText: {
-    color: "#34D399",
+    color: "#16A34A",
     marginTop: 10,
     fontWeight: "600",
   },
