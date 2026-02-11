@@ -2145,6 +2145,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     minHeight: 80,
+    margin: 4,
   },
   roleChipTextLarge: {
     color: "#475569",
