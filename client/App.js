@@ -521,14 +521,6 @@ const App = () => {
 
   const handleResetPassword = async () => {
     if (resetCode.trim().length !== 6) {
-      setError("Enter valid 6-digit reset code.");
-      return;
-    }
-    if (newPassword.trim().length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-  const handleResetPassword = async () => {
-    if (resetCode.trim().length !== 6) {
       setError("Enter valid 6-digit verification code.");
       return;
     }
