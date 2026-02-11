@@ -1583,21 +1583,6 @@ const App = () => {
                       </TouchableOpacity>
                     </>
                   )}
-                  
-                  <TouchableOpacity
-                    style={[styles.textButton]}
-                    onPress={() => {
-                      setForgotPasswordMode(false);
-                      setResetCode("");
-                      setNewPassword("");
-                      setConfirmNewPassword("");
-                      setIsResetCodeSent(false);
-                      setResetSuccess(false);
-                      setError("");
-                    }}
-                  >
-                    <Text style={styles.switchLink}>Back to login</Text>
-                  </TouchableOpacity>
                 </View>
               )}
 
