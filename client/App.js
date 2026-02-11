@@ -544,12 +544,13 @@ const App = () => {
     setError("");
 
     try {
-      // First verify the OTP code
-      await verifyCode(officialEmail.trim().toLowerCase(), resetCode.trim());
+      // Use the new OTP-based password reset endpoint
+      await axios.post(`${API_BASE}/auth/reset-password-otp`, {
+        officialEmail: officialEmail.trim().toLowerCase(),
+        otpCode: resetCode.trim(),
+        newPassword: newPassword.trim(),
+      });
       
-      // If verification succeeds, update password in User model
-      // Note: This would need a backend endpoint to update password after OTP verification
-      // For now, we'll show success and user can login with new password
       setResetSuccess(true);
       setError("");
       setTimeout(() => {
