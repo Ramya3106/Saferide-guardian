@@ -2111,13 +2111,17 @@ const styles = StyleSheet.create({
   roleRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    marginHorizontal: -4,
   },
   roleChip: {
     borderWidth: 1,
     borderColor: "#CBD5E1",
     backgroundColor: "#F8FAFC",
     paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    margin: 4,
+  },
     paddingHorizontal: 10,
     borderRadius: 999,
   },
