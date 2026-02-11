@@ -473,7 +473,7 @@ X-User-Email: user@example.com
 
 ---
 
-### 15. POST `/api/passenger/gps`
+### 16. POST `/api/passenger/gps`
 Update or toggle GPS status for tracking.
 
 **Headers:**
@@ -498,7 +498,7 @@ X-User-Email: user@example.com
 
 ---
 
-### 16. POST `/api/passenger/journey`
+### 17. POST `/api/passenger/journey`
 Create a new journey record when passenger starts a trip.
 
 **Headers:**
