@@ -493,10 +493,6 @@ const App = () => {
   };
 
   const handleSendResetCode = async () => {
-    if (!isProfessionalIdValid(role, professionalId)) {
-      setError("Enter a valid professional ID.");
-      return;
-    }
     if (!isOfficialEmailValid(role, officialEmail)) {
       setError("Enter a valid official email address.");
       return;
@@ -508,11 +504,7 @@ const App = () => {
     setIsSendingResetCode(true);
 
     try {
-      const { data } = await axios.post(`${API_BASE}/auth/forgot-password`, {
-        role,
-        professionalId: professionalId.trim(),
-        officialEmail: officialEmail.trim().toLowerCase(),
-      });
+      const { data } = await sendCode(officialEmail.trim().toLowerCase());
       const sent = Boolean(data?.sent || data?.devCode);
       setIsResetCodeSent(sent);
       if (!sent && data?.message) {
@@ -520,7 +512,7 @@ const App = () => {
       }
     } catch (err) {
       const message =
-        err?.response?.data?.message || "Unable to send reset code.";
+        err?.response?.data?.message || "Unable to send verification code.";
       setError(message);
     } finally {
       setIsSendingResetCode(false);
