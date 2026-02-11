@@ -2,6 +2,9 @@
   "expo": {
     "name": "SafeRide Guardian",
     "slug": "saferide-guardian",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "android": {
+      "softwareKeyboardLayoutMode": "pan"
+    }
   }
 }

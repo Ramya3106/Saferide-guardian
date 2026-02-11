@@ -11,9 +11,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
+import { getApiBase } from "./apiConfig";
 
-const API_BASE =
-  process.env.EXPO_PUBLIC_API_BASE || "http://10.0.2.2:5000/api";
+const API_BASE = getApiBase();
 
 const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
   // State management
@@ -107,7 +107,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
     setLoading(true);
     try {
       const submitAuthority = getSubmitAuthority(transportType);
-      
+
       const response = await axios.post(
         `${API_BASE}/passenger/complaints`,
         {
@@ -126,11 +126,11 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
           submitAuthority,
         },
         {
-          headers: { 
+          headers: {
             "X-User-Email": userEmail,
             "X-User-Name": userName,
           },
-        }
+        },
       );
 
       setCurrentComplaint(response.data.complaint);
@@ -184,7 +184,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         { enabled: !gpsEnabled },
         {
           headers: { "X-User-Email": userEmail },
-        }
+        },
       );
     } catch (error) {
       console.log("Error updating GPS:", error.message);
@@ -201,10 +201,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
           <Text style={styles.passengerName}>{userName}</Text>
           <Text style={styles.mobileNumber}>📞 {userPhone}</Text>
         </View>
-        <TouchableOpacity
-          style={styles.gpsButton}
-          onPress={handleGpsToggle}
-        >
+        <TouchableOpacity style={styles.gpsButton} onPress={handleGpsToggle}>
           <Ionicons
             name={gpsEnabled ? "location" : "location-outline"}
             size={20}
@@ -234,9 +231,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
             </Text>
             <Text style={styles.badge}>ACTIVE</Text>
           </View>
-          <Text style={styles.journeyRoute}>
-            🛣️ {activeJourney.route}
-          </Text>
+          <Text style={styles.journeyRoute}>🛣️ {activeJourney.route}</Text>
           <Text style={styles.journeyTime}>
             ⏰ {activeJourney.estimatedDuration || "2h 15min"}
           </Text>
@@ -287,7 +282,9 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
-              {modalStep === 1 ? "Report Lost Item" : `Lost Item - ${transportType?.toUpperCase()}`}
+              {modalStep === 1
+                ? "Report Lost Item"
+                : `Lost Item - ${transportType?.toUpperCase()}`}
             </Text>
             <TouchableOpacity onPress={resetComplaintModal}>
               <Ionicons name="close" size={24} color="#1E293B" />
@@ -301,7 +298,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                 <Text style={styles.questionText}>
                   In which transport did you lose your item?
                 </Text>
-                
+
                 <View style={styles.transportGrid}>
                   <TouchableOpacity
                     style={styles.transportButton}
@@ -354,10 +351,10 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                     {transportType === "train"
                       ? "🚆 Train Number"
                       : transportType === "car"
-                      ? "🚗 Car Number"
-                      : transportType === "bus"
-                      ? "🚌 Bus Number"
-                      : "🛺 Auto Number"}
+                        ? "🚗 Car Number"
+                        : transportType === "bus"
+                          ? "🚌 Bus Number"
+                          : "🛺 Auto Number"}
                   </Text>
                   <TextInput
                     style={styles.input}
@@ -365,10 +362,10 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                       transportType === "train"
                         ? "e.g., 12345 Chennai Express"
                         : transportType === "car"
-                        ? "e.g., TN-01-AB-1234"
-                        : transportType === "bus"
-                        ? "e.g., TN-01-N-1234"
-                        : "e.g., TN-01-A-1234"
+                          ? "e.g., TN-01-AB-1234"
+                          : transportType === "bus"
+                            ? "e.g., TN-01-N-1234"
+                            : "e.g., TN-01-A-1234"
                     }
                     value={vehicleNumber}
                     onChangeText={setVehicleNumber}
@@ -402,7 +399,9 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                 {/* From Location */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>
-                    {transportType === "train" ? "🚉 From Station" : "📍 From Location"}
+                    {transportType === "train"
+                      ? "🚉 From Station"
+                      : "📍 From Location"}
                   </Text>
                   <TextInput
                     style={styles.input}
@@ -410,8 +409,8 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                       transportType === "train"
                         ? "e.g., Chennai Central"
                         : transportType === "bus"
-                        ? "e.g., Velachery Stop"
-                        : "e.g., T Nagar"
+                          ? "e.g., Velachery Stop"
+                          : "e.g., T Nagar"
                     }
                     value={fromLocation}
                     onChangeText={setFromLocation}
@@ -421,7 +420,9 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                 {/* To Location */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>
-                    {transportType === "train" ? "🚉 To Station" : "📍 To Location"}
+                    {transportType === "train"
+                      ? "🚉 To Station"
+                      : "📍 To Location"}
                   </Text>
                   <TextInput
                     style={styles.input}
@@ -429,8 +430,8 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                       transportType === "train"
                         ? "e.g., Coimbatore Junction"
                         : transportType === "bus"
-                        ? "e.g., CMBT Stop"
-                        : "e.g., Anna Nagar"
+                          ? "e.g., CMBT Stop"
+                          : "e.g., Anna Nagar"
                     }
                     value={toLocation}
                     onChangeText={setToLocation}
@@ -461,7 +462,9 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
 
                 {/* Auto-captured Details */}
                 <View style={styles.autoFillSection}>
-                  <Text style={styles.autoFillLabel}>Auto-captured details:</Text>
+                  <Text style={styles.autoFillLabel}>
+                    Auto-captured details:
+                  </Text>
                   <Text style={styles.autoFillText}>
                     📍 Current Location: {fromLocation || "Pending..."}
                   </Text>
@@ -510,10 +513,26 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
 
     const statuses = [
       { key: "raised", label: "🟡 Complaint Raised", completed: true },
-      { key: "notified", label: "🔵 Staff Notified", completed: currentComplaint.staffNotified },
-      { key: "found", label: "🟢 Item Found", completed: currentComplaint.itemFound },
-      { key: "scheduled", label: "📍 Meeting Scheduled", completed: currentComplaint.meetingScheduled },
-      { key: "collected", label: "✅ Item Collected", completed: currentComplaint.itemCollected },
+      {
+        key: "notified",
+        label: "🔵 Staff Notified",
+        completed: currentComplaint.staffNotified,
+      },
+      {
+        key: "found",
+        label: "🟢 Item Found",
+        completed: currentComplaint.itemFound,
+      },
+      {
+        key: "scheduled",
+        label: "📍 Meeting Scheduled",
+        completed: currentComplaint.meetingScheduled,
+      },
+      {
+        key: "collected",
+        label: "✅ Item Collected",
+        completed: currentComplaint.itemCollected,
+      },
     ];
 
     return (
@@ -523,18 +542,22 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
           {statuses.map((status, index) => (
             <View key={status.key}>
               <View style={styles.statusStep}>
-                <View style={[
-                  styles.statusCircle,
-                  status.completed && styles.statusCircleActive,
-                ]}>
+                <View
+                  style={[
+                    styles.statusCircle,
+                    status.completed && styles.statusCircleActive,
+                  ]}
+                >
                   <Text style={styles.statusStepText}>{status.label}</Text>
                 </View>
               </View>
               {index < statuses.length - 1 && (
-                <View style={[
-                  styles.statusLine,
-                  status.completed && styles.statusLineActive,
-                ]} />
+                <View
+                  style={[
+                    styles.statusLine,
+                    status.completed && styles.statusLineActive,
+                  ]}
+                />
               )}
             </View>
           ))}
@@ -553,7 +576,9 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         <View style={styles.mapPlaceholder}>
           <Ionicons name="map" size={48} color="#CBD5E1" />
           <Text style={styles.mapText}>Live map view</Text>
-          <Text style={styles.mapSubtext}>Staff location & ETA: {currentComplaint.staffEta || "Pending..."}</Text>
+          <Text style={styles.mapSubtext}>
+            Staff location & ETA: {currentComplaint.staffEta || "Pending..."}
+          </Text>
         </View>
       </View>
     );
@@ -570,13 +595,17 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
           {currentComplaint.messages && currentComplaint.messages.length > 0 ? (
             currentComplaint.messages.map((msg, idx) => (
               <View key={idx} style={styles.messageItem}>
-                <Text style={styles.messageStaff}>👤 {msg.staffName || "Staff"}</Text>
+                <Text style={styles.messageStaff}>
+                  👤 {msg.staffName || "Staff"}
+                </Text>
                 <Text style={styles.messageText}>{msg.text}</Text>
                 <Text style={styles.messageTime}>{msg.timestamp}</Text>
               </View>
             ))
           ) : (
-            <Text style={styles.noMessagesText}>Waiting for staff update...</Text>
+            <Text style={styles.noMessagesText}>
+              Waiting for staff update...
+            </Text>
           )}
         </View>
       </View>
@@ -594,7 +623,9 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
           <View style={styles.qrPlaceholder}>
             <Ionicons name="qr-code" size={80} color="#2563EB" />
             <Text style={styles.qrText}>Scan this QR to collect item</Text>
-            <Text style={styles.qrId}>ID: {currentComplaint._id?.substring(0, 8)}</Text>
+            <Text style={styles.qrId}>
+              ID: {currentComplaint._id?.substring(0, 8)}
+            </Text>
           </View>
           <TouchableOpacity
             style={styles.scanButton}
@@ -630,7 +661,9 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
           {complaints.slice(0, 3).map((complaint) => (
             <View key={complaint._id} style={styles.historyItem}>
               <View>
-                <Text style={styles.historyItemTitle}>{complaint.itemType}</Text>
+                <Text style={styles.historyItemTitle}>
+                  {complaint.itemType}
+                </Text>
                 <Text style={styles.historyItemMeta}>
                   {complaint.vehicleNumber} • {complaint.route}
                 </Text>
@@ -638,11 +671,13 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                   {new Date(complaint.createdAt).toLocaleDateString()}
                 </Text>
               </View>
-              <View style={[
-                styles.statusBadge,
-                complaint.status === "Recovered" && styles.statusBadgeSuccess,
-                complaint.status === "Closed" && styles.statusBadgeInfo,
-              ]}>
+              <View
+                style={[
+                  styles.statusBadge,
+                  complaint.status === "Recovered" && styles.statusBadgeSuccess,
+                  complaint.status === "Closed" && styles.statusBadgeInfo,
+                ]}
+              >
                 <Text style={styles.statusBadgeText}>{complaint.status}</Text>
               </View>
             </View>
@@ -717,10 +752,13 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                     <Text style={styles.historyFullTitle}>
                       {complaint.itemType}
                     </Text>
-                    <View style={[
-                      styles.statusBadge,
-                      complaint.status === "Recovered" && styles.statusBadgeSuccess,
-                    ]}>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        complaint.status === "Recovered" &&
+                          styles.statusBadgeSuccess,
+                      ]}
+                    >
                       <Text style={styles.statusBadgeText}>
                         {complaint.status}
                       </Text>
@@ -765,10 +803,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         {renderHistoryModal()}
         {renderEmergencyHelp()}
 
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={onLogout}
-        >
+        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
           <Ionicons name="log-out" size={20} color="#FFFFFF" />
           <Text style={styles.logoutButtonText}>Log Out</Text>
         </TouchableOpacity>
@@ -1136,51 +1171,51 @@ const styles = StyleSheet.create({
   qrText: {
     fontSize: 14,
     fontWeight: "600",
-  questionText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1E293B",
-    textAlign: "center",
-    marginBottom: 24,
-    marginTop: 10,
-  },
-  transportGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 20,
-  },
-  transportButton: {
-    width: "48%",
-    backgroundColor: "#F0F9FF",
-    borderWidth: 2,
-    borderColor: "#BFDBFE",
-    borderRadius: 12,
-    padding: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 120,
-  },
-  transportButtonText: {
-    marginTop: 10,
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1E293B",
-    textAlign: "center",
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 16,
-    paddingVertical: 8,
-  },
-  backButtonText: {
-    color: "#2563EB",
-    fontSize: 14,
-    fontWeight: "600",
-  },
+    questionText: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: "#1E293B",
+      textAlign: "center",
+      marginBottom: 24,
+      marginTop: 10,
+    },
+    transportGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      gap: 12,
+      marginBottom: 20,
+    },
+    transportButton: {
+      width: "48%",
+      backgroundColor: "#F0F9FF",
+      borderWidth: 2,
+      borderColor: "#BFDBFE",
+      borderRadius: 12,
+      padding: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 120,
+    },
+    transportButtonText: {
+      marginTop: 10,
+      fontSize: 14,
+      fontWeight: "600",
+      color: "#1E293B",
+      textAlign: "center",
+    },
+    backButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginBottom: 16,
+      paddingVertical: 8,
+    },
+    backButtonText: {
+      color: "#2563EB",
+      fontSize: 14,
+      fontWeight: "600",
+    },
     color: "#1E40AF",
     marginTop: 12,
   },

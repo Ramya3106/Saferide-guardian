@@ -1,9 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { Ionicons } from "@expo/vector-icons";
+import { getApiBase } from "./apiConfig";
 import {
   Animated,
   Easing,
+  Keyboard,
+  KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -11,16 +14,16 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import PassengerDashboard from "./PassengerDashboard";
 
-const ROLES = ["Passenger", "Driver", "Conductor", "TTR/RPF", "Police"];
-const API_BASE =
-  process.env.EXPO_PUBLIC_API_BASE ||
-  (Platform.OS === "android"
-    ? "http://10.0.2.2:5000/api"
-    : "http://localhost:5000/api");
+const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
+const OFFICIAL_DOMAINS = {
+  "TTR/RPF/Police": ["railnet.gov.in", "tnpolice.gov.in"],
+};
+const API_BASE = getApiBase();
 
 const sendCode = (emailAddress) =>
   axios.post(`${API_BASE}/auth/send-verify-code`, {
@@ -40,6 +43,8 @@ const App = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [officialEmail, setOfficialEmail] = useState("");
+  const [professionalId, setProfessionalId] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -48,9 +53,15 @@ const App = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [devOtpHint, setDevOtpHint] = useState("");
+  const [loginWithOtp, setLoginWithOtp] = useState(false);
+  const [pendingApproval, setPendingApproval] = useState(false);
 
+  const [travelType, setTravelType] = useState("");
   const [travelNumber, setTravelNumber] = useState("");
+  const [travelName, setTravelName] = useState("");
+  const [busDeparture, setBusDeparture] = useState("");
+  const [busArrival, setBusArrival] = useState("");
+  const [busStartTime, setBusStartTime] = useState("");
   const [travelRoute, setTravelRoute] = useState("");
   const [travelTiming, setTravelTiming] = useState("");
   const [driverName, setDriverName] = useState("");
@@ -61,6 +72,8 @@ const App = () => {
   const [shiftTiming, setShiftTiming] = useState("");
   const [fromStop, setFromStop] = useState("");
   const [toStop, setToStop] = useState("");
+  const [pnrRange, setPnrRange] = useState("");
+  const [jurisdiction, setJurisdiction] = useState("");
 
   const [selectedTransport, setSelectedTransport] = useState("");
   const [complaintItem, setComplaintItem] = useState("");
@@ -79,64 +92,167 @@ const App = () => {
   const [error, setError] = useState("");
   const [apiStatus, setApiStatus] = useState("checking");
   const [apiError, setApiError] = useState("");
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  // Forgot password states
+  const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+  const [isResetCodeSent, setIsResetCodeSent] = useState(false);
+  const [isSendingResetCode, setIsSendingResetCode] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+
+  // Specific role selection for TTR/RPF/Police
+  const [showRoleSelection, setShowRoleSelection] = useState(false);
+  const [specificRole, setSpecificRole] = useState("");
 
   const formAnim = useRef(new Animated.Value(0)).current;
 
   const isRegister = mode === "register";
-  const isStaffRole = role !== "Passenger";
+  const isOfficialRole = role === "TTR/RPF/Police";
+  const isOperationalStaff = role === "Driver/Conductor" || role === "Cab/Auto";
+  const otpEmail = (isOfficialRole ? officialEmail : email).trim();
+  const isOtpContext =
+    (isRegister && !isOfficialRole) || (!isRegister && loginWithOtp);
+
+  const getOfficialDomain = (selectedRole) => {
+    const domains = OFFICIAL_DOMAINS[selectedRole];
+    if (Array.isArray(domains)) {
+      return domains.join(" or ");
+    }
+    return domains || "railnet.gov.in";
+  };
+
+  const isProfessionalIdValid = (selectedRole, idValue) => {
+    const normalized = idValue.trim().toUpperCase();
+    if (selectedRole === "TTR/RPF/Police") {
+      return (
+        /^TNPOLICE-\d{4,6}$/.test(normalized) ||
+        /^(TTR|RPF)-[A-Z]{2,3}-\d{4,6}$/.test(normalized)
+      );
+    }
+    return normalized.length >= 6;
+  };
+
+  const isOfficialEmailValid = (selectedRole, emailValue) => {
+    const trimmed = emailValue.trim().toLowerCase();
+    const domains = OFFICIAL_DOMAINS[selectedRole];
+    if (!trimmed || !domains) {
+      return false;
+    }
+    if (Array.isArray(domains)) {
+      return domains.some((domain) => trimmed.endsWith(`@${domain}`));
+    }
+    return trimmed.endsWith(`@${domains}`);
+  };
 
   const canVerify = useMemo(() => {
     return /^\d{6}$/.test(emailOtp.trim());
   }, [emailOtp]);
 
   const canSubmit = useMemo(() => {
-    if (isRegister) {
-      const baseReady =
-        name.trim().length >= 2 &&
-        phone.trim().length >= 8 &&
-        email.trim().length >= 5 &&
-        password.trim().length >= 6 &&
-        confirmPassword.trim().length >= 6 &&
-        isVerified;
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+    const baseRegisterReady =
+      name.trim().length >= 2 &&
+      phone.trim().length >= 8 &&
+      trimmedPassword.length >= 6 &&
+      confirmPassword.trim().length >= 6;
 
-      if (!baseReady) {
+    if (isRegister) {
+      if (!baseRegisterReady) {
+        return false;
+      }
+
+      if (isOfficialRole) {
+        return (
+          isProfessionalIdValid(role, professionalId) &&
+          isOfficialEmailValid(role, officialEmail) &&
+          pnrRange.trim().length >= 5 &&
+          jurisdiction.trim().length >= 3
+        );
+      }
+
+      const emailReady = trimmedEmail.length >= 5 && isVerified;
+      if (!emailReady) {
         return false;
       }
 
       if (role === "Passenger") {
+        if (travelType === "Bus") {
+          return (
+            travelNumber.trim().length >= 5 &&
+            busDeparture.trim().length >= 2 &&
+            busArrival.trim().length >= 2 &&
+            busStartTime.trim().length >= 3
+          );
+        }
+
         return (
+          travelType.trim().length > 0 &&
           travelNumber.trim().length >= 5 &&
+          travelName.trim().length >= 2 &&
           travelRoute.trim().length >= 3 &&
           travelTiming.trim().length >= 4
         );
       }
 
+      if (isOperationalStaff) {
+        return (
+          vehicleNumber.trim().length >= 5 &&
+          dutyRoute.trim().length >= 3 &&
+          shiftTiming.trim().length >= 3 &&
+          fromStop.trim().length >= 2 &&
+          toStop.trim().length >= 2
+        );
+      }
+
+      return false;
+    }
+
+    if (isOfficialRole) {
       return (
-        vehicleNumber.trim().length >= 5 &&
-        dutyRoute.trim().length >= 3 &&
-        shiftTiming.trim().length >= 3 &&
-        fromStop.trim().length >= 2 &&
-        toStop.trim().length >= 2
+        isProfessionalIdValid(role, professionalId) &&
+        trimmedPassword.length >= 6
       );
     }
 
-    return email.trim().length >= 5 && password.trim().length >= 6;
+    if (loginWithOtp) {
+      return otpEmail.length >= 5 && isVerified;
+    }
+
+    return trimmedEmail.length >= 5 && trimmedPassword.length >= 6;
   }, [
     confirmPassword,
+    busArrival,
+    busDeparture,
+    busStartTime,
     dutyRoute,
     email,
     fromStop,
+    isOfficialRole,
     isRegister,
     isVerified,
+    jurisdiction,
+    loginWithOtp,
     name,
+    otpEmail,
+    officialEmail,
     password,
     phone,
+    pnrRange,
+    professionalId,
     role,
     shiftTiming,
     toStop,
     travelNumber,
+    travelName,
     travelRoute,
     travelTiming,
+    travelType,
     vehicleNumber,
   ]);
 
@@ -186,10 +302,32 @@ const App = () => {
     }).start();
   }, [formAnim, isAuthenticated, mode]);
 
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardDidShow",
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
   const resetForm = () => {
     setName("");
     setPhone("");
     setEmail("");
+    setOfficialEmail("");
+    setProfessionalId("");
     setPassword("");
     setConfirmPassword("");
     setShowPassword(false);
@@ -198,8 +336,13 @@ const App = () => {
     setIsVerified(false);
     setIsOtpSent(false);
     setIsSendingOtp(false);
-    setDevOtpHint("");
+    setLoginWithOtp(false);
+    setTravelType("");
     setTravelNumber("");
+    setTravelName("");
+    setBusDeparture("");
+    setBusArrival("");
+    setBusStartTime("");
     setTravelRoute("");
     setTravelTiming("");
     setDriverName("");
@@ -209,10 +352,23 @@ const App = () => {
     setShiftTiming("");
     setFromStop("");
     setToStop("");
+    setPnrRange("");
+    setJurisdiction("");
     setStaffComplaintType("");
     setStaffComplaintTarget("");
     setStaffComplaintDetails("");
     setStaffComplaintSubmitted(false);
+    setForgotPasswordMode(false);
+    setResetCode("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setShowNewPassword(false);
+    setShowConfirmNewPassword(false);
+    setIsResetCodeSent(false);
+    setIsSendingResetCode(false);
+    setResetSuccess(false);
+    setShowRoleSelection(false);
+    setSpecificRole("");
     setError("");
   };
 
@@ -227,6 +383,34 @@ const App = () => {
       return;
     }
 
+    if (!isRegister && isOfficialRole && pendingApproval) {
+      setError("Your account is pending admin approval. Please try later.");
+      return;
+    }
+
+    if (isRegister && isOfficialRole) {
+      setPendingApproval(true);
+      setMode("login");
+      setError("Registration submitted. Admin approval takes up to 24 hours.");
+      return;
+    }
+
+    setError("");
+    
+    // Show role selection for TTR/RPF/Police login
+    if (!isRegister && isOfficialRole) {
+      setShowRoleSelection(true);
+      return;
+    }
+    
+    setIsAuthenticated(true);
+  };
+
+  const handleSpecificRoleSelection = () => {
+    if (!specificRole) {
+      setError("Please select your specific role.");
+      return;
+    }
     setError("");
     setIsAuthenticated(true);
   };
@@ -236,6 +420,17 @@ const App = () => {
     resetForm();
   };
 
+  const handleRoleChange = (nextRole) => {
+    setRole(nextRole);
+    setEmailOtp("");
+    setIsVerified(false);
+    setIsOtpSent(false);
+    setIsSendingOtp(false);
+    setLoginWithOtp(false);
+    setPendingApproval(false);
+    setError("");
+  };
+
   const handleLogout = () => {
     setIsAuthenticated(false);
     setMode("login");
@@ -243,12 +438,18 @@ const App = () => {
     setStaffConfirmed(false);
     setHandoffComplete(false);
     setStaffComplaintSubmitted(false);
+    setShowRoleSelection(false);
+    setSpecificRole("");
     resetForm();
   };
 
   const handleSendOtp = async () => {
-    if (email.trim().length < 5) {
+    if (otpEmail.length < 5) {
       setError("Enter a valid email address.");
+      return;
+    }
+    if (isOfficialRole && !isOfficialEmailValid(role, otpEmail)) {
+      setError("Enter a valid official email address.");
       return;
     }
 
@@ -256,18 +457,14 @@ const App = () => {
     setIsVerified(false);
     setIsOtpSent(false);
     setEmailOtp("");
-    setDevOtpHint("");
     setIsSendingOtp(true);
 
     try {
-      const { data } = await sendCode(email.trim());
+      const { data } = await sendCode(otpEmail);
       const sent = Boolean(data?.sent || data?.devCode);
       setIsOtpSent(sent);
       if (!sent && data?.message) {
         setError(data.message);
-      }
-      if (data?.devCode) {
-        setDevOtpHint(`Dev code: ${data.devCode}`);
       }
     } catch (err) {
       const message =
@@ -287,12 +484,158 @@ const App = () => {
     setError("");
 
     try {
-      await verifyCode(email.trim(), emailOtp.trim());
+      await verifyCode(otpEmail, emailOtp.trim());
       setIsVerified(true);
-      setDevOtpHint("");
     } catch (err) {
       const message = err?.response?.data?.message || "Unable to verify code.";
       setIsVerified(false);
+      setError(message);
+    }
+  };
+
+  const handleSendResetCode = async () => {
+    const trimmedEmail = officialEmail.trim().toLowerCase();
+    
+    // Basic email validation
+    if (trimmedEmail.length < 5 || !trimmedEmail.includes('@')) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
+    // Check if it's an official domain (but don't block if not - let backend validate)
+    if (!isOfficialEmailValid(role, officialEmail)) {
+      setError(`Please use your official ${getOfficialDomain(role)} email address.`);
+      return;
+    }
+
+    setError("");
+    setIsResetCodeSent(false);
+    setResetCode("");
+    setIsSendingResetCode(true);
+
+    try {
+      const { data } = await sendCode(trimmedEmail);
+      const sent = Boolean(data?.sent || data?.devCode);
+      setIsResetCodeSent(sent);
+      if (!sent && data?.message) {
+        setError(data.message);
+      }
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || "Unable to send verification code.";
+      setError(message);
+    } finally {
+      setIsSendingResetCode(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (resetCode.trim().length !== 6) {
+      setError("Enter valid 6-digit verification code.");
+      return;
+    }
+    if (newPassword.trim().length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setError("");
+
+    try {
+      // Use the new OTP-based password reset endpoint
+      await axios.post(`${API_BASE}/auth/reset-password-otp`, {
+        officialEmail: officialEmail.trim().toLowerCase(),
+        otpCode: resetCode.trim(),
+        newPassword: newPassword.trim(),
+      });
+      
+      setResetSuccess(true);
+      setError("");
+      setTimeout(() => {
+        setForgotPasswordMode(false);
+        setResetSuccess(false);
+        setResetCode("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setIsResetCodeSent(false);
+        setOfficialEmail("");
+      }, 2000);
+    } catch (err) {
+      const message = err?.response?.data?.message || "Unable to verify code or reset password.";
+      setError(message);
+    }
+  };
+
+  const handleSendResetCodeUser = async () => {
+    const trimmedEmail = email.trim().toLowerCase();
+    
+    // Basic email validation
+    if (trimmedEmail.length < 5 || !trimmedEmail.includes('@')) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
+    setError("");
+    setIsResetCodeSent(false);
+    setResetCode("");
+    setIsSendingResetCode(true);
+
+    try {
+      const { data } = await sendCode(trimmedEmail);
+      const sent = Boolean(data?.sent || data?.devCode);
+      setIsResetCodeSent(sent);
+      if (!sent && data?.message) {
+        setError(data.message);
+      }
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || "Unable to send verification code.";
+      setError(message);
+    } finally {
+      setIsSendingResetCode(false);
+    }
+  };
+
+  const handleResetPasswordUser = async () => {
+    if (resetCode.trim().length !== 6) {
+      setError("Enter valid 6-digit verification code.");
+      return;
+    }
+    if (newPassword.trim().length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setError("");
+
+    try {
+      await axios.post(`${API_BASE}/auth/reset-password-user`, {
+        email: email.trim().toLowerCase(),
+        otpCode: resetCode.trim(),
+        newPassword: newPassword.trim(),
+      });
+      
+      setResetSuccess(true);
+      setError("");
+      setTimeout(() => {
+        setForgotPasswordMode(false);
+        setResetSuccess(false);
+        setResetCode("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setIsResetCodeSent(false);
+        setEmail("");
+      }, 2000);
+    } catch (err) {
+      const message = err?.response?.data?.message || "Unable to verify code or reset password.";
       setError(message);
     }
   };
@@ -340,7 +683,7 @@ const App = () => {
         <TouchableOpacity
           key={item}
           style={[styles.roleChip, role === item && styles.roleChipActive]}
-          onPress={() => setRole(item)}
+          onPress={() => handleRoleChange(item)}
         >
           <Text
             style={[
@@ -624,104 +967,245 @@ const App = () => {
     </View>
   );
 
-  const renderStaffDashboard = () => (
-    <View>
-      <Text style={styles.sectionTitle}>{role} Duty Dashboard</Text>
-      <Text style={styles.sectionSubtitle}>
-        Live queue, QR handoffs, and custody logs for your duty roster.
-      </Text>
+  const renderStaffDashboard = () => {
+    const displayName = name.trim() || "Staff Member";
+    const displayEmail = email.trim() || "Not set";
+    const displayPhone = phone.trim() || "Not set";
+    const displayVehicleNumber = vehicleNumber.trim() || "Not set";
+    const displayRoute = dutyRoute.trim() || "Not set";
+    const displayShift = shiftTiming.trim() || "Not set";
+    const displayFromStop = fromStop.trim() || "Not set";
+    const displayToStop = toStop.trim() || "Not set";
 
-      <View style={styles.cardBlock}>
-        <Text style={styles.cardTitle}>Active Complaint Queue</Text>
-        <View style={styles.queueItem}>
-          <View>
-            <Text style={styles.queueTitle}>Black backpack</Text>
-            <Text style={styles.queueMeta}>
-              TN-01-AB-1234 • Stop: Medavakkam
-            </Text>
+    return (
+      <View>
+        {/* Staff Profile Card */}
+        <View style={styles.profileCard}>
+          <View style={styles.profileHeader}>
+            <View style={styles.profileAvatar}>
+              <Text style={styles.profileAvatarText}>
+                {displayName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{displayName}</Text>
+              <Text style={styles.profileRole}>{role}</Text>
+            </View>
           </View>
-          <Text style={styles.queueStatus}>NEW</Text>
-        </View>
-        <View style={styles.queueItem}>
-          <View>
-            <Text style={styles.queueTitle}>Passport pouch</Text>
-            <Text style={styles.queueMeta}>Route: Velachery → CMBT</Text>
+          
+          <View style={styles.profileDetails}>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Email:</Text>
+              <Text style={styles.profileDetailValue}>{displayEmail}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Phone:</Text>
+              <Text style={styles.profileDetailValue}>{displayPhone}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Vehicle:</Text>
+              <Text style={styles.profileDetailValue}>{displayVehicleNumber}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Route:</Text>
+              <Text style={styles.profileDetailValue}>{displayRoute}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Shift:</Text>
+              <Text style={styles.profileDetailValue}>{displayShift}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Stops:</Text>
+              <Text style={styles.profileDetailValue}>
+                {displayFromStop} → {displayToStop}
+              </Text>
+            </View>
           </View>
-          <Text style={styles.queueStatusAmber}>HIGH</Text>
         </View>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={handleStaffConfirm}
-        >
-          <Text style={styles.primaryButtonText}>Mark item SAFE</Text>
-        </TouchableOpacity>
-      </View>
 
-      {staffConfirmed && (
+        <Text style={styles.sectionTitle}>{role} Duty Dashboard</Text>
+        <Text style={styles.sectionSubtitle}>
+          Live queue, QR handoffs, and custody logs for your duty roster.
+        </Text>
+
         <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Custody & Handoff</Text>
-          <Text style={styles.cardText}>Item tagged: QR-8721</Text>
-          <Text style={styles.cardText}>Pickup window: 10:15AM @ Guindy</Text>
+          <Text style={styles.cardTitle}>Active Complaint Queue</Text>
+          <View style={styles.queueItem}>
+            <View>
+              <Text style={styles.queueTitle}>Black backpack</Text>
+              <Text style={styles.queueMeta}>
+                TN-01-AB-1234 • Stop: Medavakkam
+              </Text>
+            </View>
+            <Text style={styles.queueStatus}>NEW</Text>
+          </View>
+          <View style={styles.queueItem}>
+            <View>
+              <Text style={styles.queueTitle}>Passport pouch</Text>
+              <Text style={styles.queueMeta}>Route: Velachery → CMBT</Text>
+            </View>
+            <Text style={styles.queueStatusAmber}>HIGH</Text>
+          </View>
           <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={handleHandoffComplete}
+            style={styles.primaryButton}
+            onPress={handleStaffConfirm}
           >
-            <Text style={styles.secondaryButtonText}>Scan QR handoff</Text>
+            <Text style={styles.primaryButtonText}>Mark item SAFE</Text>
           </TouchableOpacity>
-          {handoffComplete && (
-            <Text style={styles.successText}>
-              Handoff complete. Custody log updated.
-            </Text>
-          )}
         </View>
-      )}
-    </View>
-  );
 
-  const renderTtrDashboard = () => (
-    <View>
-      <Text style={styles.sectionTitle}>TTR/RPF Escalations</Text>
-      <Text style={styles.sectionSubtitle}>
-        High-value items with PNR verification and chain-of-custody logs.
-      </Text>
-      <View style={styles.cardBlock}>
-        <Text style={styles.cardTitle}>Priority Alerts</Text>
-        <Text style={styles.cardText}>PNR: 4528193021 • Passport + Visa</Text>
-        <Text style={styles.cardText}>Train: MS-EXP-204 • Coach B2</Text>
-        <Text style={styles.cardText}>Next stop: Guindy • ETA 9 mins</Text>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={handleStaffConfirm}
-        >
-          <Text style={styles.primaryButtonText}>Verify PNR & confirm</Text>
-        </TouchableOpacity>
+        {staffConfirmed && (
+          <View style={styles.cardBlock}>
+            <Text style={styles.cardTitle}>Custody & Handoff</Text>
+            <Text style={styles.cardText}>Item tagged: QR-8721</Text>
+            <Text style={styles.cardText}>Pickup window: 10:15AM @ Guindy</Text>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={handleHandoffComplete}
+            >
+              <Text style={styles.secondaryButtonText}>Scan QR handoff</Text>
+            </TouchableOpacity>
+            {handoffComplete && (
+              <Text style={styles.successText}>
+                Handoff complete. Custody log updated.
+              </Text>
+            )}
+          </View>
+        )}
       </View>
-    </View>
-  );
+    );
+  };
 
-  const renderPoliceDashboard = () => (
-    <View>
-      <Text style={styles.sectionTitle}>Police Command Console</Text>
-      <Text style={styles.sectionSubtitle}>
-        Cross-jurisdiction recovery for medical, passport, and legal items.
-      </Text>
-      <View style={styles.cardBlock}>
-        <Text style={styles.cardTitle}>Jurisdiction Escalations</Text>
-        <Text style={styles.cardText}>
-          Medical dossier flagged • Case ID 98-204
+  const renderTtrDashboard = () => {
+    const displayName = name.trim() || "Officer";
+    const displayEmail = officialEmail.trim() || "Not set";
+    const displayProfessionalId = professionalId.trim() || "Not set";
+    const displayRole = specificRole || "TTR/RPF";
+    const displayJurisdiction = jurisdiction.trim() || "Not set";
+    const displayPnrRange = pnrRange.trim() || "Not set";
+
+    return (
+      <View>
+        {/* Professional Profile Card */}
+        <View style={styles.profileCard}>
+          <View style={styles.profileHeader}>
+            <View style={styles.profileAvatar}>
+              <Text style={styles.profileAvatarText}>
+                {displayName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{displayName}</Text>
+              <Text style={styles.profileRole}>{displayRole} Officer</Text>
+            </View>
+          </View>
+          
+          <View style={styles.profileDetails}>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Professional ID:</Text>
+              <Text style={styles.profileDetailValue}>{displayProfessionalId}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Official Email:</Text>
+              <Text style={styles.profileDetailValue}>{displayEmail}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Jurisdiction:</Text>
+              <Text style={styles.profileDetailValue}>{displayJurisdiction}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>PNR Range:</Text>
+              <Text style={styles.profileDetailValue}>{displayPnrRange}</Text>
+            </View>
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>TTR/RPF Escalations</Text>
+        <Text style={styles.sectionSubtitle}>
+          High-value items with PNR verification and chain-of-custody logs.
         </Text>
-        <Text style={styles.cardText}>
-          Location: CMBT • Linked staff: RPF-114
-        </Text>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={handleStaffConfirm}
-        >
-          <Text style={styles.primaryButtonText}>Dispatch unit</Text>
-        </TouchableOpacity>
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Priority Alerts</Text>
+          <Text style={styles.cardText}>PNR: 4528193021 • Passport + Visa</Text>
+          <Text style={styles.cardText}>Train: MS-EXP-204 • Coach B2</Text>
+          <Text style={styles.cardText}>Next stop: Guindy • ETA 9 mins</Text>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={handleStaffConfirm}
+          >
+            <Text style={styles.primaryButtonText}>Verify PNR & confirm</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
+
+  const renderPoliceDashboard = () => {
+    const displayName = name.trim() || "Officer";
+    const displayEmail = officialEmail.trim() || "Not set";
+    const displayProfessionalId = professionalId.trim() || "Not set";
+    const displayRole = specificRole || "Police";
+    const displayJurisdiction = jurisdiction.trim() || "Not set";
+    const displayPnrRange = pnrRange.trim() || "Not set";
+
+    return (
+      <View>
+        {/* Professional Profile Card */}
+        <View style={styles.profileCard}>
+          <View style={styles.profileHeader}>
+            <View style={styles.profileAvatar}>
+              <Text style={styles.profileAvatarText}>
+                {displayName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{displayName}</Text>
+              <Text style={styles.profileRole}>{displayRole} Officer</Text>
+            </View>
+          </View>
+          
+          <View style={styles.profileDetails}>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Professional ID:</Text>
+              <Text style={styles.profileDetailValue}>{displayProfessionalId}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Official Email:</Text>
+              <Text style={styles.profileDetailValue}>{displayEmail}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Jurisdiction:</Text>
+              <Text style={styles.profileDetailValue}>{displayJurisdiction}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>PNR Range:</Text>
+              <Text style={styles.profileDetailValue}>{displayPnrRange}</Text>
+            </View>
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>Police Command Console</Text>
+        <Text style={styles.sectionSubtitle}>
+          Cross-jurisdiction recovery for medical, passport, and legal items.
+        </Text>
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Jurisdiction Escalations</Text>
+          <Text style={styles.cardText}>
+            Medical dossier flagged • Case ID 98-204
+          </Text>
+          <Text style={styles.cardText}>
+            Location: CMBT • Linked staff: RPF-114
+          </Text>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={handleStaffConfirm}
+          >
+            <Text style={styles.primaryButtonText}>Dispatch unit</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   const renderDashboard = () => {
     if (role === "Passenger") {
@@ -740,25 +1224,41 @@ const App = () => {
         />
       );
     }
-    if (role === "TTR/RPF") {
+    
+    // Handle TTR/RPF/Police based on specific role selection
+    if (role === "TTR/RPF/Police") {
+      if (specificRole === "TTR" || specificRole === "RPF") {
+        return renderTtrDashboard();
+      }
+      if (specificRole === "Police") {
+        return renderPoliceDashboard();
+      }
+      // Default to TTR dashboard if no specific role selected yet
       return renderTtrDashboard();
     }
-    if (role === "Police") {
-      return renderPoliceDashboard();
-    }
+    
     return renderStaffDashboard();
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.backgroundGlow} />
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          !isAuthenticated && styles.scrollContentCentered,
-        ]}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        enabled={Platform.OS === "ios"}
       >
-        <View style={styles.card}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            contentContainerStyle={[
+              styles.scrollContent,
+              !isAuthenticated && !keyboardVisible && styles.scrollContentCentered,
+            ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={true}
+            bounces={true}
+          >
+            <View style={styles.card}>
           <View style={styles.brandRow}>
             <View>
               <Text style={styles.title}>SafeRide Guardian</Text>
@@ -804,18 +1304,111 @@ const App = () => {
                 </TouchableOpacity>
               )}
             </View>
+          ) : showRoleSelection ? (
+            <View>
+              <View style={styles.backButtonRow}>
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={() => {
+                    setShowRoleSelection(false);
+                    setSpecificRole("");
+                    setError("");
+                  }}
+                >
+                  <Ionicons name="arrow-back" size={24} color="#2563EB" />
+                </TouchableOpacity>
+                <Text style={styles.formTitle}>Select Your Specific Role</Text>
+                <View style={{ width: 24 }} />
+              </View>
+              <Text style={styles.sectionSubtitle}>
+                Please specify which department you belong to
+              </Text>
+
+              <View style={styles.cardBlock}>
+                <View style={styles.roleRow}>
+                  {["TTR", "RPF", "Police"].map((item) => (
+                    <TouchableOpacity
+                      key={item}
+                      style={[
+                        styles.roleChipLarge,
+                        specificRole === item && styles.roleChipActive,
+                      ]}
+                      onPress={() => setSpecificRole(item)}
+                    >
+                      <Text
+                        style={[
+                          styles.roleChipTextLarge,
+                          specificRole === item && styles.roleChipTextActive,
+                        ]}
+                      >
+                        {item}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <View style={styles.roleDescriptions}>
+                  {specificRole === "TTR" && (
+                    <View style={styles.roleDescCard}>
+                      <Text style={styles.roleDescTitle}>
+                        🚂 Travelling Ticket Examiner (TTR)
+                      </Text>
+                      <Text style={styles.roleDescText}>
+                        Responsible for ticket checking, passenger assistance,
+                        and onboard security in trains.
+                      </Text>
+                    </View>
+                  )}
+                  {specificRole === "RPF" && (
+                    <View style={styles.roleDescCard}>
+                      <Text style={styles.roleDescTitle}>
+                        🛡️ Railway Protection Force (RPF)
+                      </Text>
+                      <Text style={styles.roleDescText}>
+                        Railway security force responsible for protecting
+                        railway property, passengers, and freight.
+                      </Text>
+                    </View>
+                  )}
+                  {specificRole === "Police" && (
+                    <View style={styles.roleDescCard}>
+                      <Text style={styles.roleDescTitle}>
+                        👮 Police Department
+                      </Text>
+                      <Text style={styles.roleDescText}>
+                        Law enforcement officers handling criminal cases,
+                        investigations, and public safety.
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {error.length > 0 && (
+                <Text style={styles.errorText}>{error}</Text>
+              )}
+
+              <TouchableOpacity
+                style={[
+                  styles.primaryButton,
+                  !specificRole && styles.buttonDisabled,
+                ]}
+                onPress={handleSpecificRoleSelection}
+                disabled={!specificRole}
+              >
+                <Text style={styles.primaryButtonText}>Continue</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <View>
               <Text style={styles.formTitle}>
                 {isRegister ? "Create your account" : "Sign in to continue"}
               </Text>
 
-              {isRegister && (
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Select role</Text>
-                  {renderRoleSelector()}
-                </View>
-              )}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Select role</Text>
+                {renderRoleSelector()}
+              </View>
 
               {isRegister && (
                 <View style={styles.inputGroup}>
@@ -845,45 +1438,83 @@ const App = () => {
                 </View>
               )}
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email address</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="you@example.com"
-                  placeholderTextColor="#94A3B8"
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Password</Text>
-                <View style={styles.passwordRow}>
+              {!isOfficialRole && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Email address</Text>
                   <TextInput
-                    style={[styles.input, styles.passwordInput]}
-                    placeholder="Enter your password"
+                    style={styles.input}
+                    placeholder="you@example.com"
                     placeholderTextColor="#94A3B8"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
                   />
-                  <TouchableOpacity
-                    style={styles.eyeButton}
-                    onPress={() => setShowPassword((prev) => !prev)}
-                    accessibilityLabel={
-                      showPassword ? "Hide password" : "Show password"
-                    }
-                  >
-                    <Ionicons
-                      name={showPassword ? "eye-off" : "eye"}
-                      size={20}
-                      color="#64748B"
-                    />
-                  </TouchableOpacity>
                 </View>
-              </View>
+              )}
+
+              {isOfficialRole && !forgotPasswordMode && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Professional ID</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={
+                      role === "Police" ? "TNPolice-45678" : "TTR-SR-12345"
+                    }
+                    placeholderTextColor="#94A3B8"
+                    value={professionalId}
+                    onChangeText={setProfessionalId}
+                    autoCapitalize="characters"
+                  />
+                </View>
+              )}
+
+              {isRegister && isOfficialRole && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Official email</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={`name@${getOfficialDomain(role)}`}
+                    placeholderTextColor="#94A3B8"
+                    value={officialEmail}
+                    onChangeText={setOfficialEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
+                  <Text style={styles.helperText}>
+                    Use your {getOfficialDomain(role)} mailbox for approval.
+                  </Text>
+                </View>
+              )}
+
+              {(!loginWithOtp || isRegister || isOfficialRole) && !forgotPasswordMode && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Password</Text>
+                  <View style={styles.passwordRow}>
+                    <TextInput
+                      style={[styles.input, styles.passwordInput]}
+                      placeholder="Enter your password"
+                      placeholderTextColor="#94A3B8"
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={!showPassword}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setShowPassword((prev) => !prev)}
+                      accessibilityLabel={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      <Ionicons
+                        name={showPassword ? "eye-off" : "eye"}
+                        size={20}
+                        color="#64748B"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
 
               {isRegister && (
                 <View style={styles.inputGroup}>
@@ -916,11 +1547,380 @@ const App = () => {
                 </View>
               )}
 
-              {isRegister && (
+              {!isRegister && !isOfficialRole && (
+                <View style={styles.otpToggleRow}>
+                  <Text style={styles.helperText}>
+                    {loginWithOtp ? "Signing in with OTP" : "Forgot password?"}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (loginWithOtp) {
+                        setLoginWithOtp(false);
+                        setEmailOtp("");
+                        setIsVerified(false);
+                        setIsOtpSent(false);
+                      } else {
+                        setForgotPasswordMode(true);
+                        setIsResetCodeSent(false);
+                        setResetCode("");
+                        setError("");
+                      }
+                    }}
+                  >
+                    <Text style={styles.switchLink}>
+                      {loginWithOtp ? "Use password" : "Reset password"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {!isRegister && isOfficialRole && !forgotPasswordMode && (
+                <View style={styles.otpToggleRow}>
+                  <Text style={styles.helperText}>Forgot password?</Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setForgotPasswordMode(true);
+                      setIsResetCodeSent(false);
+                      setResetCode("");
+                      setError("");
+                    }}
+                  >
+                    <Text style={styles.switchLink}>Reset password</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {!isRegister && isOfficialRole && forgotPasswordMode && (
                 <View style={styles.verifyCard}>
-                  <Text style={styles.cardTitle}>Email verification</Text>
+                  <View style={styles.backButtonRow}>
+                    <TouchableOpacity
+                      style={styles.backButton}
+                      onPress={() => {
+                        setForgotPasswordMode(false);
+                        setResetCode("");
+                        setNewPassword("");
+                        setConfirmNewPassword("");
+                        setIsResetCodeSent(false);
+                        setResetSuccess(false);
+                        setOfficialEmail("");
+                        setError("");
+                      }}
+                    >
+                      <Ionicons name="arrow-back" size={24} color="#2563EB" />
+                    </TouchableOpacity>
+                    <Text style={styles.cardTitle}>Reset Password</Text>
+                    <View style={{ width: 24 }} />
+                  </View>
                   <Text style={styles.sectionSubtitle}>
-                    We'll send a verification code to your email address
+                    We'll send a verification code to your registered official email
+                  </Text>
+                  
+                  {!isResetCodeSent ? (
+                    <>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Official Email</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder={`name@${getOfficialDomain(role)}`}
+                          placeholderTextColor="#94A3B8"
+                          value={officialEmail}
+                          onChangeText={setOfficialEmail}
+                          autoCapitalize="none"
+                          keyboardType="email-address"
+                        />
+                        <Text style={styles.helperText}>
+                          Enter your registered {getOfficialDomain(role)} email
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.primaryButton,
+                          (officialEmail.trim().length < 5 || isSendingResetCode) &&
+                            styles.buttonDisabled,
+                        ]}
+                        onPress={handleSendResetCode}
+                        disabled={
+                          officialEmail.trim().length < 5 || isSendingResetCode
+                        }
+                      >
+                        <Text style={styles.primaryButtonText}>
+                          {isSendingResetCode
+                            ? "Sending verification code..."
+                            : "Send verification code"}
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : resetSuccess ? (
+                    <View style={styles.successCard}>
+                      <Text style={styles.successText}>
+                        ✅ Password reset successful!
+                      </Text>
+                      <Text style={styles.cardText}>
+                        You can now login with your new password.
+                      </Text>
+                    </View>
+                  ) : (
+                    <>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Verification Code</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Enter 6-digit code"
+                          placeholderTextColor="#94A3B8"
+                          value={resetCode}
+                          onChangeText={setResetCode}
+                          keyboardType="number-pad"
+                          maxLength={6}
+                        />
+                      </View>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>New Password</Text>
+                        <View style={styles.passwordRow}>
+                          <TextInput
+                            style={[styles.input, styles.passwordInput]}
+                            placeholder="Enter new password"
+                            placeholderTextColor="#94A3B8"
+                            value={newPassword}
+                            onChangeText={setNewPassword}
+                            secureTextEntry={!showNewPassword}
+                          />
+                          <TouchableOpacity
+                            style={styles.eyeButton}
+                            onPress={() => setShowNewPassword((prev) => !prev)}
+                          >
+                            <Ionicons
+                              name={showNewPassword ? "eye-off" : "eye"}
+                              size={20}
+                              color="#64748B"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Confirm New Password</Text>
+                        <View style={styles.passwordRow}>
+                          <TextInput
+                            style={[styles.input, styles.passwordInput]}
+                            placeholder="Re-enter new password"
+                            placeholderTextColor="#94A3B8"
+                            value={confirmNewPassword}
+                            onChangeText={setConfirmNewPassword}
+                            secureTextEntry={!showConfirmNewPassword}
+                          />
+                          <TouchableOpacity
+                            style={styles.eyeButton}
+                            onPress={() =>
+                              setShowConfirmNewPassword((prev) => !prev)
+                            }
+                          >
+                            <Ionicons
+                              name={showConfirmNewPassword ? "eye-off" : "eye"}
+                              size={20}
+                              color="#64748B"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.primaryButton,
+                          (resetCode.trim().length !== 6 ||
+                            newPassword.trim().length < 6 ||
+                            confirmNewPassword.trim().length < 6) &&
+                            styles.buttonDisabled,
+                        ]}
+                        onPress={handleResetPassword}
+                        disabled={
+                          resetCode.trim().length !== 6 ||
+                          newPassword.trim().length < 6 ||
+                          confirmNewPassword.trim().length < 6
+                        }
+                      >
+                        <Text style={styles.primaryButtonText}>
+                          Reset Password
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.textButton]}
+                        onPress={handleSendResetCode}
+                      >
+                        <Text style={styles.switchLink}>Resend code</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              )}
+
+              {!isRegister && !isOfficialRole && forgotPasswordMode && (
+                <View style={styles.verifyCard}>
+                  <View style={styles.backButtonRow}>
+                    <TouchableOpacity
+                      style={styles.backButton}
+                      onPress={() => {
+                        setForgotPasswordMode(false);
+                        setResetCode("");
+                        setNewPassword("");
+                        setConfirmNewPassword("");
+                        setIsResetCodeSent(false);
+                        setResetSuccess(false);
+                        setEmail("");
+                        setError("");
+                      }}
+                    >
+                      <Ionicons name="arrow-back" size={24} color="#2563EB" />
+                    </TouchableOpacity>
+                    <Text style={styles.cardTitle}>Reset Password</Text>
+                    <View style={{ width: 24 }} />
+                  </View>
+                  <Text style={styles.sectionSubtitle}>
+                    We'll send a verification code to your registered email
+                  </Text>
+                  
+                  {!isResetCodeSent ? (
+                    <>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Email</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Enter your email"
+                          placeholderTextColor="#94A3B8"
+                          value={email}
+                          onChangeText={setEmail}
+                          autoCapitalize="none"
+                          keyboardType="email-address"
+                        />
+                        <Text style={styles.helperText}>
+                          Enter your registered email address
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.primaryButton,
+                          (email.trim().length < 5 || isSendingResetCode) &&
+                            styles.buttonDisabled,
+                        ]}
+                        onPress={handleSendResetCodeUser}
+                        disabled={
+                          email.trim().length < 5 || isSendingResetCode
+                        }
+                      >
+                        <Text style={styles.primaryButtonText}>
+                          {isSendingResetCode
+                            ? "Sending verification code..."
+                            : "Send verification code"}
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : resetSuccess ? (
+                    <View style={styles.successCard}>
+                      <Text style={styles.successText}>
+                        ✅ Password reset successful!
+                      </Text>
+                      <Text style={styles.cardText}>
+                        You can now login with your new password.
+                      </Text>
+                    </View>
+                  ) : (
+                    <>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Verification Code</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="Enter 6-digit code"
+                          placeholderTextColor="#94A3B8"
+                          value={resetCode}
+                          onChangeText={setResetCode}
+                          keyboardType="number-pad"
+                          maxLength={6}
+                        />
+                      </View>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>New Password</Text>
+                        <View style={styles.passwordRow}>
+                          <TextInput
+                            style={[styles.input, styles.passwordInput]}
+                            placeholder="Enter new password"
+                            placeholderTextColor="#94A3B8"
+                            value={newPassword}
+                            onChangeText={setNewPassword}
+                            secureTextEntry={!showNewPassword}
+                          />
+                          <TouchableOpacity
+                            style={styles.eyeButton}
+                            onPress={() => setShowNewPassword((prev) => !prev)}
+                          >
+                            <Ionicons
+                              name={showNewPassword ? "eye-off" : "eye"}
+                              size={20}
+                              color="#64748B"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Confirm New Password</Text>
+                        <View style={styles.passwordRow}>
+                          <TextInput
+                            style={[styles.input, styles.passwordInput]}
+                            placeholder="Re-enter new password"
+                            placeholderTextColor="#94A3B8"
+                            value={confirmNewPassword}
+                            onChangeText={setConfirmNewPassword}
+                            secureTextEntry={!showConfirmNewPassword}
+                          />
+                          <TouchableOpacity
+                            style={styles.eyeButton}
+                            onPress={() =>
+                              setShowConfirmNewPassword((prev) => !prev)
+                            }
+                          >
+                            <Ionicons
+                              name={showConfirmNewPassword ? "eye-off" : "eye"}
+                              size={20}
+                              color="#64748B"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.primaryButton,
+                          (resetCode.trim().length !== 6 ||
+                            newPassword.trim().length < 6 ||
+                            confirmNewPassword.trim().length < 6) &&
+                            styles.buttonDisabled,
+                        ]}
+                        onPress={handleResetPasswordUser}
+                        disabled={
+                          resetCode.trim().length !== 6 ||
+                          newPassword.trim().length < 6 ||
+                          confirmNewPassword.trim().length < 6
+                        }
+                      >
+                        <Text style={styles.primaryButtonText}>
+                          Reset Password
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.textButton]}
+                        onPress={handleSendResetCodeUser}
+                      >
+                        <Text style={styles.switchLink}>Resend code</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              )}
+
+              {isOtpContext && (
+                <View style={styles.verifyCard}>
+                  <Text style={styles.cardTitle}>
+                    {isRegister ? "Email verification" : "OTP sign-in"}
+                  </Text>
+                  <Text style={styles.sectionSubtitle}>
+                    {isRegister
+                      ? "We'll send a verification code to your email address"
+                      : "We'll send a one-time code to your email"}
                   </Text>
                   {!isOtpSent ? (
                     <TouchableOpacity
@@ -970,11 +1970,10 @@ const App = () => {
                         onPress={handleSendOtp}
                         activeOpacity={0.85}
                       >
-                        <Text style={styles.switchLink}>Resend code</Text>
+                        {!isVerified && (
+                          <Text style={styles.switchLink}>Resend code</Text>
+                        )}
                       </TouchableOpacity>
-                      {devOtpHint.length > 0 && (
-                        <Text style={styles.devHintText}>{devOtpHint}</Text>
-                      )}
                     </>
                   )}
                 </View>
@@ -989,7 +1988,34 @@ const App = () => {
                       Passenger travel details
                     </Text>
                     <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Bus/Train number</Text>
+                      <Text style={styles.label}>Travel mode</Text>
+                      <View style={styles.roleRow}>
+                        {["Bus", "Train"].map((item) => (
+                          <TouchableOpacity
+                            key={item}
+                            style={[
+                              styles.roleChip,
+                              travelType === item && styles.roleChipActive,
+                            ]}
+                            onPress={() => setTravelType(item)}
+                          >
+                            <Text
+                              style={[
+                                styles.roleChipText,
+                                travelType === item &&
+                                  styles.roleChipTextActive,
+                              ]}
+                            >
+                              {item}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+                    <View style={styles.inputGroup}>
+                      <Text style={styles.label}>
+                        {travelType === "Bus" ? "Bus" : "Train"} number
+                      </Text>
                       <TextInput
                         style={styles.input}
                         placeholder="TN-01-AB-1234"
@@ -999,51 +2025,108 @@ const App = () => {
                       />
                     </View>
                     <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Route</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Velachery → CMBT"
-                        placeholderTextColor="#94A3B8"
-                        value={travelRoute}
-                        onChangeText={setTravelRoute}
-                      />
-                    </View>
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Timing</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="09:30AM - 11:45AM"
-                        placeholderTextColor="#94A3B8"
-                        value={travelTiming}
-                        onChangeText={setTravelTiming}
-                      />
-                    </View>
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Driver name (optional)</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Driver name"
-                        placeholderTextColor="#94A3B8"
-                        value={driverName}
-                        onChangeText={setDriverName}
-                      />
-                    </View>
-                    <View style={styles.inputGroup}>
                       <Text style={styles.label}>
-                        Conductor name (optional)
+                        {travelType === "Bus"
+                          ? "Bus name (optional)"
+                          : "Train name"}
                       </Text>
                       <TextInput
                         style={styles.input}
-                        placeholder="Conductor name"
+                        placeholder="MTC 27B / MS-EXP-204"
                         placeholderTextColor="#94A3B8"
-                        value={conductorName}
-                        onChangeText={setConductorName}
+                        value={travelName}
+                        onChangeText={setTravelName}
                       />
                     </View>
+                    {travelType === "Bus" ? (
+                      <>
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.label}>Departure stop</Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Velachery"
+                            placeholderTextColor="#94A3B8"
+                            value={busDeparture}
+                            onChangeText={setBusDeparture}
+                          />
+                        </View>
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.label}>Arrival stop</Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="CMBT"
+                            placeholderTextColor="#94A3B8"
+                            value={busArrival}
+                            onChangeText={setBusArrival}
+                          />
+                        </View>
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.label}>Bus start timing</Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="09:30AM"
+                            placeholderTextColor="#94A3B8"
+                            value={busStartTime}
+                            onChangeText={setBusStartTime}
+                          />
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.label}>Route</Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Velachery → CMBT"
+                            placeholderTextColor="#94A3B8"
+                            value={travelRoute}
+                            onChangeText={setTravelRoute}
+                          />
+                        </View>
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.label}>Timing</Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="09:30AM - 11:45AM"
+                            placeholderTextColor="#94A3B8"
+                            value={travelTiming}
+                            onChangeText={setTravelTiming}
+                          />
+                        </View>
+                      </>
+                    )}
+                    {travelType === "Bus" && (
+                      <>
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.label}>
+                            Driver name (optional)
+                          </Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Driver name"
+                            placeholderTextColor="#94A3B8"
+                            value={driverName}
+                            onChangeText={setDriverName}
+                          />
+                        </View>
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.label}>
+                            Conductor name (optional)
+                          </Text>
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Conductor name"
+                            placeholderTextColor="#94A3B8"
+                            value={conductorName}
+                            onChangeText={setConductorName}
+                          />
+                        </View>
+                      </>
+                    )}
                   </View>
                 )}
 
-              {isRegister && isStaffRole && isOtpSent && isVerified && (
+              {isRegister && isOperationalStaff && isOtpSent && isVerified && (
                 <View style={styles.cardBlock}>
                   <Text style={styles.cardTitle}>Daily duty roster</Text>
                   <View style={styles.inputGroup}>
@@ -1099,33 +2182,76 @@ const App = () => {
                 </View>
               )}
 
+              {isRegister && isOfficialRole && (
+                <View style={styles.cardBlock}>
+                  <Text style={styles.cardTitle}>Official duty details</Text>
+                  <Text style={styles.sectionSubtitle}>
+                    Admin approval required within 24 hours.
+                  </Text>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Train PNR range</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="4528193000-4528193999"
+                      placeholderTextColor="#94A3B8"
+                      value={pnrRange}
+                      onChangeText={setPnrRange}
+                    />
+                  </View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Jurisdiction</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Chennai Central Division"
+                      placeholderTextColor="#94A3B8"
+                      value={jurisdiction}
+                      onChangeText={setJurisdiction}
+                    />
+                  </View>
+                </View>
+              )}
+
+              {pendingApproval && !isRegister && isOfficialRole && (
+                <View style={styles.noticeCard}>
+                  <Text style={styles.noticeTitle}>Approval pending</Text>
+                  <Text style={styles.noticeText}>
+                    Your registration is under admin review. Check your official
+                    inbox for approval within 24 hours.
+                  </Text>
+                </View>
+              )}
+
               {error.length > 0 && (
                 <Text style={styles.errorText}>{error}</Text>
               )}
 
-              <TouchableOpacity
-                style={[
-                  styles.primaryButton,
-                  !canSubmit && styles.buttonDisabled,
-                ]}
-                onPress={handleSubmit}
-                disabled={!canSubmit}
-              >
-                <Text style={styles.primaryButtonText}>
-                  {isRegister ? "Create account" : "Log in"}
-                </Text>
-              </TouchableOpacity>
+              {!forgotPasswordMode && (
+                <>
+                  <TouchableOpacity
+                    style={[
+                      styles.primaryButton,
+                      !canSubmit && styles.buttonDisabled,
+                    ]}
+                    onPress={handleSubmit}
+                    disabled={!canSubmit}
+                  >
+                    <Text style={styles.primaryButtonText}>
+                      {isRegister ? "Create account" : "Log in"}
+                    </Text>
+                  </TouchableOpacity>
 
-              <View style={styles.switchRow}>
-                <Text style={styles.switchText}>
-                  {isRegister ? "Already have an account?" : "New here?"}
-                </Text>
-                <TouchableOpacity onPress={handleSwitchMode}>
-                  <Text style={styles.switchLink}>
-                    {isRegister ? "Log in" : "Create one"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                  <View style={styles.switchRow}>
+                    <Text style={styles.switchText}>
+                      {isRegister ? "Already have an account?" : "New here?"}
+                    </Text>
+                    <TouchableOpacity onPress={handleSwitchMode}>
+                      <Text style={styles.switchLink}>
+                        {isRegister ? "Log in" : "Create one"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
 
               <View style={styles.footerRow}>
                 <Text style={styles.footerText}>
@@ -1136,14 +2262,19 @@ const App = () => {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
-  );
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
+  </SafeAreaView>
+);
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   backgroundGlow: {
     position: "absolute",
@@ -1275,6 +2406,11 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     fontWeight: "500",
   },
+  helperText: {
+    color: "#64748B",
+    fontSize: 12,
+    marginTop: 6,
+  },
   input: {
     backgroundColor: "#F8FAFC",
     borderColor: "#CBD5E1",
@@ -1306,7 +2442,7 @@ const styles = StyleSheet.create({
   roleRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    marginHorizontal: -4,
   },
   roleChip: {
     borderWidth: 1,
@@ -1315,6 +2451,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 999,
+    margin: 4,
   },
   roleChipActive: {
     backgroundColor: "#2563EB",
@@ -1327,6 +2464,45 @@ const styles = StyleSheet.create({
   roleChipTextActive: {
     color: "#F8FAFC",
     fontWeight: "600",
+  },
+  roleChipLarge: {
+    borderWidth: 2,
+    borderColor: "#CBD5E1",
+    backgroundColor: "#F8FAFC",
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 80,
+    margin: 4,
+  },
+  roleChipTextLarge: {
+    color: "#475569",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  roleDescriptions: {
+    marginTop: 20,
+  },
+  roleDescCard: {
+    backgroundColor: "#EFF6FF",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+  },
+  roleDescTitle: {
+    color: "#1E40AF",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  roleDescText: {
+    color: "#1E40AF",
+    fontSize: 14,
+    lineHeight: 20,
   },
   errorText: {
     color: "#F87171",
@@ -1363,6 +2539,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginTop: 14,
+  },
+  otpToggleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
   },
   switchText: {
     color: "#64748B",
@@ -1405,6 +2587,31 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#E2E8F0",
+  },
+  successCard: {
+    backgroundColor: "#DCFCE7",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#86EFAC",
+  },
+  noticeCard: {
+    backgroundColor: "#FFF7ED",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#FDBA74",
+  },
+  noticeTitle: {
+    color: "#9A3412",
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  noticeText: {
+    color: "#9A3412",
+    lineHeight: 18,
   },
   cardTitle: {
     color: "#1E293B",
@@ -1492,7 +2699,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   successText: {
-    color: "#34D399",
+    color: "#16A34A",
     marginTop: 10,
     fontWeight: "600",
   },
@@ -1510,6 +2717,15 @@ const styles = StyleSheet.create({
   textButton: {
     marginTop: 12,
     alignItems: "center",
+  },
+  backButtonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 8,
   },
   logoutButton: {
     marginTop: 8,
@@ -1549,6 +2765,77 @@ const styles = StyleSheet.create({
   },
   transportButtonTextSelected: {
     color: "#3B82F6",
+  },
+  profileCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  profileHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+  },
+  profileAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#2563EB",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+  },
+  profileAvatarText: {
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: "700",
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginBottom: 4,
+  },
+  profileRole: {
+    fontSize: 14,
+    color: "#64748B",
+    fontWeight: "500",
+  },
+  profileDetails: {
+    marginTop: 0,
+  },
+  profileDetailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  profileDetailLabel: {
+    fontSize: 14,
+    color: "#64748B",
+    fontWeight: "500",
+    flex: 1,
+  },
+  profileDetailValue: {
+    fontSize: 14,
+    color: "#1E293B",
+    fontWeight: "600",
+    flex: 2,
+    textAlign: "right",
   },
 });
 
