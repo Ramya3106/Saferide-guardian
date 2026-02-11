@@ -395,6 +395,22 @@ const App = () => {
     }
 
     setError("");
+    
+    // Show role selection for TTR/RPF/Police login
+    if (!isRegister && isOfficialRole) {
+      setShowRoleSelection(true);
+      return;
+    }
+    
+    setIsAuthenticated(true);
+  };
+
+  const handleSpecificRoleSelection = () => {
+    if (!specificRole) {
+      setError("Please select your specific role.");
+      return;
+    }
+    setError("");
     setIsAuthenticated(true);
   };
 
