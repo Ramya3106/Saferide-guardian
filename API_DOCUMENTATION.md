@@ -356,7 +356,7 @@ X-User-Email: user@example.com
 
 ---
 
-### 11. GET `/api/passenger/tracking/:complaintId`
+### 12. GET `/api/passenger/tracking/:complaintId`
 Get live tracking information for a complaint.
 
 **Headers:**
@@ -384,7 +384,7 @@ X-User-Email: user@example.com
 
 ---
 
-### 12. GET `/api/passenger/messages/:complaintId`
+### 13. GET `/api/passenger/messages/:complaintId`
 Get staff messages for a complaint.
 
 **Headers:**
