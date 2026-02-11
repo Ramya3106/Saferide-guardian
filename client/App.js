@@ -1398,14 +1398,21 @@ const App = () => {
                   </Text>
                   <TouchableOpacity
                     onPress={() => {
-                      setLoginWithOtp((prev) => !prev);
-                      setEmailOtp("");
-                      setIsVerified(false);
-                      setIsOtpSent(false);
+                      if (loginWithOtp) {
+                        setLoginWithOtp(false);
+                        setEmailOtp("");
+                        setIsVerified(false);
+                        setIsOtpSent(false);
+                      } else {
+                        setForgotPasswordMode(true);
+                        setIsResetCodeSent(false);
+                        setResetCode("");
+                        setError("");
+                      }
                     }}
                   >
                     <Text style={styles.switchLink}>
-                      {loginWithOtp ? "Use password" : "Use OTP"}
+                      {loginWithOtp ? "Use password" : "Reset password"}
                     </Text>
                   </TouchableOpacity>
                 </View>
