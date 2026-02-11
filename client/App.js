@@ -353,6 +353,15 @@ const App = () => {
     setStaffComplaintTarget("");
     setStaffComplaintDetails("");
     setStaffComplaintSubmitted(false);
+    setForgotPasswordMode(false);
+    setResetCode("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setShowNewPassword(false);
+    setShowConfirmNewPassword(false);
+    setIsResetCodeSent(false);
+    setIsSendingResetCode(false);
+    setResetSuccess(false);
     setError("");
   };
 
