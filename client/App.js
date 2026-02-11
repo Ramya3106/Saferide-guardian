@@ -1060,7 +1060,7 @@ const App = () => {
                 </View>
               )}
 
-              {(!loginWithOtp || isRegister || isOfficialRole) && (
+              {(!loginWithOtp || isRegister || isOfficialRole) && !forgotPasswordMode && (
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Password</Text>
                   <View style={styles.passwordRow}>
