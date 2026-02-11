@@ -195,11 +195,41 @@ Reset password using OTP verification (simplified flow for TTR/RPF/Police).
 
 ---
 
+### 8. POST `/api/auth/reset-password-user`
+Reset password using OTP verification for non-official users (Passenger, Driver/Conductor, Cab/Auto).
+
+**Body:**
+```json
+{
+  "email": "user@example.com",
+  "otpCode": "123456",
+  "newPassword": "newsecurepassword"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Password reset successful. You can now login."
+}
+```
+
+**Notes:**
+- Available for Passenger, Driver/Conductor, and Cab/Auto roles
+- Uses the same OTP verification system as email verification
+- OTP code expires in 10 minutes
+- Maximum 5 attempts allowed
+- Only requires registered email address
+- After successful reset, user can login with new password
+
+---
+
 ## Passenger Dashboard Endpoints
 
 All passenger requests must include the `X-User-Email` header with the passenger's email address for authentication.
 
-### 8. GET `/api/passenger/dashboard`
+### 9. GET `/api/passenger/dashboard`
 Get the passenger's active journey information.
 
 **Headers:**
