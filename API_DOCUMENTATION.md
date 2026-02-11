@@ -140,7 +140,7 @@ Request a password reset code for TTR/RPF/Police users.
 ---
 
 ### 6. POST `/api/auth/reset-password`
-Reset password using the reset code.
+Reset password using the reset code (for forgot-password flow with professional ID).
 
 **Body:**
 ```json
@@ -166,11 +166,40 @@ Reset password using the reset code.
 
 ---
 
+### 7. POST `/api/auth/reset-password-otp`
+Reset password using OTP verification (simplified flow for TTR/RPF/Police).
+
+**Body:**
+```json
+{
+  "officialEmail": "officer@railnet.gov.in",
+  "otpCode": "123456",
+  "newPassword": "newsecurepassword"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Password reset successful. You can now login."
+}
+```
+
+**Notes:**
+- Uses the same OTP verification system as email verification
+- OTP code expires in 10 minutes
+- Maximum 5 attempts allowed
+- Simpler flow - only requires official email, no professional ID needed
+- After successful reset, user can login with new password
+
+---
+
 ## Passenger Dashboard Endpoints
 
 All passenger requests must include the `X-User-Email` header with the passenger's email address for authentication.
 
-### 7. GET `/api/passenger/dashboard`
+### 8. GET `/api/passenger/dashboard`
 Get the passenger's active journey information.
 
 **Headers:**
@@ -201,7 +230,7 @@ X-User-Email: user@example.com
 
 ---
 
-### 8. POST `/api/passenger/complaints`
+### 9. POST `/api/passenger/complaints`
 Create a new complaint for a lost item.
 
 **Headers:**
