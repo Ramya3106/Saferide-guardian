@@ -8,8 +8,10 @@ const User = require("../models/User");
 dotenv.config();
 
 const VERIFY_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const RESET_CODE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 const MAX_ATTEMPTS = 5;
 const verificationStore = new Map();
+const resetPasswordStore = new Map();
 const user = (process.env.EMAIL_USER || "").trim();
 const pass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
 const fromAddress = (process.env.EMAIL_FROM || user).trim();
@@ -415,3 +417,204 @@ router.post("/login", async (req, res) => {
 });
 
 module.exports = router;
+
+// Password Reset - Send reset code
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const role = (req.body?.role || "").trim();
+    const professionalId = (req.body?.professionalId || "").trim();
+    const officialEmail = (req.body?.officialEmail || "").trim().toLowerCase();
+
+    if (!role || role !== "TTR/RPF/Police") {
+      return res.status(400).json({ 
+        message: "Password reset only available for TTR/RPF/Police users." 
+      });
+    }
+
+    if (!isValidProfessionalId(role, professionalId)) {
+      return res.status(400).json({ 
+        message: "Invalid professional ID format." 
+      });
+    }
+
+    if (!isValidOfficialEmail(role, officialEmail)) {
+      return res.status(400).json({ 
+        message: "Official email domain required." 
+      });
+    }
+
+    const user = await User.findOne({ 
+      role, 
+      professionalId, 
+      officialEmail 
+    });
+
+    if (!user) {
+      return res.status(404).json({ 
+        message: "No account found with these credentials." 
+      });
+    }
+
+    const transporter = createTransporter();
+    if (!transporter) {
+      if (returnDevCode) {
+        const resetCode = generateCode();
+        const expiresAt = Date.now() + RESET_CODE_TTL_MS;
+        resetPasswordStore.set(officialEmail, { 
+          code: resetCode, 
+          expiresAt, 
+          attempts: 0,
+          userId: user._id.toString()
+        });
+        return res.status(200).json({
+          sent: false,
+          devCode: resetCode,
+          message: "Email service not configured. Using dev code.",
+        });
+      }
+
+      return res.status(500).json({
+        message: "Email service not configured. Contact support.",
+      });
+    }
+
+    const resetCode = generateCode();
+    const expiresAt = Date.now() + RESET_CODE_TTL_MS;
+
+    resetPasswordStore.set(officialEmail, { 
+      code: resetCode, 
+      expiresAt, 
+      attempts: 0,
+      userId: user._id.toString()
+    });
+
+    try {
+      await transporter.sendMail({
+        from: fromAddress || user,
+        to: officialEmail,
+        subject: "SafeRide Guardian - Password Reset Code",
+        text: `Your SafeRide password reset code is: ${resetCode}\n\nIt expires in 15 minutes.\n\nIf you didn't request this, please ignore this email.\n\nSafeRide Team`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+            <h2>🛡️ SafeRide Guardian</h2>
+            <p>You requested a password reset. Your reset code is:</p>
+            <div style="background: #f0f0f0; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
+              ${resetCode}
+            </div>
+            <p>This code expires in <strong>15 minutes</strong>.</p>
+            <p>If you didn't request this password reset, please ignore this email.</p>
+            <hr>
+            <p>Thank you for using SafeRide Guardian!</p>
+          </div>
+        `,
+      });
+
+      console.log(`✅ Password reset code sent to ${officialEmail}`);
+      return res.status(200).json({
+        sent: true,
+        ...(returnDevCode ? { devCode: resetCode } : {}),
+      });
+    } catch (error) {
+      console.error("❌ Email error:", error);
+      resetPasswordStore.delete(officialEmail);
+      
+      if (returnDevCode) {
+        const fallbackCode = generateCode();
+        const expiresAt = Date.now() + RESET_CODE_TTL_MS;
+        resetPasswordStore.set(officialEmail, {
+          code: fallbackCode,
+          expiresAt,
+          attempts: 0,
+          userId: user._id.toString()
+        });
+        return res.status(200).json({
+          sent: false,
+          devCode: fallbackCode,
+          message: "Email failed. Using dev code.",
+        });
+      }
+
+      return res.status(500).json({
+        message: "Failed to send reset email.",
+      });
+    }
+  } catch (error) {
+    console.error("Forgot password error:", error.message);
+    return res.status(500).json({ message: "Unable to process request." });
+  }
+});
+
+// Password Reset - Verify reset code and update password
+router.post("/reset-password", async (req, res) => {
+  try {
+    const officialEmail = (req.body?.officialEmail || "").trim().toLowerCase();
+    const resetCode = String(req.body?.resetCode || "").trim();
+    const newPassword = String(req.body?.newPassword || "").trim();
+
+    if (!isValidEmail(officialEmail) || resetCode.length !== 6) {
+      return res.status(400).json({ 
+        message: "Invalid email or reset code." 
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        message: "Password must be at least 6 characters." 
+      });
+    }
+
+    const record = resetPasswordStore.get(officialEmail);
+    if (!record) {
+      return res.status(400).json({ 
+        message: "No reset code found. Request a new one." 
+      });
+    }
+
+    if (Date.now() > record.expiresAt) {
+      resetPasswordStore.delete(officialEmail);
+      return res.status(400).json({
+        message: "Reset code expired. Request a new one.",
+      });
+    }
+
+    if (record.attempts >= MAX_ATTEMPTS) {
+      resetPasswordStore.delete(officialEmail);
+      return res.status(429).json({
+        message: "Too many attempts. Request a new code.",
+      });
+    }
+
+    if (record.code !== resetCode) {
+      record.attempts += 1;
+      resetPasswordStore.set(officialEmail, record);
+      return res.status(400).json({ 
+        message: "Incorrect reset code." 
+      });
+    }
+
+    const user = await User.findById(record.userId);
+    if (!user) {
+      resetPasswordStore.delete(officialEmail);
+      return res.status(404).json({ 
+        message: "User not found." 
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    resetPasswordStore.delete(officialEmail);
+
+    console.log(`✅ Password reset successful for: ${officialEmail}`);
+    return res.status(200).json({ 
+      success: true,
+      message: "Password reset successful. You can now login." 
+    });
+  } catch (error) {
+    console.error("Reset password error:", error.message);
+    return res.status(500).json({ message: "Unable to reset password." });
+  }
+});
