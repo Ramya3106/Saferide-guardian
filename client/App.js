@@ -1159,8 +1159,8 @@ const App = () => {
       <View style={styles.backgroundGlow} />
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        enabled={Platform.OS === "ios"}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <ScrollView
@@ -1171,6 +1171,7 @@ const App = () => {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={true}
             bounces={true}
+            nestedScrollEnabled={true}
           >
             <View style={styles.card}>
           <View style={styles.brandRow}>
