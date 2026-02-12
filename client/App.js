@@ -18,6 +18,8 @@ import {
   View,
 } from "react-native";
 import PassengerDashboard from "./PassengerDashboard";
+import CarAutoDashboard from "./CarAutoDashboard";
+import DriverConductorDashboard from "./DriverConductorDashboard";
 
 const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
 const OFFICIAL_DOMAINS = {
@@ -75,6 +77,7 @@ const App = () => {
   const [pnrRange, setPnrRange] = useState("");
   const [jurisdiction, setJurisdiction] = useState("");
 
+  const [selectedTransport, setSelectedTransport] = useState("");
   const [complaintItem, setComplaintItem] = useState("");
   const [complaintDesc, setComplaintDesc] = useState("");
   const [complaintLocation, setComplaintLocation] = useState("");
@@ -705,7 +708,91 @@ const App = () => {
       </Text>
 
       <View style={styles.cardBlock}>
-        <Text style={styles.cardTitle}>Raise Geo-Tagged Complaint</Text>
+        <Text style={styles.cardTitle}>Report Lost Item</Text>
+        <Text style={styles.label}>In which transport did you lose your item?</Text>
+        <View style={styles.transportGrid}>
+          <View style={styles.transportRow}>
+            <TouchableOpacity
+              style={[
+                styles.transportButton,
+                selectedTransport === "Train" && styles.transportButtonSelected,
+              ]}
+              onPress={() => setSelectedTransport("Train")}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.transportIcon}>🚆</Text>
+              <Text
+                style={[
+                  styles.transportButtonText,
+                  selectedTransport === "Train" && styles.transportButtonTextSelected,
+                ]}
+              >
+                Train
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.transportButton,
+                selectedTransport === "Car" && styles.transportButtonSelected,
+              ]}
+              onPress={() => setSelectedTransport("Car")}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.transportIcon}>🚗</Text>
+              <Text
+                style={[
+                  styles.transportButtonText,
+                  selectedTransport === "Car" && styles.transportButtonTextSelected,
+                ]}
+              >
+                Car
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.transportRow}>
+            <TouchableOpacity
+              style={[
+                styles.transportButton,
+                selectedTransport === "Bus" && styles.transportButtonSelected,
+              ]}
+              onPress={() => setSelectedTransport("Bus")}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.transportIcon}>🚌</Text>
+              <Text
+                style={[
+                  styles.transportButtonText,
+                  selectedTransport === "Bus" && styles.transportButtonTextSelected,
+                ]}
+              >
+                Bus
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.transportButton,
+                selectedTransport === "Auto" && styles.transportButtonSelected,
+              ]}
+              onPress={() => setSelectedTransport("Auto")}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.transportIcon}>🛺</Text>
+              <Text
+                style={[
+                  styles.transportButtonText,
+                  selectedTransport === "Auto" && styles.transportButtonTextSelected,
+                ]}
+              >
+                Auto
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      {selectedTransport && (
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Raise Geo-Tagged Complaint</Text>
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Lost item</Text>
           <TextInput
@@ -753,6 +840,7 @@ const App = () => {
           <Text style={styles.primaryButtonText}>Submit complaint</Text>
         </TouchableOpacity>
       </View>
+      )}
 
       {complaintSubmitted && (
         <View style={styles.cardBlock}>
@@ -1134,6 +1222,24 @@ const App = () => {
           userEmail={trimmedEmail}
           userName={displayName}
           userPhone={displayPhone}
+          onLogout={handleLogout}
+        />
+      );
+    }
+
+    // Handle Cab/Auto Driver
+    if (role === "Cab/Auto") {
+      return (
+        <CarAutoDashboard
+          onLogout={handleLogout}
+        />
+      );
+    }
+
+    // Handle Driver/Conductor
+    if (role === "Driver/Conductor") {
+      return (
+        <DriverConductorDashboard
           onLogout={handleLogout}
         />
       );
@@ -2644,6 +2750,42 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     marginTop: 8,
+  },
+  transportGrid: {
+    marginTop: 12,
+    gap: 12,
+  },
+  transportRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 12,
+  },
+  transportButton: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: "#E2E8F0",
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 100,
+  },
+  transportButtonSelected: {
+    backgroundColor: "#EFF6FF",
+    borderColor: "#3B82F6",
+  },
+  transportIcon: {
+    fontSize: 40,
+    marginBottom: 8,
+  },
+  transportButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#64748B",
+  },
+  transportButtonTextSelected: {
+    color: "#3B82F6",
   },
   profileCard: {
     backgroundColor: "#FFFFFF",
