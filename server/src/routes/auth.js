@@ -361,12 +361,12 @@ router.post("/login", async (req, res) => {
           .status(400)
           .json({ message: "Invalid professional ID format." });
       }
-      user = await User.findOne({ professionalId, role });
+      user = await User.findOne({ professionalId, role }).select('+password');
     } else {
       if (!isValidEmail(email)) {
         return res.status(400).json({ message: "Enter a valid email." });
       }
-      user = await User.findOne({ email, role });
+      user = await User.findOne({ email, role }).select('+password');
     }
 
     if (!user) {
