@@ -594,7 +594,6 @@ const App = () => {
     try {
       await verifyCode(otpEmail, emailOtp.trim());
       setIsVerified(true);
-      Keyboard.dismiss();
     } catch (err) {
       const message = err?.response?.data?.message || "Unable to verify code.";
       setIsVerified(false);
@@ -2121,7 +2120,10 @@ const App = () => {
                           <View style={styles.inputGroup}>
                             <Text style={styles.label}>Verification code</Text>
                             <TextInput
-                              style={styles.input}
+                              style={[
+                                styles.input,
+                                isVerified && styles.inputDisabled,
+                              ]}
                               placeholder="Enter 6-digit code"
                               placeholderTextColor="#94A3B8"
                               value={emailOtp}
