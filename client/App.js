@@ -117,8 +117,7 @@ const App = () => {
   const isOfficialRole = role === "TTR/RPF/Police";
   const isOperationalStaff = role === "Driver/Conductor" || role === "Cab/Auto";
   const otpEmail = (isOfficialRole ? officialEmail : email).trim();
-  const isOtpContext =
-    (isRegister && !isOfficialRole) || (!isRegister && loginWithOtp);
+  const isOtpContext = isRegister || (!isRegister && loginWithOtp);
 
   const getOfficialDomain = (selectedRole) => {
     const domains = OFFICIAL_DOMAINS[selectedRole];
@@ -187,6 +186,7 @@ const App = () => {
         return (
           isProfessionalIdValid(role, professionalId) &&
           isOfficialEmailValid(role, officialEmail) &&
+          isVerified &&
           pnrRange.trim().length >= 5 &&
           jurisdiction.trim().length >= 3
         );
@@ -404,14 +404,71 @@ const App = () => {
       return;
     }
 
-    if (isRegister && isOfficialRole) {
-      setPendingApproval(true);
-      setMode("login");
-      setError("Registration submitted. Admin approval takes up to 24 hours.");
+    if (isRegister && isOfficialRole && !isVerified) {
+      setError("Verify your official email before registering.");
       return;
     }
 
     setError("");
+
+    if (isRegister) {
+      const isBusTravel = travelType === "Bus";
+      const resolvedTravelRoute = isBusTravel
+        ? `${busDeparture.trim()} -> ${busArrival.trim()}`
+        : travelRoute.trim();
+      const resolvedTravelTiming = isBusTravel
+        ? busStartTime.trim()
+        : travelTiming.trim();
+
+      try {
+        await axios.post(`${API_BASE}/auth/register`, {
+          role,
+          name: name.trim(),
+          phone: phone.trim(),
+          email: email.trim().toLowerCase(),
+          officialEmail: officialEmail.trim().toLowerCase(),
+          professionalId: professionalId.trim(),
+          password: password.trim(),
+          isVerified,
+          travelType: travelType.trim(),
+          travelNumber: travelNumber.trim(),
+          travelName: travelName.trim(),
+          travelRoute: resolvedTravelRoute,
+          travelTiming: resolvedTravelTiming,
+          driverName: driverName.trim(),
+          conductorName: conductorName.trim(),
+          vehicleNumber: vehicleNumber.trim(),
+          dutyRoute: dutyRoute.trim(),
+          shiftTiming: shiftTiming.trim(),
+          fromStop: fromStop.trim(),
+          toStop: toStop.trim(),
+          pnrRange: pnrRange.trim(),
+          jurisdiction: jurisdiction.trim(),
+        });
+
+        if (isOfficialRole) {
+          setPendingApproval(true);
+          setMode("login");
+          setPassword("");
+          setConfirmPassword("");
+          setEmailOtp("");
+          setIsVerified(false);
+          setIsOtpSent(false);
+          setError(
+            "Registration submitted. Admin approval takes up to 24 hours.",
+          );
+          return;
+        }
+
+        setIsAuthenticated(true);
+        return;
+      } catch (err) {
+        const message =
+          err?.response?.data?.message || "Unable to register account.";
+        setError(message);
+        return;
+      }
+    }
 
     if (!isRegister && isOfficialRole) {
       try {
@@ -2044,11 +2101,11 @@ const App = () => {
                         <TouchableOpacity
                           style={[
                             styles.primaryButton,
-                            (email.trim().length < 5 || isSendingOtp) &&
+                            (otpEmail.trim().length < 5 || isSendingOtp) &&
                               styles.buttonDisabled,
                           ]}
                           onPress={handleSendOtp}
-                          disabled={email.trim().length < 5 || isSendingOtp}
+                          disabled={otpEmail.trim().length < 5 || isSendingOtp}
                           activeOpacity={0.9}
                         >
                           <Text style={styles.primaryButtonText}>
