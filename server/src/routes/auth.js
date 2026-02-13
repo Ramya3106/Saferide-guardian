@@ -225,10 +225,8 @@ router.post("/register", async (req, res) => {
           .status(400)
           .json({ message: "Invalid professional ID format." });
       }
-      if (!isValidOfficialEmail(role, officialEmail)) {
-        return res
-          .status(400)
-          .json({ message: "Official email domain required." });
+      if (!isValidEmail(officialEmail)) {
+        return res.status(400).json({ message: "Enter a valid email." });
       }
       if (!req.body?.isVerified) {
         return res.status(400).json({ message: "Email not verified." });

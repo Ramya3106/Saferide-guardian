@@ -164,6 +164,11 @@ const App = () => {
     return trimmed.endsWith(`@${domains}`);
   };
 
+  const isValidEmail = (emailValue) => {
+    const trimmed = (emailValue || "").trim().toLowerCase();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+  };
+
   const canVerify = useMemo(() => {
     return /^\d{6}$/.test(emailOtp.trim());
   }, [emailOtp]);
@@ -185,7 +190,7 @@ const App = () => {
       if (isOfficialRole) {
         return (
           isProfessionalIdValid(role, professionalId) &&
-          isOfficialEmailValid(role, officialEmail) &&
+          isValidEmail(officialEmail) &&
           isVerified &&
           pnrRange.trim().length >= 5 &&
           jurisdiction.trim().length >= 3
@@ -551,12 +556,8 @@ const App = () => {
   };
 
   const handleSendOtp = async () => {
-    if (otpEmail.length < 5) {
+    if (!isValidEmail(otpEmail)) {
       setError("Enter a valid email address.");
-      return;
-    }
-    if (isOfficialRole && !isOfficialEmailValid(role, otpEmail)) {
-      setError("Enter a valid official email address.");
       return;
     }
 
