@@ -230,6 +230,9 @@ router.post("/register", async (req, res) => {
           .status(400)
           .json({ message: "Official email domain required." });
       }
+      if (!req.body?.isVerified) {
+        return res.status(400).json({ message: "Email not verified." });
+      }
       email = officialEmail;
     } else {
       if (!isValidEmail(email)) {
