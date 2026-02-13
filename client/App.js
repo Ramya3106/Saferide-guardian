@@ -2607,6 +2607,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     color: "#1E293B",
   },
+  inputDisabled: {
+    backgroundColor: "#E2E8F0",
+    color: "#94A3B8",
+  },
   passwordRow: {
     flexDirection: "row",
     alignItems: "center",
