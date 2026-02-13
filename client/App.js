@@ -594,6 +594,7 @@ const App = () => {
     try {
       await verifyCode(otpEmail, emailOtp.trim());
       setIsVerified(true);
+      Keyboard.dismiss();
     } catch (err) {
       const message = err?.response?.data?.message || "Unable to verify code.";
       setIsVerified(false);
@@ -2127,6 +2128,7 @@ const App = () => {
                               onChangeText={setEmailOtp}
                               keyboardType="number-pad"
                               maxLength={6}
+                              editable={!isVerified}
                             />
                           </View>
                           <TouchableOpacity
