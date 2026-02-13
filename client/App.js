@@ -319,6 +319,17 @@ const App = () => {
   }, [formAnim, isAuthenticated, mode]);
 
   useEffect(() => {
+    if (mode === "login" && role === "TTR/RPF/Police") {
+      if (!professionalId.trim()) {
+        setProfessionalId("TTR-SR-11111");
+      }
+      if (!password.trim()) {
+        setPassword("123456");
+      }
+    }
+  }, [mode, password, professionalId, role]);
+
+  useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       "keyboardDidShow",
       () => {
