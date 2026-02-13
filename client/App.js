@@ -1589,13 +1589,17 @@ const App = () => {
                     <View style={styles.inputGroup}>
                       <Text style={styles.label}>Email address</Text>
                       <TextInput
-                        style={styles.input}
+                        style={[
+                          styles.input,
+                          isRegister && isVerified && styles.inputDisabled,
+                        ]}
                         placeholder="you@example.com"
                         placeholderTextColor="#94A3B8"
                         value={email}
                         onChangeText={setEmail}
                         autoCapitalize="none"
                         keyboardType="email-address"
+                        editable={!(isRegister && isVerified)}
                       />
                     </View>
                   )}
@@ -1620,13 +1624,17 @@ const App = () => {
                     <View style={styles.inputGroup}>
                       <Text style={styles.label}>Official email</Text>
                       <TextInput
-                        style={styles.input}
+                        style={[
+                          styles.input,
+                          isVerified && styles.inputDisabled,
+                        ]}
                         placeholder={`name@${getOfficialDomain(role)}`}
                         placeholderTextColor="#94A3B8"
                         value={officialEmail}
                         onChangeText={setOfficialEmail}
                         autoCapitalize="none"
                         keyboardType="email-address"
+                        editable={!isVerified}
                       />
                       <Text style={styles.helperText}>
                         Use your {getOfficialDomain(role)} mailbox for approval.
