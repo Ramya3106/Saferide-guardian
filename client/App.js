@@ -2437,33 +2437,33 @@ const App = () => {
                   )}
 
                         {!forgotPasswordMode && (
-                                  <>
-                                    <TouchableOpacity
-                                      style={[
-                                        styles.primaryButton,
-                                        !canSubmit && styles.buttonDisabled,
-                                      ]}
-                                      onPress={handleSubmit}
-                                      disabled={!canSubmit}
-                                    >
-                                      <Text style={styles.primaryButtonText}>
-                                        {isRegister ? "Create account" : "Log in"}
+                                <View>
+                                  <TouchableOpacity
+                                    style={[
+                                      styles.primaryButton,
+                                      !canSubmit && styles.buttonDisabled,
+                                    ]}
+                                    onPress={handleSubmit}
+                                    disabled={!canSubmit}
+                                  >
+                                    <Text style={styles.primaryButtonText}>
+                                      {isRegister ? "Create account" : "Log in"}
+                                    </Text>
+                                  </TouchableOpacity>
+        
+                                  <View style={styles.switchRow}>
+                                    <Text style={styles.switchText}>
+                                      {isRegister
+                                        ? "Already have an account?"
+                                        : "New here?"}
+                                    </Text>
+                                    <TouchableOpacity onPress={handleSwitchMode}>
+                                      <Text style={styles.switchLink}>
+                                        {isRegister ? "Log in" : "Create one"}
                                       </Text>
                                     </TouchableOpacity>
-              
-                                    <View style={styles.switchRow}>
-                                      <Text style={styles.switchText}>
-                                        {isRegister
-                                          ? "Already have an account?"
-                                          : "New here?"}
-                                      </Text>
-                                      <TouchableOpacity onPress={handleSwitchMode}>
-                                        <Text style={styles.switchLink}>
-                                          {isRegister ? "Log in" : "Create one"}
-                                        </Text>
-                                      </TouchableOpacity>
-                                    </View>
-                                  </>
+                                  </View>
+                                </View>
                               )}
                             </>
                   )}
