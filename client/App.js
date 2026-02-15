@@ -8,7 +8,6 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,6 +15,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  useSafeAreaInsets,
 } from "react-native";
 import PassengerDashboard from "./PassengerDashboard";
 import CarAutoDashboard from "./CarAutoDashboard";
@@ -1404,8 +1404,10 @@ const App = () => {
     );
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {isAuthenticated ? (
         <View style={styles.authenticatedContainer}>
           {renderAuthenticatedContent()}
