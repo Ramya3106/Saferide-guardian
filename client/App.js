@@ -1564,11 +1564,11 @@ const App = () => {
                         <Text style={styles.primaryButtonText}>Continue</Text>
                       </TouchableOpacity>
                     </View>
-                  ) : (
-                <View>
-                  <Text style={styles.formTitle}>
-                    {isRegister ? "Create your account" : "Sign in to continue"}
-                  </Text>
+                ) : (
+                  <View>
+                    <Text style={styles.formTitle}>
+                      {isRegister ? "Create your account" : "Sign in to continue"}
+                    </Text>
 
                   <View style={styles.inputGroup}>
                     <Text style={styles.label}>Select role</Text>
@@ -2466,12 +2466,13 @@ const App = () => {
                     </>
                   )}
 
-                  <View style={styles.footerRow}>
-                    <Text style={styles.footerText}>
-                      Multi-role recovery platform for public transport.
-                    </Text>
+                    <View style={styles.footerRow}>
+                      <Text style={styles.footerText}>
+                        Multi-role recovery platform for public transport.
+                      </Text>
+                    </View>
                   </View>
-                </View>
+                )}
               )}
             </View>
           </ScrollView>
