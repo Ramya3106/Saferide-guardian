@@ -2484,6 +2484,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
+  authenticatedContainer: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
+  authenticatedContent: {
+    flex: 1,
+  },
+  authenticatedScrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  logoutButtonFull: {
+    marginTop: 12,
+  },
   keyboardAvoidingView: {
     flex: 1,
   },
