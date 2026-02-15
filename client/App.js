@@ -2478,6 +2478,8 @@ const App = () => {
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
+        </>
+      )}
     </SafeAreaView>
   );
 };
