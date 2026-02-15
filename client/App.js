@@ -2464,8 +2464,8 @@ const App = () => {
                                     </TouchableOpacity>
                                   </View>
                                 </View>
-                              )}
-                            </>
+                      )}
+                    </View>
                   )}
                 </View>
               </ScrollView>
