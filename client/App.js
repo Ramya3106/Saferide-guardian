@@ -1407,7 +1407,7 @@ const App = () => {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       {isAuthenticated ? (
         <View style={styles.authenticatedContainer}>
           {renderAuthenticatedContent()}
