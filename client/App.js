@@ -2480,8 +2480,9 @@ const App = () => {
               )}
             </View>
           </ScrollView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+                </TouchableWithoutFeedback>
+              </KeyboardAvoidingView>
+            </View>
         </>
       )}
     </SafeAreaView>
