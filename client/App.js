@@ -1534,35 +1534,35 @@ const App = () => {
                             </View>
                           )}
                           {specificRole === "Police" && (
-                        <View style={styles.roleDescCard}>
-                          <Text style={styles.roleDescTitle}>
-                            👮 Police Department
-                          </Text>
-                          <Text style={styles.roleDescText}>
-                            Law enforcement officers handling criminal cases,
-                            investigations, and public safety.
-                          </Text>
+                            <View style={styles.roleDescCard}>
+                              <Text style={styles.roleDescTitle}>
+                                👮 Police Department
+                              </Text>
+                              <Text style={styles.roleDescText}>
+                                Law enforcement officers handling criminal cases,
+                                investigations, and public safety.
+                              </Text>
+                            </View>
+                          )}
                         </View>
+                      </View>
+
+                      {error.length > 0 && (
+                        <Text style={styles.errorText}>{error}</Text>
                       )}
+
+                      <TouchableOpacity
+                        style={[
+                          styles.primaryButton,
+                          !specificRole && styles.buttonDisabled,
+                        ]}
+                        onPress={handleSpecificRoleSelection}
+                        disabled={!specificRole}
+                      >
+                        <Text style={styles.primaryButtonText}>Continue</Text>
+                      </TouchableOpacity>
                     </View>
-                  </View>
-
-                  {error.length > 0 && (
-                    <Text style={styles.errorText}>{error}</Text>
-                  )}
-
-                  <TouchableOpacity
-                    style={[
-                      styles.primaryButton,
-                      !specificRole && styles.buttonDisabled,
-                    ]}
-                    onPress={handleSpecificRoleSelection}
-                    disabled={!specificRole}
-                  >
-                    <Text style={styles.primaryButtonText}>Continue</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
+                  ) : (
                 <View>
                   <Text style={styles.formTitle}>
                     {isRegister ? "Create your account" : "Sign in to continue"}
