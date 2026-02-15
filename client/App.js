@@ -1467,7 +1467,7 @@ const App = () => {
                   <View style={styles.divider} />
 
                   {showRoleSelection ? (
-                  <View>
+                    <View>
                     <View style={styles.backButtonRow}>
                       <TouchableOpacity
                         style={styles.backButton}
@@ -2466,14 +2466,12 @@ const App = () => {
                                   </>
                               )}
                             </>
-                          )}
-                        </View>
-                      </ScrollView>
-                    </TouchableWithoutFeedback>
-                  </KeyboardAvoidingView>
-                </>
-      )}
-    </>
+                  )}
+                </View>
+              </ScrollView>
+            </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
+        </>
       )}
     </SafeAreaView>
   );
