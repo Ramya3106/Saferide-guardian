@@ -1464,9 +1464,9 @@ const App = () => {
                       )}
                     </View>
                   </View>
-                <View style={styles.divider} />
+                  <View style={styles.divider} />
 
-                {showRoleSelection ? (
+                  {showRoleSelection ? (
                   <View>
                     <View style={styles.backButtonRow}>
                       <TouchableOpacity
@@ -2464,16 +2464,9 @@ const App = () => {
                                       </TouchableOpacity>
                                     </View>
                                   </>
-                                  )}
-  
-                                    <View style={styles.footerRow}>
-                                      <Text style={styles.footerText}>
-                                        Multi-role recovery platform for public transport.
-                                      </Text>
-                                    </View>
-                                  </View>
-                                )}
-                              </>
+                              )}
+                            </>
+                          )}
                         </View>
                       </ScrollView>
                     </TouchableWithoutFeedback>
