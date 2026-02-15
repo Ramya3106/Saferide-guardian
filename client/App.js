@@ -2472,8 +2472,8 @@ const App = () => {
                     </TouchableWithoutFeedback>
                   </KeyboardAvoidingView>
                 </>
-              )}
-        </>
+      )}
+    </>
       )}
     </SafeAreaView>
   );
