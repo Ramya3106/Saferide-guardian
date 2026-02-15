@@ -2466,18 +2466,19 @@ const App = () => {
                                   </>
                                   )}
   
-                                  <View style={styles.footerRow}>
-                                    <Text style={styles.footerText}>
-                                      Multi-role recovery platform for public transport.
-                                    </Text>
+                                    <View style={styles.footerRow}>
+                                      <Text style={styles.footerText}>
+                                        Multi-role recovery platform for public transport.
+                                      </Text>
+                                    </View>
                                   </View>
-                                </View>
-                              )}
-                            </>
-                      </View>
-                    </ScrollView>
-                  </TouchableWithoutFeedback>
-                </KeyboardAvoidingView>
+                                )}
+                              </>
+                        </View>
+                      </ScrollView>
+                    </TouchableWithoutFeedback>
+                  </KeyboardAvoidingView>
+                </>
               )}
         </>
       )}
