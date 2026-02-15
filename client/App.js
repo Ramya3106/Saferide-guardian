@@ -1466,104 +1466,104 @@ const App = () => {
                   </View>
                   <View style={styles.divider} />
 
-                  {showRoleSelection ? (
-                    <View>
-                      <View style={styles.backButtonRow}>
-                        <TouchableOpacity
-                          style={styles.backButton}
-                          onPress={() => {
-                            setShowRoleSelection(false);
-                            setSpecificRole("");
-                            setError("");
-                          }}
-                        >
-                          <Ionicons name="arrow-back" size={24} color="#2563EB" />
-                        </TouchableOpacity>
-                        <Text style={styles.formTitle}>
-                          Select Your Specific Role
-                        </Text>
-                        <View style={{ width: 24 }} />
-                      </View>
-                      <Text style={styles.sectionSubtitle}>
-                        Please specify which department you belong to
-                      </Text>
-
-                      <View style={styles.cardBlock}>
-                        <View style={styles.roleRow}>
-                          {["TTR", "RPF", "Police"].map((item) => (
-                            <TouchableOpacity
-                              key={item}
-                              style={[
-                                styles.roleChipLarge,
-                                specificRole === item && styles.roleChipActive,
-                              ]}
-                              onPress={() => setSpecificRole(item)}
-                            >
-                              <Text
-                                style={[
-                                  styles.roleChipTextLarge,
-                                  specificRole === item &&
-                                    styles.roleChipTextActive,
-                                ]}
-                              >
-                                {item}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-
-                        <View style={styles.roleDescriptions}>
-                          {specificRole === "TTR" && (
-                            <View style={styles.roleDescCard}>
-                              <Text style={styles.roleDescTitle}>
-                                🚂 Travelling Ticket Examiner (TTR)
-                              </Text>
-                              <Text style={styles.roleDescText}>
-                                Responsible for ticket checking, passenger
-                                assistance, and onboard security in trains.
-                              </Text>
-                            </View>
-                          )}
-                          {specificRole === "RPF" && (
-                            <View style={styles.roleDescCard}>
-                              <Text style={styles.roleDescTitle}>
-                                🛡️ Railway Protection Force (RPF)
-                              </Text>
-                              <Text style={styles.roleDescText}>
-                                Railway security force responsible for protecting
-                                railway property, passengers, and freight.
-                              </Text>
-                            </View>
-                          )}
-                          {specificRole === "Police" && (
-                            <View style={styles.roleDescCard}>
-                              <Text style={styles.roleDescTitle}>
-                                👮 Police Department
-                              </Text>
-                              <Text style={styles.roleDescText}>
-                                Law enforcement officers handling criminal cases,
-                                investigations, and public safety.
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                      </View>
-
-                      {error.length > 0 && (
-                        <Text style={styles.errorText}>{error}</Text>
-                      )}
-
+                {showRoleSelection ? (
+                  <View>
+                    <View style={styles.backButtonRow}>
                       <TouchableOpacity
-                        style={[
-                          styles.primaryButton,
-                          !specificRole && styles.buttonDisabled,
-                        ]}
-                        onPress={handleSpecificRoleSelection}
-                        disabled={!specificRole}
+                        style={styles.backButton}
+                        onPress={() => {
+                          setShowRoleSelection(false);
+                          setSpecificRole("");
+                          setError("");
+                        }}
                       >
-                        <Text style={styles.primaryButtonText}>Continue</Text>
+                        <Ionicons name="arrow-back" size={24} color="#2563EB" />
                       </TouchableOpacity>
+                      <Text style={styles.formTitle}>
+                        Select Your Specific Role
+                      </Text>
+                      <View style={{ width: 24 }} />
                     </View>
+                    <Text style={styles.sectionSubtitle}>
+                      Please specify which department you belong to
+                    </Text>
+
+                    <View style={styles.cardBlock}>
+                      <View style={styles.roleRow}>
+                        {["TTR", "RPF", "Police"].map((item) => (
+                          <TouchableOpacity
+                            key={item}
+                            style={[
+                              styles.roleChipLarge,
+                              specificRole === item && styles.roleChipActive,
+                            ]}
+                            onPress={() => setSpecificRole(item)}
+                          >
+                            <Text
+                              style={[
+                                styles.roleChipTextLarge,
+                                specificRole === item &&
+                                  styles.roleChipTextActive,
+                              ]}
+                            >
+                              {item}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+
+                      <View style={styles.roleDescriptions}>
+                        {specificRole === "TTR" && (
+                          <View style={styles.roleDescCard}>
+                            <Text style={styles.roleDescTitle}>
+                              🚂 Travelling Ticket Examiner (TTR)
+                            </Text>
+                            <Text style={styles.roleDescText}>
+                              Responsible for ticket checking, passenger
+                              assistance, and onboard security in trains.
+                            </Text>
+                          </View>
+                        )}
+                        {specificRole === "RPF" && (
+                          <View style={styles.roleDescCard}>
+                            <Text style={styles.roleDescTitle}>
+                              🛡️ Railway Protection Force (RPF)
+                            </Text>
+                            <Text style={styles.roleDescText}>
+                              Railway security force responsible for protecting
+                              railway property, passengers, and freight.
+                            </Text>
+                          </View>
+                        )}
+                        {specificRole === "Police" && (
+                          <View style={styles.roleDescCard}>
+                            <Text style={styles.roleDescTitle}>
+                              👮 Police Department
+                            </Text>
+                            <Text style={styles.roleDescText}>
+                              Law enforcement officers handling criminal cases,
+                              investigations, and public safety.
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+
+                    {error.length > 0 && (
+                      <Text style={styles.errorText}>{error}</Text>
+                    )}
+
+                    <TouchableOpacity
+                      style={[
+                        styles.primaryButton,
+                        !specificRole && styles.buttonDisabled,
+                      ]}
+                      onPress={handleSpecificRoleSelection}
+                      disabled={!specificRole}
+                    >
+                      <Text style={styles.primaryButtonText}>Continue</Text>
+                    </TouchableOpacity>
+                  </View>
                 ) : (
                   <View>
                     <Text style={styles.formTitle}>
