@@ -3073,8 +3073,4 @@ const styles = StyleSheet.create({
   },
 });
 
-    </SafeAreaView>
-  );
-};
-
 export default App;
