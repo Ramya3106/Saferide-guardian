@@ -1380,144 +1380,160 @@ const App = () => {
     return renderStaffDashboard();
   };
 
+  const usesInternalScroll =
+    role === "Passenger" || role === "Cab/Auto" || role === "Driver/Conductor";
+  const showStandaloneLogout = !usesInternalScroll && role !== "Passenger";
+
+  const renderAuthenticatedContent = () => {
+    if (usesInternalScroll) {
+      return <View style={styles.authenticatedContent}>{renderDashboard()}</View>;
+    }
+
+    return (
+      <ScrollView contentContainerStyle={styles.authenticatedScrollContent}>
+        {renderDashboard()}
+        {showStandaloneLogout && (
+          <TouchableOpacity
+            style={[styles.secondaryButton, styles.logoutButtonFull]}
+            onPress={handleLogout}
+          >
+            <Text style={styles.secondaryButtonText}>Log out</Text>
+          </TouchableOpacity>
+        )}
+      </ScrollView>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.backgroundGlow} />
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView
-            contentContainerStyle={[
-              styles.scrollContent,
-              !isAuthenticated &&
-                !keyboardVisible &&
-                styles.scrollContentCentered,
-            ]}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={true}
-            bounces={true}
-            nestedScrollEnabled={true}
+      {isAuthenticated ? (
+        <View style={styles.authenticatedContainer}>
+          {renderAuthenticatedContent()}
+        </View>
+      ) : (
+        <>
+          <View style={styles.backgroundGlow} />
+          <KeyboardAvoidingView
+            style={styles.keyboardAvoidingView}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
           >
-            <View style={styles.card}>
-              <View style={styles.brandRow}>
-                <View>
-                  <Text style={styles.title}>SafeRide Guardian</Text>
-                  <Text style={styles.subtitle}>
-                    AI-powered role-based recovery for buses, trains, cabs,
-                    autos.
-                  </Text>
-                  <View style={styles.statusBadgeRow}>
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        apiStatus === "online"
-                          ? styles.statusBadgeOnline
-                          : apiStatus === "offline"
-                            ? styles.statusBadgeOffline
-                            : styles.statusBadgeChecking,
-                      ]}
-                    >
-                      <Text style={styles.statusBadgeText}>
-                        {apiStatus === "online"
-                          ? "Backend online"
-                          : apiStatus === "offline"
-                            ? "Backend offline"
-                            : "Checking backend..."}
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <ScrollView
+                contentContainerStyle={[
+                  styles.scrollContent,
+                  !keyboardVisible && styles.scrollContentCentered,
+                ]}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={true}
+                bounces={true}
+                nestedScrollEnabled={true}
+              >
+                <View style={styles.card}>
+                  <View style={styles.brandRow}>
+                    <View>
+                      <Text style={styles.title}>SafeRide Guardian</Text>
+                      <Text style={styles.subtitle}>
+                        AI-powered role-based recovery for buses, trains, cabs,
+                        autos.
                       </Text>
-                    </View>
-                  </View>
-                  {apiStatus === "offline" && apiError.length > 0 && (
-                    <Text style={styles.apiErrorText}>{apiError}</Text>
-                  )}
-                </View>
-              </View>
-              <View style={styles.divider} />
-
-              {isAuthenticated ? (
-                <View style={styles.home}>
-                  {renderDashboard()}
-                  {role !== "Passenger" && (
-                    <TouchableOpacity
-                      style={[styles.secondaryButton, styles.logoutButton]}
-                      onPress={handleLogout}
-                    >
-                      <Text style={styles.secondaryButtonText}>Log out</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ) : showRoleSelection ? (
-                <View>
-                  <View style={styles.backButtonRow}>
-                    <TouchableOpacity
-                      style={styles.backButton}
-                      onPress={() => {
-                        setShowRoleSelection(false);
-                        setSpecificRole("");
-                        setError("");
-                      }}
-                    >
-                      <Ionicons name="arrow-back" size={24} color="#2563EB" />
-                    </TouchableOpacity>
-                    <Text style={styles.formTitle}>
-                      Select Your Specific Role
-                    </Text>
-                    <View style={{ width: 24 }} />
-                  </View>
-                  <Text style={styles.sectionSubtitle}>
-                    Please specify which department you belong to
-                  </Text>
-
-                  <View style={styles.cardBlock}>
-                    <View style={styles.roleRow}>
-                      {["TTR", "RPF", "Police"].map((item) => (
-                        <TouchableOpacity
-                          key={item}
+                      <View style={styles.statusBadgeRow}>
+                        <View
                           style={[
-                            styles.roleChipLarge,
-                            specificRole === item && styles.roleChipActive,
+                            styles.statusBadge,
+                            apiStatus === "online"
+                              ? styles.statusBadgeOnline
+                              : apiStatus === "offline"
+                                ? styles.statusBadgeOffline
+                                : styles.statusBadgeChecking,
                           ]}
-                          onPress={() => setSpecificRole(item)}
                         >
-                          <Text
-                            style={[
-                              styles.roleChipTextLarge,
-                              specificRole === item &&
-                                styles.roleChipTextActive,
-                            ]}
-                          >
-                            {item}
+                          <Text style={styles.statusBadgeText}>
+                            {apiStatus === "online"
+                              ? "Backend online"
+                              : apiStatus === "offline"
+                                ? "Backend offline"
+                                : "Checking backend..."}
                           </Text>
-                        </TouchableOpacity>
-                      ))}
+                        </View>
+                      </View>
+                      {apiStatus === "offline" && apiError.length > 0 && (
+                        <Text style={styles.apiErrorText}>{apiError}</Text>
+                      )}
                     </View>
+                  </View>
+                  <View style={styles.divider} />
 
-                    <View style={styles.roleDescriptions}>
-                      {specificRole === "TTR" && (
-                        <View style={styles.roleDescCard}>
-                          <Text style={styles.roleDescTitle}>
-                            🚂 Travelling Ticket Examiner (TTR)
-                          </Text>
-                          <Text style={styles.roleDescText}>
-                            Responsible for ticket checking, passenger
-                            assistance, and onboard security in trains.
-                          </Text>
+                  {showRoleSelection ? (
+                    <View>
+                      <View style={styles.backButtonRow}>
+                        <TouchableOpacity
+                          style={styles.backButton}
+                          onPress={() => {
+                            setShowRoleSelection(false);
+                            setSpecificRole("");
+                            setError("");
+                          }}
+                        >
+                          <Ionicons name="arrow-back" size={24} color="#2563EB" />
+                        </TouchableOpacity>
+                        <Text style={styles.formTitle}>
+                          Select Your Specific Role
+                        </Text>
+                        <View style={{ width: 24 }} />
+                      </View>
+                      <Text style={styles.sectionSubtitle}>
+                        Please specify which department you belong to
+                      </Text>
+
+                      <View style={styles.cardBlock}>
+                        <View style={styles.roleRow}>
+                          {["TTR", "RPF", "Police"].map((item) => (
+                            <TouchableOpacity
+                              key={item}
+                              style={[
+                                styles.roleChipLarge,
+                                specificRole === item && styles.roleChipActive,
+                              ]}
+                              onPress={() => setSpecificRole(item)}
+                            >
+                              <Text
+                                style={[
+                                  styles.roleChipTextLarge,
+                                  specificRole === item &&
+                                    styles.roleChipTextActive,
+                                ]}
+                              >
+                                {item}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
                         </View>
-                      )}
-                      {specificRole === "RPF" && (
-                        <View style={styles.roleDescCard}>
-                          <Text style={styles.roleDescTitle}>
-                            🛡️ Railway Protection Force (RPF)
-                          </Text>
-                          <Text style={styles.roleDescText}>
-                            Railway security force responsible for protecting
-                            railway property, passengers, and freight.
-                          </Text>
-                        </View>
-                      )}
-                      {specificRole === "Police" && (
+
+                        <View style={styles.roleDescriptions}>
+                          {specificRole === "TTR" && (
+                            <View style={styles.roleDescCard}>
+                              <Text style={styles.roleDescTitle}>
+                                🚂 Travelling Ticket Examiner (TTR)
+                              </Text>
+                              <Text style={styles.roleDescText}>
+                                Responsible for ticket checking, passenger
+                                assistance, and onboard security in trains.
+                              </Text>
+                            </View>
+                          )}
+                          {specificRole === "RPF" && (
+                            <View style={styles.roleDescCard}>
+                              <Text style={styles.roleDescTitle}>
+                                🛡️ Railway Protection Force (RPF)
+                              </Text>
+                              <Text style={styles.roleDescText}>
+                                Railway security force responsible for protecting
+                                railway property, passengers, and freight.
+                              </Text>
+                            </View>
+                          )}
+                          {specificRole === "Police" && (
                         <View style={styles.roleDescCard}>
                           <Text style={styles.roleDescTitle}>
                             👮 Police Department
