@@ -291,65 +291,81 @@ const App = () => {
           return;
         }
         if (data?.status === "ok") {
-          return (
-            <SafeAreaProvider>
-              <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-                {isAuthenticated ? (
-                  <View style={styles.authenticatedContainer}>
-                    {renderAuthenticatedContent()}
-                  </View>
-                ) : (
-                  <>
-                    <View style={styles.backgroundGlow} />
-                    <KeyboardAvoidingView
-                      style={styles.keyboardAvoidingView}
-                      behavior={Platform.OS === "ios" ? "padding" : "height"}
-                      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-                    >
-                      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                        <ScrollView
-                          contentContainerStyle={[
-                            styles.scrollContent,
-                            !keyboardVisible && styles.scrollContentCentered,
+          setApiStatus("online");
+          setApiError("");
+        } else {
+          setApiStatus("offline");
+          setApiError("Backend service unavailable");
+        }
+      } catch (err) {
+        if (isMounted) {
+          setApiStatus("offline");
+          setApiError(err?.message || "Unable to connect to backend");
+        }
+      }
+    };
+
+    checkHealth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const renderUnauthenticatedContent = () => (
+    <SafeAreaProvider>
+      <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+        <>
+          <View style={styles.backgroundGlow} />
+          <KeyboardAvoidingView
+            style={styles.keyboardAvoidingView}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+          >
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <ScrollView
+                contentContainerStyle={[
+                  styles.scrollContent,
+                  !keyboardVisible && styles.scrollContentCentered,
+                ]}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={true}
+                bounces={true}
+                nestedScrollEnabled={true}
+              >
+                <View style={styles.card}>
+                  <View style={styles.brandRow}>
+                    <View>
+                      <Text style={styles.title}>SafeRide Guardian</Text>
+                      <Text style={styles.subtitle}>
+                        AI-powered role-based recovery for buses, trains, cabs,
+                        autos.
+                      </Text>
+                      <View style={styles.statusBadgeRow}>
+                        <View
+                          style={[
+                            styles.statusBadge,
+                            apiStatus === "online"
+                              ? styles.statusBadgeOnline
+                              : apiStatus === "offline"
+                                ? styles.statusBadgeOffline
+                                : styles.statusBadgeChecking,
                           ]}
-                          keyboardShouldPersistTaps="handled"
-                          showsVerticalScrollIndicator={true}
-                          bounces={true}
-                          nestedScrollEnabled={true}
                         >
-                          <View style={styles.card}>
-                            <View style={styles.brandRow}>
-                              <View>
-                                <Text style={styles.title}>SafeRide Guardian</Text>
-                                <Text style={styles.subtitle}>
-                                  AI-powered role-based recovery for buses, trains, cabs,
-                                  autos.
-                                </Text>
-                                <View style={styles.statusBadgeRow}>
-                                  <View
-                                    style={[
-                                      styles.statusBadge,
-                                      apiStatus === "online"
-                                        ? styles.statusBadgeOnline
-                                        : apiStatus === "offline"
-                                          ? styles.statusBadgeOffline
-                                          : styles.statusBadgeChecking,
-                                    ]}
-                                  >
-                                    <Text style={styles.statusBadgeText}>
-                                      {apiStatus === "online"
-                                        ? "Backend online"
-                                        : apiStatus === "offline"
-                                          ? "Backend offline"
-                                          : "Checking backend..."}
-                                    </Text>
-                                  </View>
-                                  {apiStatus === "offline" && apiError.length > 0 && (
-                                    <Text style={styles.apiErrorText}>{apiError}</Text>
-                                  )}
-                                </View>
-                              </View>
-                            </View>
+                          <Text style={styles.statusBadgeText}>
+                            {apiStatus === "online"
+                              ? "Backend online"
+                              : apiStatus === "offline"
+                                ? "Backend offline"
+                                : "Checking backend..."}
+                          </Text>
+                        </View>
+                        {apiStatus === "offline" && apiError.length > 0 && (
+                          <Text style={styles.apiErrorText}>{apiError}</Text>
+                        )}
+                      </View>
+                    </View>
+                  </View>
     setPhone("");
     setEmail("");
     setOfficialEmail("");
