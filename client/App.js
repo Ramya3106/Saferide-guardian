@@ -2526,6 +2526,7 @@ const App = () => {
         </>
       )}
     </SafeAreaView>
+  </SafeAreaProvider>
   );
 };
 
