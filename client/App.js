@@ -311,68 +311,6 @@ const App = () => {
     };
   }, []);
 
-  const renderUnauthenticatedContent = () => (
-    <SafeAreaProvider>
-      <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-        <>
-          <View style={styles.backgroundGlow} />
-          <KeyboardAvoidingView
-            style={styles.keyboardAvoidingView}
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-          >
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-              <ScrollView
-                contentContainerStyle={[
-                  styles.scrollContent,
-                  !keyboardVisible && styles.scrollContentCentered,
-                ]}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={true}
-                bounces={true}
-                nestedScrollEnabled={true}
-              >
-                <View style={styles.card}>
-                  <View style={styles.brandRow}>
-                    <View>
-                      <Text style={styles.title}>SafeRide Guardian</Text>
-                      <Text style={styles.subtitle}>
-                        AI-powered role-based recovery for buses, trains, cabs,
-                        autos.
-                      </Text>
-                      <View style={styles.statusBadgeRow}>
-                        <View
-                          style={[
-                            styles.statusBadge,
-                            apiStatus === "online"
-                              ? styles.statusBadgeOnline
-                              : apiStatus === "offline"
-                                ? styles.statusBadgeOffline
-                                : styles.statusBadgeChecking,
-                          ]}
-                        >
-                          <Text style={styles.statusBadgeText}>
-                            {apiStatus === "online"
-                              ? "Backend online"
-                              : apiStatus === "offline"
-                                ? "Backend offline"
-                                : "Checking backend..."}
-                          </Text>
-                        </View>
-                        {apiStatus === "offline" && apiError.length > 0 && (
-                          <Text style={styles.apiErrorText}>{apiError}</Text>
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              </ScrollView>
-            </TouchableWithoutFeedback>
-          </KeyboardAvoidingView>
-        </>
-      </SafeAreaView>
-    </SafeAreaProvider>
-  );
 
   const resetForm = () => {
     setName("");
@@ -1440,67 +1378,68 @@ const App = () => {
   const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      {isAuthenticated ? (
-        <View style={styles.authenticatedContainer}>
-          {renderAuthenticatedContent()}
-        </View>
-      ) : (
-        <>
-          <View style={styles.backgroundGlow} />
-          <KeyboardAvoidingView
-            style={styles.keyboardAvoidingView}
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-          >
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-              <ScrollView
-                contentContainerStyle={[
-                  styles.scrollContent,
-                  !keyboardVisible && styles.scrollContentCentered,
-                ]}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={true}
-                bounces={true}
-                nestedScrollEnabled={true}
-              >
-                <View style={styles.card}>
-                  <View style={styles.brandRow}>
-                    <View>
-                      <Text style={styles.title}>SafeRide Guardian</Text>
-                      <Text style={styles.subtitle}>
-                        AI-powered role-based recovery for buses, trains,
-                        cabs, autos.
-                      </Text>
-                      <View style={styles.statusBadgeRow}>
-                        <View
-                          style={[
-                            styles.statusBadge,
-                            apiStatus === "online"
-                              ? styles.statusBadgeOnline
-                              : apiStatus === "offline"
-                                ? styles.statusBadgeOffline
-                                : styles.statusBadgeChecking,
-                          ]}
-                        >
-                          <Text style={styles.statusBadgeText}>
-                            {apiStatus === "online"
-                              ? "Backend online"
-                              : apiStatus === "offline"
-                                ? "Backend offline"
-                                : "Checking backend..."}
-                          </Text>
+    <SafeAreaProvider>
+      <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+        {isAuthenticated ? (
+          <View style={styles.authenticatedContainer}>
+            {renderAuthenticatedContent()}
+          </View>
+        ) : (
+          <>
+            <View style={styles.backgroundGlow} />
+            <KeyboardAvoidingView
+              style={styles.keyboardAvoidingView}
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+            >
+              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <ScrollView
+                  contentContainerStyle={[
+                    styles.scrollContent,
+                    !keyboardVisible && styles.scrollContentCentered,
+                  ]}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={true}
+                  bounces={true}
+                  nestedScrollEnabled={true}
+                >
+                  <View style={styles.card}>
+                    <View style={styles.brandRow}>
+                      <View>
+                        <Text style={styles.title}>SafeRide Guardian</Text>
+                        <Text style={styles.subtitle}>
+                          AI-powered role-based recovery for buses, trains,
+                          cabs, autos.
+                        </Text>
+                        <View style={styles.statusBadgeRow}>
+                          <View
+                            style={[
+                              styles.statusBadge,
+                              apiStatus === "online"
+                                ? styles.statusBadgeOnline
+                                : apiStatus === "offline"
+                                  ? styles.statusBadgeOffline
+                                  : styles.statusBadgeChecking,
+                            ]}
+                          >
+                            <Text style={styles.statusBadgeText}>
+                              {apiStatus === "online"
+                                ? "Backend online"
+                                : apiStatus === "offline"
+                                  ? "Backend offline"
+                                  : "Checking backend..."}
+                            </Text>
+                          </View>
                         </View>
+                        {apiStatus === "offline" && apiError.length > 0 && (
+                          <Text style={styles.apiErrorText}>{apiError}</Text>
+                        )}
                       </View>
-                      {apiStatus === "offline" && apiError.length > 0 && (
-                        <Text style={styles.apiErrorText}>{apiError}</Text>
-                      )}
                     </View>
-                  </View>
-                  <View style={styles.divider} />
+                    <View style={styles.divider} />
 
-                  {showRoleSelection ? (
-                    <View>
+                    {showRoleSelection ? (
+                      <View>
                         <View style={styles.backButtonRow}>
                           <TouchableOpacity
                             style={styles.backButton}
@@ -2605,11 +2544,11 @@ const App = () => {
                 </ScrollView>
               </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
-          </>
-        )}
-      </SafeAreaView>
-    </SafeAreaProvider>
-  );
+            </>
+          )}
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
 };
 
 const styles = StyleSheet.create({
