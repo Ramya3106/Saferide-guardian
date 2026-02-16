@@ -16,7 +16,10 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import PassengerDashboard from "./PassengerDashboard";
 import CarAutoDashboard from "./CarAutoDashboard";
 import DriverConductorDashboard from "./DriverConductorDashboard";
