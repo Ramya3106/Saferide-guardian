@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import {
   SafeAreaView,
+  SafeAreaProvider,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import PassengerDashboard from "./PassengerDashboard";
@@ -41,7 +42,7 @@ const verifyCode = (emailAddress, code) =>
     code,
   });
 
-const App = () => {
+const AppContent = () => {
   const [mode, setMode] = useState("login");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [role, setRole] = useState("Passenger");
