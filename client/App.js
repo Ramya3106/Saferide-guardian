@@ -3140,4 +3140,10 @@ const styles = StyleSheet.create({
   },
 });
 
+const App = () => (
+  <SafeAreaProvider>
+    <AppContent />
+  </SafeAreaProvider>
+);
+
 export default App;
