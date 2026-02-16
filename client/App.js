@@ -311,7 +311,6 @@ const App = () => {
     };
   }, []);
 
-
   const resetForm = () => {
     setName("");
     setPhone("");
@@ -2544,11 +2543,11 @@ const App = () => {
                 </ScrollView>
               </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
-            </>
-          )}
-        </SafeAreaView>
-      </SafeAreaProvider>
-    );
+          </>
+        )}
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
 };
 
 const styles = StyleSheet.create({
