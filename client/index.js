@@ -4,9 +4,9 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import App from "./App";
 
 const Root = () => (
-	<SafeAreaProvider>
-		<App />
-	</SafeAreaProvider>
+  <SafeAreaProvider>
+    <App />
+  </SafeAreaProvider>
 );
 
 registerRootComponent(Root);
