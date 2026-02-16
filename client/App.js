@@ -2552,8 +2552,8 @@ const App = () => {
           </KeyboardAvoidingView>
         </>
       )}
-    </SafeAreaView>
-  </SafeAreaProvider>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 
