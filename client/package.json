@@ -16,7 +16,8 @@
     "express": "^5.2.1",
     "mongoose": "^9.1.6",
     "react": "19.1.0",
-    "react-native": "0.81.5"
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "^4.14.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
