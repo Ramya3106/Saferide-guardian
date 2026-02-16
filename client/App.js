@@ -366,6 +366,17 @@ const App = () => {
                       </View>
                     </View>
                   </View>
+                </View>
+              </ScrollView>
+            </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
+        </>
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
+
+  const resetForm = () => {
+    setName("");
     setPhone("");
     setEmail("");
     setOfficialEmail("");
