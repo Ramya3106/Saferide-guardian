@@ -1192,7 +1192,12 @@ const AppContent = () => {
               </Text>
             </View>
             <View style={styles.notificationBadge}>
-              <Ionicons name="notifications" size={16} color="#1E40AF" />
+              <Ionicons
+                name="notifications"
+                size={16}
+                color="#1E40AF"
+                style={styles.notificationIcon}
+              />
               <Text style={styles.notificationText}>3</Text>
             </View>
           </View>
@@ -1422,7 +1427,12 @@ const AppContent = () => {
               </Text>
             </View>
             <View style={styles.notificationBadge}>
-              <Ionicons name="notifications" size={16} color="#1E40AF" />
+              <Ionicons
+                name="notifications"
+                size={16}
+                color="#1E40AF"
+                style={styles.notificationIcon}
+              />
               <Text style={styles.notificationText}>2</Text>
             </View>
           </View>
@@ -1580,7 +1590,12 @@ const AppContent = () => {
               <Text style={styles.authoritySubtitle}>👮 Police</Text>
             </View>
             <View style={styles.notificationBadge}>
-              <Ionicons name="alert-circle" size={16} color="#B91C1C" />
+              <Ionicons
+                name="alert-circle"
+                size={16}
+                color="#B91C1C"
+                style={styles.notificationIcon}
+              />
               <Text style={styles.notificationText}>1</Text>
             </View>
           </View>
