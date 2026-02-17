@@ -1304,8 +1304,7 @@ const AppContent = () => {
 
         <View style={styles.cardBlock}>
           <Text style={styles.cardTitle}>Item Verification</Text>
-          <View style={styles.optionList}
-          >
+          <View style={styles.optionList}>
             <Text style={styles.optionItem}>📸 Upload item photo</Text>
             <Text style={styles.optionItem}>✅ Mark item found</Text>
             <Text style={styles.optionItem}>❌ Mark not found</Text>
@@ -1861,90 +1860,6 @@ const AppContent = () => {
                           <Text style={styles.helperText}>
                             Continue enabled after selection.
                           </Text>
-                        </View>
-                            style={styles.backButton}
-                            onPress={() => {
-                              setShowRoleSelection(false);
-                              setSpecificRole("");
-                              setError("");
-                            }}
-                          >
-                            <Ionicons
-                              name="arrow-back"
-                              size={24}
-                              color="#2563EB"
-                            />
-                          </TouchableOpacity>
-                          <Text style={styles.formTitle}>
-                            Select Your Specific Role
-                          </Text>
-                          <View style={{ width: 24 }} />
-                        </View>
-                        <Text style={styles.sectionSubtitle}>
-                          Please specify which department you belong to
-                        </Text>
-
-                        <View style={styles.cardBlock}>
-                          <View style={styles.roleRow}>
-                            {["TTR", "RPF", "Police"].map((item) => (
-                              <TouchableOpacity
-                                key={item}
-                                style={[
-                                  styles.roleChipLarge,
-                                  specificRole === item &&
-                                    styles.roleChipActive,
-                                ]}
-                                onPress={() => setSpecificRole(item)}
-                              >
-                                <Text
-                                  style={[
-                                    styles.roleChipTextLarge,
-                                    specificRole === item &&
-                                      styles.roleChipTextActive,
-                                  ]}
-                                >
-                                  {item}
-                                </Text>
-                              </TouchableOpacity>
-                            ))}
-                          </View>
-
-                          <View style={styles.roleDescriptions}>
-                            {specificRole === "TTR" && (
-                              <View style={styles.roleDescCard}>
-                                <Text style={styles.roleDescTitle}>
-                                  🚂 Travelling Ticket Examiner (TTR)
-                                </Text>
-                                <Text style={styles.roleDescText}>
-                                  Responsible for ticket checking, passenger
-                                  assistance, and onboard security in trains.
-                                </Text>
-                              </View>
-                            )}
-                            {specificRole === "RPF" && (
-                              <View style={styles.roleDescCard}>
-                                <Text style={styles.roleDescTitle}>
-                                  🛡️ Railway Protection Force (RPF)
-                                </Text>
-                                <Text style={styles.roleDescText}>
-                                  Railway security force responsible for
-                                  protecting railway property, passengers, and
-                                  freight.
-                                </Text>
-                              </View>
-                            )}
-                            {specificRole === "Police" && (
-                              <View style={styles.roleDescCard}>
-                                <Text style={styles.roleDescTitle}>
-                                  👮 Police Department
-                                </Text>
-                                <Text style={styles.roleDescText}>
-                                  Law enforcement officers handling criminal
-                                  cases, investigations, and public safety.
-                                </Text>
-                              </View>
-                            )}
-                          </View>
                         </View>
 
                         {error.length > 0 && (
