@@ -3213,6 +3213,221 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
+  authorityHeaderCard: {
+    backgroundColor: "#0F172A",
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: "#1E293B",
+  },
+  authorityHeaderTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  authorityTitle: {
+    color: "#F8FAFC",
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  authoritySubtitle: {
+    color: "#CBD5F5",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  notificationBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E0E7FF",
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    gap: 6,
+  },
+  notificationText: {
+    color: "#1E40AF",
+    fontWeight: "700",
+  },
+  authorityMetaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 12,
+  },
+  metaPill: {
+    backgroundColor: "#1E293B",
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginRight: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  metaPillText: {
+    color: "#E2E8F0",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  dutyRow: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  dutyLabel: {
+    color: "#E2E8F0",
+    fontWeight: "600",
+  },
+  dutyToggle: {
+    width: 52,
+    height: 28,
+    borderRadius: 16,
+    padding: 3,
+    justifyContent: "center",
+  },
+  dutyToggleActive: {
+    backgroundColor: "#22C55E",
+  },
+  dutyToggleInactive: {
+    backgroundColor: "#334155",
+  },
+  dutyKnob: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#F8FAFC",
+  },
+  dutyKnobActive: {
+    alignSelf: "flex-end",
+  },
+  dutyKnobInactive: {
+    alignSelf: "flex-start",
+  },
+  alertCard: {
+    backgroundColor: "#FEF2F2",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  alertTitle: {
+    color: "#B91C1C",
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  alertText: {
+    color: "#7F1D1D",
+    marginBottom: 4,
+  },
+  actionRow: {
+    flexDirection: "row",
+    marginTop: 12,
+  },
+  actionButton: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  actionButtonSpacing: {
+    marginLeft: 10,
+  },
+  actionButtonPrimary: {
+    backgroundColor: "#2563EB",
+  },
+  actionButtonSecondary: {
+    borderWidth: 1,
+    borderColor: "#2563EB",
+    backgroundColor: "#EFF6FF",
+  },
+  actionButtonPrimaryText: {
+    color: "#F8FAFC",
+    fontWeight: "600",
+  },
+  actionButtonSecondaryText: {
+    color: "#1D4ED8",
+    fontWeight: "600",
+  },
+  optionList: {
+    marginBottom: 8,
+  },
+  optionItem: {
+    color: "#475569",
+    marginBottom: 6,
+  },
+  messageRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 12,
+  },
+  messageChip: {
+    backgroundColor: "#E2E8F0",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  messageChipText: {
+    color: "#1E293B",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  metricGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  metricCard: {
+    width: "48%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  metricValue: {
+    color: "#1E293B",
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  metricLabel: {
+    color: "#64748B",
+    fontSize: 12,
+    marginTop: 4,
+  },
+  authorityOptions: {
+    marginTop: 8,
+    marginBottom: 12,
+    gap: 12,
+  },
+  authorityOption: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  authorityOptionActive: {
+    borderColor: "#2563EB",
+    backgroundColor: "#EFF6FF",
+  },
+  authorityOptionTitle: {
+    color: "#0F172A",
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  authorityOptionText: {
+    color: "#475569",
+    lineHeight: 18,
+  },
+  selectionHints: {
+    marginBottom: 10,
+  },
   cardBlockBlurred: {
     opacity: 0.5,
   },
