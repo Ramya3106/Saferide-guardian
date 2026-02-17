@@ -67,6 +67,19 @@ const isValidProfessionalId = (role, idValue) => {
   return normalized.length >= 6;
 };
 
+const normalizeProfessionalId = (value) => (value || "").trim().toUpperCase();
+
+const findOfficialByProfessionalId = async (role, professionalId) => {
+  const normalized = normalizeProfessionalId(professionalId);
+  const candidates = await User.find({ role }).select("+password");
+  return (
+    candidates.find(
+      (candidate) =>
+        normalizeProfessionalId(candidate.professionalId) === normalized,
+    ) || null
+  );
+};
+
 const consumeVerificationCode = (email, code) => {
   const record = verificationStore.get(email);
   if (!record) {
@@ -247,9 +260,10 @@ router.post("/register", async (req, res) => {
     }
 
     if (isOfficialRole(role)) {
-      const existingProfessional = await User.findOne({
+      const existingProfessional = await findOfficialByProfessionalId(
+        role,
         professionalId,
-      }).lean();
+      );
       if (existingProfessional) {
         return res
           .status(409)
@@ -362,7 +376,7 @@ router.post("/login", async (req, res) => {
           .status(400)
           .json({ message: "Invalid professional ID format." });
       }
-      user = await User.findOne({ professionalId, role }).select("+password");
+      user = await findOfficialByProfessionalId(role, professionalId);
     } else {
       if (!isValidEmail(email)) {
         return res.status(400).json({ message: "Enter a valid email." });
