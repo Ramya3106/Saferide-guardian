@@ -1324,9 +1324,7 @@ const AppContent = () => {
             <TouchableOpacity
               style={[styles.actionButton, styles.actionButtonSecondary]}
             >
-              <Text style={styles.actionButtonSecondaryText}>
-                Upload photo
-              </Text>
+              <Text style={styles.actionButtonSecondaryText}>Upload photo</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -1344,9 +1342,7 @@ const AppContent = () => {
           <Text style={styles.cardTitle}>Passenger Communication</Text>
           <View style={styles.messageRow}>
             <View style={styles.messageChip}>
-              <Text style={styles.messageChipText}>
-                "Item secured in S3"
-              </Text>
+              <Text style={styles.messageChipText}>"Item secured in S3"</Text>
             </View>
             <View style={styles.messageChip}>
               <Text style={styles.messageChipText}>
@@ -1354,9 +1350,7 @@ const AppContent = () => {
               </Text>
             </View>
             <View style={styles.messageChip}>
-              <Text style={styles.messageChipText}>
-                "Bring ID proof"
-              </Text>
+              <Text style={styles.messageChipText}>"Bring ID proof"</Text>
             </View>
           </View>
           <TouchableOpacity style={styles.secondaryButton}>
@@ -1366,7 +1360,9 @@ const AppContent = () => {
 
         <View style={styles.cardBlock}>
           <Text style={styles.cardTitle}>QR Handover</Text>
-          <Text style={styles.cardText}>Generate and scan for custody log.</Text>
+          <Text style={styles.cardText}>
+            Generate and scan for custody log.
+          </Text>
           <View style={styles.actionRow}>
             <TouchableOpacity
               style={[styles.actionButton, styles.actionButtonPrimary]}
@@ -1438,7 +1434,9 @@ const AppContent = () => {
           </View>
           <View style={styles.authorityMetaRow}>
             <View style={styles.metaPill}>
-              <Text style={styles.metaPillText}>Badge {displayProfessionalId}</Text>
+              <Text style={styles.metaPillText}>
+                Badge {displayProfessionalId}
+              </Text>
             </View>
             <View style={styles.metaPill}>
               <Text style={styles.metaPillText}>{displayJurisdiction}</Text>
@@ -1541,7 +1539,9 @@ const AppContent = () => {
             <Text style={styles.optionItem}>• Log station and GPS</Text>
             <Text style={styles.optionItem}>• Upload recovery proof</Text>
             <Text style={styles.optionItem}>• Assign case ID</Text>
-            <Text style={styles.optionItem}>• Transfer to police if needed</Text>
+            <Text style={styles.optionItem}>
+              • Transfer to police if needed
+            </Text>
           </View>
           <TouchableOpacity style={styles.secondaryButton}>
             <Text style={styles.secondaryButtonText}>Create custody log</Text>
@@ -1607,7 +1607,9 @@ const AppContent = () => {
               <Text style={styles.metaPillText}>{displayJurisdiction}</Text>
             </View>
             <View style={styles.metaPill}>
-              <Text style={styles.metaPillText}>Duty {onDuty ? "ON" : "OFF"}</Text>
+              <Text style={styles.metaPillText}>
+                Duty {onDuty ? "ON" : "OFF"}
+              </Text>
             </View>
           </View>
           <View style={styles.dutyRow}>
@@ -1906,10 +1908,14 @@ const AppContent = () => {
                               color="#2563EB"
                             />
                           </TouchableOpacity>
-                          <Text style={styles.formTitle}>SafeRide Guardian</Text>
+                          <Text style={styles.formTitle}>
+                            SafeRide Guardian
+                          </Text>
                           <View style={{ width: 24 }} />
                         </View>
-                        <Text style={styles.sectionTitle}>Choose Your Authority</Text>
+                        <Text style={styles.sectionTitle}>
+                          Choose Your Authority
+                        </Text>
                         <Text style={styles.sectionSubtitle}>
                           Select one role to continue into the duty dashboard.
                         </Text>
@@ -1925,8 +1931,7 @@ const AppContent = () => {
                             {
                               key: "RPF",
                               title: "🛡 RPF – Railway Protection Force",
-                              description:
-                                "Responsible for railway security.",
+                              description: "Responsible for railway security.",
                             },
                             {
                               key: "Police",
@@ -1955,7 +1960,9 @@ const AppContent = () => {
                         </View>
 
                         <View style={styles.selectionHints}>
-                          <Text style={styles.helperText}>Only one selectable.</Text>
+                          <Text style={styles.helperText}>
+                            Only one selectable.
+                          </Text>
                           <Text style={styles.helperText}>
                             Continue enabled after selection.
                           </Text>
