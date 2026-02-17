@@ -3259,7 +3259,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingVertical: 4,
     paddingHorizontal: 10,
-    gap: 6,
+  },
+  notificationIcon: {
+    marginRight: 6,
   },
   notificationText: {
     color: "#1E40AF",
@@ -3418,7 +3420,6 @@ const styles = StyleSheet.create({
   authorityOptions: {
     marginTop: 8,
     marginBottom: 12,
-    gap: 12,
   },
   authorityOption: {
     backgroundColor: "#F8FAFC",
@@ -3426,6 +3427,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: "#E2E8F0",
+    marginBottom: 12,
   },
   authorityOptionActive: {
     borderColor: "#2563EB",
