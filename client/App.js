@@ -1890,7 +1890,8 @@ const AppContent = () => {
                     <View style={styles.divider} />
 
                     {showRoleSelection ? (
-                      <View style={styles.backButtonRow}>
+                      <View>
+                        <View style={styles.backButtonRow}>
                           <TouchableOpacity
                             style={styles.backButton}
                             onPress={() => {
