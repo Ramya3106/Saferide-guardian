@@ -114,6 +114,7 @@ const AppContent = () => {
   // Specific role selection for TTR/RPF/Police
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [specificRole, setSpecificRole] = useState("");
+  const [onDuty, setOnDuty] = useState(true);
 
   const formAnim = useRef(new Animated.Value(0)).current;
 
@@ -359,6 +360,7 @@ const AppContent = () => {
     setResetSuccess(false);
     setShowRoleSelection(false);
     setSpecificRole("");
+    setOnDuty(true);
     setError("");
   };
 
@@ -493,6 +495,7 @@ const AppContent = () => {
       return;
     }
     setError("");
+    setShowRoleSelection(false);
     setIsAuthenticated(true);
   };
 
@@ -1171,13 +1174,58 @@ const AppContent = () => {
     const displayName = name.trim() || "Officer";
     const displayEmail = officialEmail.trim() || "Not set";
     const displayProfessionalId = professionalId.trim() || "Not set";
-    const displayRole = specificRole || "TTR/RPF";
-    const displayJurisdiction = jurisdiction.trim() || "Not set";
-    const displayPnrRange = pnrRange.trim() || "Not set";
+    const displayRole = specificRole || "TTR";
+    const displayJurisdiction = jurisdiction.trim() || "Chennai Division";
+    const displayPnrRange = pnrRange.trim() || "4500000000 - 4599999999";
+    const trainNumber = travelNumber.trim() || "12631";
+    const coachAllotted = "S3";
+    const shiftTime = "08:00 AM - 04:00 PM";
 
     return (
       <View>
-        {/* Professional Profile Card */}
+        <View style={styles.authorityHeaderCard}>
+          <View style={styles.authorityHeaderTop}>
+            <View>
+              <Text style={styles.authorityTitle}>{displayName}</Text>
+              <Text style={styles.authoritySubtitle}>
+                🎫 TTR - Train Ticket Examiner
+              </Text>
+            </View>
+            <View style={styles.notificationBadge}>
+              <Ionicons name="notifications" size={16} color="#1E40AF" />
+              <Text style={styles.notificationText}>3</Text>
+            </View>
+          </View>
+          <View style={styles.authorityMetaRow}>
+            <View style={styles.metaPill}>
+              <Text style={styles.metaPillText}>Train {trainNumber}</Text>
+            </View>
+            <View style={styles.metaPill}>
+              <Text style={styles.metaPillText}>Coach {coachAllotted}</Text>
+            </View>
+            <View style={styles.metaPill}>
+              <Text style={styles.metaPillText}>Shift {shiftTime}</Text>
+            </View>
+          </View>
+          <View style={styles.dutyRow}>
+            <Text style={styles.dutyLabel}>On Duty</Text>
+            <TouchableOpacity
+              style={[
+                styles.dutyToggle,
+                onDuty ? styles.dutyToggleActive : styles.dutyToggleInactive,
+              ]}
+              onPress={() => setOnDuty((prev) => !prev)}
+            >
+              <View
+                style={[
+                  styles.dutyKnob,
+                  onDuty ? styles.dutyKnobActive : styles.dutyKnobInactive,
+                ]}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <View style={styles.profileCard}>
           <View style={styles.profileHeader}>
             <View style={styles.profileAvatar}>
@@ -1215,21 +1263,302 @@ const AppContent = () => {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>TTR/RPF Escalations</Text>
-        <Text style={styles.sectionSubtitle}>
-          High-value items with PNR verification and chain-of-custody logs.
-        </Text>
         <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Priority Alerts</Text>
-          <Text style={styles.cardText}>PNR: 4528193021 • Passport + Visa</Text>
-          <Text style={styles.cardText}>Train: MS-EXP-204 • Coach B2</Text>
-          <Text style={styles.cardText}>Next stop: Guindy • ETA 9 mins</Text>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={handleStaffConfirm}
+          <Text style={styles.cardTitle}>Active Train Info</Text>
+          <Text style={styles.cardText}>
+            Train: {trainNumber} - Chennai Express
+          </Text>
+          <Text style={styles.cardText}>Coach: {coachAllotted}</Text>
+          <Text style={styles.cardText}>From: Chennai</Text>
+          <Text style={styles.cardText}>To: Madurai</Text>
+          <Text style={styles.cardText}>Current Station: Tambaram</Text>
+          <Text style={styles.cardText}>Next Station: Chengalpattu</Text>
+        </View>
+
+        <View style={styles.alertCard}>
+          <Text style={styles.alertTitle}>⚠ LOST ITEM ALERT</Text>
+          <Text style={styles.alertText}>Passenger: Ramya V</Text>
+          <Text style={styles.alertText}>PNR: 4567891234</Text>
+          <Text style={styles.alertText}>Item: Passport</Text>
+          <Text style={styles.alertText}>Coach: {coachAllotted}</Text>
+          <Text style={styles.alertText}>Berth: 21</Text>
+          <Text style={styles.alertText}>Reported: 10:15 AM</Text>
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.actionButtonSecondary]}
+            >
+              <Text style={styles.actionButtonSecondaryText}>View details</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.actionButtonPrimary,
+                styles.actionButtonSpacing,
+              ]}
+              onPress={handleStaffConfirm}
+            >
+              <Text style={styles.actionButtonPrimaryText}>Accept</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Item Verification</Text>
+          <View style={styles.optionList}
           >
-            <Text style={styles.primaryButtonText}>Verify PNR & confirm</Text>
+            <Text style={styles.optionItem}>📸 Upload item photo</Text>
+            <Text style={styles.optionItem}>✅ Mark item found</Text>
+            <Text style={styles.optionItem}>❌ Mark not found</Text>
+            <Text style={styles.optionItem}>
+              🔁 Escalate to RPF (high-value)
+            </Text>
+          </View>
+          <Text style={styles.helperText}>
+            Auto GPS stamp + coach location captured on confirmation.
+          </Text>
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.actionButtonSecondary]}
+            >
+              <Text style={styles.actionButtonSecondaryText}>
+                Upload photo
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.actionButtonPrimary,
+                styles.actionButtonSpacing,
+              ]}
+            >
+              <Text style={styles.actionButtonPrimaryText}>Mark found</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Passenger Communication</Text>
+          <View style={styles.messageRow}>
+            <View style={styles.messageChip}>
+              <Text style={styles.messageChipText}>
+                "Item secured in S3"
+              </Text>
+            </View>
+            <View style={styles.messageChip}>
+              <Text style={styles.messageChipText}>
+                "Collect at Trichy station"
+              </Text>
+            </View>
+            <View style={styles.messageChip}>
+              <Text style={styles.messageChipText}>
+                "Bring ID proof"
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity style={styles.secondaryButton}>
+            <Text style={styles.secondaryButtonText}>Send update</Text>
           </TouchableOpacity>
+        </View>
+
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>QR Handover</Text>
+          <Text style={styles.cardText}>Generate and scan for custody log.</Text>
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.actionButtonPrimary]}
+            >
+              <Text style={styles.actionButtonPrimaryText}>Generate QR</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.actionButtonSecondary,
+                styles.actionButtonSpacing,
+              ]}
+            >
+              <Text style={styles.actionButtonSecondaryText}>Scan QR</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>TTR Performance</Text>
+          <View style={styles.metricGrid}>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>8</Text>
+              <Text style={styles.metricLabel}>Cases handled</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>5</Text>
+              <Text style={styles.metricLabel}>Items secured</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>2</Text>
+              <Text style={styles.metricLabel}>Escalated</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>6m</Text>
+              <Text style={styles.metricLabel}>Avg response</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const renderRpfDashboard = () => {
+    const displayName = name.trim() || "Officer";
+    const displayEmail = officialEmail.trim() || "Not set";
+    const displayProfessionalId = professionalId.trim() || "RPF-CH-11456";
+    const displayJurisdiction = jurisdiction.trim() || "Chennai Central Zone";
+
+    return (
+      <View>
+        <View style={styles.authorityHeaderCard}>
+          <View style={styles.authorityHeaderTop}>
+            <View>
+              <Text style={styles.authorityTitle}>{displayName}</Text>
+              <Text style={styles.authoritySubtitle}>
+                🛡 RPF - Railway Protection Force
+              </Text>
+            </View>
+            <View style={styles.notificationBadge}>
+              <Ionicons name="notifications" size={16} color="#1E40AF" />
+              <Text style={styles.notificationText}>2</Text>
+            </View>
+          </View>
+          <View style={styles.authorityMetaRow}>
+            <View style={styles.metaPill}>
+              <Text style={styles.metaPillText}>Badge {displayProfessionalId}</Text>
+            </View>
+            <View style={styles.metaPill}>
+              <Text style={styles.metaPillText}>{displayJurisdiction}</Text>
+            </View>
+          </View>
+          <View style={styles.dutyRow}>
+            <Text style={styles.dutyLabel}>On Duty</Text>
+            <TouchableOpacity
+              style={[
+                styles.dutyToggle,
+                onDuty ? styles.dutyToggleActive : styles.dutyToggleInactive,
+              ]}
+              onPress={() => setOnDuty((prev) => !prev)}
+            >
+              <View
+                style={[
+                  styles.dutyKnob,
+                  onDuty ? styles.dutyKnobActive : styles.dutyKnobInactive,
+                ]}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.profileCard}>
+          <View style={styles.profileHeader}>
+            <View style={styles.profileAvatar}>
+              <Text style={styles.profileAvatarText}>
+                {displayName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{displayName}</Text>
+              <Text style={styles.profileRole}>RPF Officer</Text>
+            </View>
+          </View>
+
+          <View style={styles.profileDetails}>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Badge ID:</Text>
+              <Text style={styles.profileDetailValue}>
+                {displayProfessionalId}
+              </Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Official Email:</Text>
+              <Text style={styles.profileDetailValue}>{displayEmail}</Text>
+            </View>
+            <View style={styles.profileDetailRow}>
+              <Text style={styles.profileDetailLabel}>Assigned Zone:</Text>
+              <Text style={styles.profileDetailValue}>
+                {displayJurisdiction}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.alertCard}>
+          <Text style={styles.alertTitle}>🚨 HIGH PRIORITY ALERT</Text>
+          <Text style={styles.alertText}>Item: Laptop</Text>
+          <Text style={styles.alertText}>Location: Train 12631 - S3</Text>
+          <Text style={styles.alertText}>Escalated by: TTR</Text>
+          <Text style={styles.alertText}>Reason: Possible theft</Text>
+          <Text style={styles.alertText}>Reported: 10:30 AM</Text>
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.actionButtonPrimary]}
+            >
+              <Text style={styles.actionButtonPrimaryText}>Investigate</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.actionButtonSecondary,
+                styles.actionButtonSpacing,
+              ]}
+            >
+              <Text style={styles.actionButtonSecondaryText}>
+                Contact passenger
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Investigation Screen</Text>
+          <View style={styles.optionList}>
+            <Text style={styles.optionItem}>🗺 View coach map</Text>
+            <Text style={styles.optionItem}>📞 Contact TTR</Text>
+            <Text style={styles.optionItem}>👥 Contact passenger</Text>
+            <Text style={styles.optionItem}>📝 Record statement</Text>
+            <Text style={styles.optionItem}>📸 Upload evidence photo</Text>
+          </View>
+        </View>
+
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Secure Custody Module</Text>
+          <Text style={styles.cardText}>If item recovered:</Text>
+          <View style={styles.optionList}>
+            <Text style={styles.optionItem}>• Log station and GPS</Text>
+            <Text style={styles.optionItem}>• Upload recovery proof</Text>
+            <Text style={styles.optionItem}>• Assign case ID</Text>
+            <Text style={styles.optionItem}>• Transfer to police if needed</Text>
+          </View>
+          <TouchableOpacity style={styles.secondaryButton}>
+            <Text style={styles.secondaryButtonText}>Create custody log</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Case Monitoring</Text>
+          <View style={styles.metricGrid}>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>6</Text>
+              <Text style={styles.metricLabel}>Active investigations</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>12</Text>
+              <Text style={styles.metricLabel}>Closed cases</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>4</Text>
+              <Text style={styles.metricLabel}>Escalations today</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>9m</Text>
+              <Text style={styles.metricLabel}>Avg response</Text>
+            </View>
+          </View>
         </View>
       </View>
     );
@@ -1240,12 +1569,52 @@ const AppContent = () => {
     const displayEmail = officialEmail.trim() || "Not set";
     const displayProfessionalId = professionalId.trim() || "Not set";
     const displayRole = specificRole || "Police";
-    const displayJurisdiction = jurisdiction.trim() || "Not set";
-    const displayPnrRange = pnrRange.trim() || "Not set";
+    const displayJurisdiction = jurisdiction.trim() || "Trichy";
+    const displayStation = "Trichy Junction";
 
     return (
       <View>
-        {/* Professional Profile Card */}
+        <View style={styles.authorityHeaderCard}>
+          <View style={styles.authorityHeaderTop}>
+            <View>
+              <Text style={styles.authorityTitle}>{displayName}</Text>
+              <Text style={styles.authoritySubtitle}>👮 Police</Text>
+            </View>
+            <View style={styles.notificationBadge}>
+              <Ionicons name="alert-circle" size={16} color="#B91C1C" />
+              <Text style={styles.notificationText}>1</Text>
+            </View>
+          </View>
+          <View style={styles.authorityMetaRow}>
+            <View style={styles.metaPill}>
+              <Text style={styles.metaPillText}>{displayStation}</Text>
+            </View>
+            <View style={styles.metaPill}>
+              <Text style={styles.metaPillText}>{displayJurisdiction}</Text>
+            </View>
+            <View style={styles.metaPill}>
+              <Text style={styles.metaPillText}>Duty {onDuty ? "ON" : "OFF"}</Text>
+            </View>
+          </View>
+          <View style={styles.dutyRow}>
+            <Text style={styles.dutyLabel}>Duty Status</Text>
+            <TouchableOpacity
+              style={[
+                styles.dutyToggle,
+                onDuty ? styles.dutyToggleActive : styles.dutyToggleInactive,
+              ]}
+              onPress={() => setOnDuty((prev) => !prev)}
+            >
+              <View
+                style={[
+                  styles.dutyKnob,
+                  onDuty ? styles.dutyKnobActive : styles.dutyKnobInactive,
+                ]}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <View style={styles.profileCard}>
           <View style={styles.profileHeader}>
             <View style={styles.profileAvatar}>
@@ -1267,8 +1636,8 @@ const AppContent = () => {
               </Text>
             </View>
             <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Official Email:</Text>
-              <Text style={styles.profileDetailValue}>{displayEmail}</Text>
+              <Text style={styles.profileDetailLabel}>Station:</Text>
+              <Text style={styles.profileDetailValue}>{displayStation}</Text>
             </View>
             <View style={styles.profileDetailRow}>
               <Text style={styles.profileDetailLabel}>Jurisdiction:</Text>
@@ -1277,30 +1646,95 @@ const AppContent = () => {
               </Text>
             </View>
             <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>PNR Range:</Text>
-              <Text style={styles.profileDetailValue}>{displayPnrRange}</Text>
+              <Text style={styles.profileDetailLabel}>Official Email:</Text>
+              <Text style={styles.profileDetailValue}>{displayEmail}</Text>
             </View>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Police Command Console</Text>
-        <Text style={styles.sectionSubtitle}>
-          Cross-jurisdiction recovery for medical, passport, and legal items.
-        </Text>
+        <View style={styles.alertCard}>
+          <Text style={styles.alertTitle}>🚨 LEGAL CASE ALERT</Text>
+          <Text style={styles.alertText}>Item: Passport</Text>
+          <Text style={styles.alertText}>Train: 12631</Text>
+          <Text style={styles.alertText}>Station: Trichy</Text>
+          <Text style={styles.alertText}>Escalated by: RPF</Text>
+          <Text style={styles.alertText}>Case ID: SG-2026-108</Text>
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.actionButtonPrimary]}
+            >
+              <Text style={styles.actionButtonPrimaryText}>Open case</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                styles.actionButtonSecondary,
+                styles.actionButtonSpacing,
+              ]}
+            >
+              <Text style={styles.actionButtonSecondaryText}>Contact RPF</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Jurisdiction Escalations</Text>
-          <Text style={styles.cardText}>
-            Medical dossier flagged • Case ID 98-204
-          </Text>
-          <Text style={styles.cardText}>
-            Location: CMBT • Linked staff: RPF-114
-          </Text>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={handleStaffConfirm}
-          >
-            <Text style={styles.primaryButtonText}>Dispatch unit</Text>
+          <Text style={styles.cardTitle}>Case Management</Text>
+          <View style={styles.optionList}>
+            <Text style={styles.optionItem}>Case ID: SG-2026-108</Text>
+            <Text style={styles.optionItem}>Passenger: Ramya V</Text>
+            <Text style={styles.optionItem}>Aadhaar verified</Text>
+            <Text style={styles.optionItem}>Evidence uploaded</Text>
+            <Text style={styles.optionItem}>Investigation notes ready</Text>
+          </View>
+          <TouchableOpacity style={styles.secondaryButton}>
+            <Text style={styles.secondaryButtonText}>FIR (Optional)</Text>
           </TouchableOpacity>
+        </View>
+
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Inter-Jurisdiction Transfer</Text>
+          <Text style={styles.cardText}>
+            Forward to nearest police station for passenger city.
+          </Text>
+          <View style={styles.optionList}>
+            <Text style={styles.optionItem}>• Digital case transfer</Text>
+            <Text style={styles.optionItem}>• Status update to passenger</Text>
+          </View>
+          <TouchableOpacity style={styles.secondaryButton}>
+            <Text style={styles.secondaryButtonText}>Start transfer</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Secure Handover Logging</Text>
+          <View style={styles.optionList}>
+            <Text style={styles.optionItem}>Verify passenger ID</Text>
+            <Text style={styles.optionItem}>Capture signature</Text>
+            <Text style={styles.optionItem}>GPS log</Text>
+            <Text style={styles.optionItem}>Close legal case</Text>
+          </View>
+        </View>
+
+        <View style={styles.cardBlock}>
+          <Text style={styles.cardTitle}>Police Analytics</Text>
+          <View style={styles.metricGrid}>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>3</Text>
+              <Text style={styles.metricLabel}>Legal cases today</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>12</Text>
+              <Text style={styles.metricLabel}>Resolved cases</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>5</Text>
+              <Text style={styles.metricLabel}>Pending cases</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>2</Text>
+              <Text style={styles.metricLabel}>Cross-district transfers</Text>
+            </View>
+          </View>
         </View>
       </View>
     );
@@ -1336,8 +1770,11 @@ const AppContent = () => {
 
     // Handle TTR/RPF/Police based on specific role selection
     if (role === "TTR/RPF/Police") {
-      if (specificRole === "TTR" || specificRole === "RPF") {
+      if (specificRole === "TTR") {
         return renderTtrDashboard();
+      }
+      if (specificRole === "RPF") {
+        return renderRpfDashboard();
       }
       if (specificRole === "Police") {
         return renderPoliceDashboard();
@@ -1356,92 +1793,75 @@ const AppContent = () => {
   const renderAuthenticatedContent = () => {
     if (usesInternalScroll) {
       return (
-        <View style={styles.authenticatedContent}>{renderDashboard()}</View>
-      );
-    }
-
-    return (
-      <ScrollView contentContainerStyle={styles.authenticatedScrollContent}>
-        {renderDashboard()}
-        {showStandaloneLogout && (
-          <TouchableOpacity
-            style={[styles.secondaryButton, styles.logoutButtonFull]}
-            onPress={handleLogout}
-          >
-            <Text style={styles.secondaryButtonText}>Log out</Text>
-          </TouchableOpacity>
-        )}
-      </ScrollView>
-    );
-  };
-
-  const insets = useSafeAreaInsets();
-
-  return (
-    <SafeAreaProvider>
-      <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-        {isAuthenticated ? (
-          <View style={styles.authenticatedContainer}>
-            {renderAuthenticatedContent()}
-          </View>
-        ) : (
-          <>
-            <View style={styles.backgroundGlow} />
-            <KeyboardAvoidingView
-              style={styles.keyboardAvoidingView}
-              behavior={Platform.OS === "ios" ? "padding" : "height"}
-              keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-            >
-              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <ScrollView
-                  contentContainerStyle={[
-                    styles.scrollContent,
-                    !keyboardVisible && styles.scrollContentCentered,
-                  ]}
-                  keyboardShouldPersistTaps="handled"
-                  showsVerticalScrollIndicator={true}
-                  bounces={true}
-                  nestedScrollEnabled={true}
-                >
-                  <View style={styles.card}>
-                    <View style={styles.brandRow}>
-                      <View>
-                        <Text style={styles.title}>SafeRide Guardian</Text>
-                        <Text style={styles.subtitle}>
-                          AI-powered role-based recovery for buses, trains,
-                          cabs, autos.
-                        </Text>
-                        <View style={styles.statusBadgeRow}>
-                          <View
-                            style={[
-                              styles.statusBadge,
-                              apiStatus === "online"
-                                ? styles.statusBadgeOnline
-                                : apiStatus === "offline"
-                                  ? styles.statusBadgeOffline
-                                  : styles.statusBadgeChecking,
-                            ]}
-                          >
-                            <Text style={styles.statusBadgeText}>
-                              {apiStatus === "online"
-                                ? "Backend online"
-                                : apiStatus === "offline"
-                                  ? "Backend offline"
-                                  : "Checking backend..."}
-                            </Text>
-                          </View>
-                        </View>
-                        {apiStatus === "offline" && apiError.length > 0 && (
-                          <Text style={styles.apiErrorText}>{apiError}</Text>
-                        )}
-                      </View>
-                    </View>
-                    <View style={styles.divider} />
-
-                    {showRoleSelection ? (
-                      <View>
                         <View style={styles.backButtonRow}>
                           <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={() => {
+                              setShowRoleSelection(false);
+                              setSpecificRole("");
+                              setError("");
+                            }}
+                          >
+                            <Ionicons
+                              name="arrow-back"
+                              size={24}
+                              color="#2563EB"
+                            />
+                          </TouchableOpacity>
+                          <Text style={styles.formTitle}>SafeRide Guardian</Text>
+                          <View style={{ width: 24 }} />
+                        </View>
+                        <Text style={styles.sectionTitle}>Choose Your Authority</Text>
+                        <Text style={styles.sectionSubtitle}>
+                          Select one role to continue into the duty dashboard.
+                        </Text>
+
+                        <View style={styles.authorityOptions}>
+                          {[
+                            {
+                              key: "TTR",
+                              title: "🎫 TTR – Train Ticket Examiner",
+                              description:
+                                "Responsible for onboard train verification.",
+                            },
+                            {
+                              key: "RPF",
+                              title: "🛡 RPF – Railway Protection Force",
+                              description:
+                                "Responsible for railway security.",
+                            },
+                            {
+                              key: "Police",
+                              title: "👮 Police",
+                              description:
+                                "Responsible for legal & cross-jurisdiction cases.",
+                            },
+                          ].map((item) => (
+                            <TouchableOpacity
+                              key={item.key}
+                              style={[
+                                styles.authorityOption,
+                                specificRole === item.key &&
+                                  styles.authorityOptionActive,
+                              ]}
+                              onPress={() => setSpecificRole(item.key)}
+                            >
+                              <Text style={styles.authorityOptionTitle}>
+                                {item.title}
+                              </Text>
+                              <Text style={styles.authorityOptionText}>
+                                {item.description}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+
+                        <View style={styles.selectionHints}>
+                          <Text style={styles.helperText}>Only one selectable.</Text>
+                          <Text style={styles.helperText}>
+                            Continue enabled after selection.
+                          </Text>
+                        </View>
                             style={styles.backButton}
                             onPress={() => {
                               setShowRoleSelection(false);
