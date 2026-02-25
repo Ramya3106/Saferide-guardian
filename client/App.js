@@ -2022,7 +2022,19 @@ const AppContent = () => {
                     <View style={styles.divider} />
 
                     {showRoleSelection ? (
-                      <View>
+                      <Animated.View
+                        style={{
+                          opacity: formAnim,
+                          transform: [
+                            {
+                              translateY: formAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [50, 0],
+                              }),
+                            },
+                          ],
+                        }}
+                      >
                         <View style={styles.backButtonRow}>
                           <TouchableOpacity
                             style={styles.backButton}
