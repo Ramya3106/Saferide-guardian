@@ -3339,6 +3339,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     fontWeight: "500",
   },
+  labelWithIcon: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 6,
+  },
   helperText: {
     color: "#64748B",
     fontSize: 12,
