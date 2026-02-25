@@ -3233,6 +3233,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
+  shieldIconContainer: {
+    marginRight: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  brandTextContainer: {
+    flex: 1,
+  },
   title: {
     fontSize: 28,
     fontWeight: "700",
