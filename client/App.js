@@ -874,6 +874,39 @@ const AppContent = () => {
     </View>
   );
 
+  // Animated label with icon
+  const renderAnimatedLabel = (text, iconName) => {
+    const iconPulse = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(iconPulse, {
+            toValue: 1.2,
+            duration: 1500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(iconPulse, {
+            toValue: 1,
+            duration: 1500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }, []);
+
+    return (
+      <View style={styles.labelWithIcon}>
+        <Animated.View style={{ transform: [{ scale: iconPulse }] }}>
+          <Ionicons name={iconName} size={16} color="#2563EB" />
+        </Animated.View>
+        <Text style={styles.label}>{text}</Text>
+      </View>
+    );
+  };
+
   const renderPassengerDashboard = () => (
     <View>
       <Text style={styles.sectionTitle}>Passenger Command Center</Text>
