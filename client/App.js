@@ -2213,7 +2213,7 @@ const AppContent = () => {
 
                         {!isOfficialRole && (
                           <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Email address</Text>
+                            {renderAnimatedLabel("Email address", "mail")}
                             <TextInput
                               style={[
                                 styles.input,
@@ -2276,7 +2276,7 @@ const AppContent = () => {
                         {(!loginWithOtp || isRegister || isOfficialRole) &&
                           !forgotPasswordMode && (
                             <View style={styles.inputGroup}>
-                              <Text style={styles.label}>Password</Text>
+                              {renderAnimatedLabel("Password", "lock-closed")}
                               <View style={styles.passwordRow}>
                                 <TextInput
                                   style={[styles.input, styles.passwordInput]}
