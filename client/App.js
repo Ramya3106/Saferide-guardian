@@ -1948,8 +1948,48 @@ const AppContent = () => {
                 >
                   <View style={styles.card}>
                     <View style={styles.brandRow}>
-                      <View>
-                        <Text style={styles.title}>SafeRide Guardian</Text>
+                      <Animated.View
+                        style={[
+                          styles.shieldIconContainer,
+                          {
+                            opacity: titleFade,
+                            transform: [
+                              {
+                                rotate: shieldRotate.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: ['-5deg', '5deg'],
+                                }),
+                              },
+                              { translateX: shieldShake },
+                            ],
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name="shield-checkmark"
+                          size={48}
+                          color="#2563EB"
+                        />
+                      </Animated.View>
+                      <View style={styles.brandTextContainer}>
+                        <Animated.Text
+                          style={[
+                            styles.title,
+                            {
+                              opacity: titleFade,
+                              transform: [
+                                {
+                                  translateY: titleFade.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [20, 0],
+                                  }),
+                                },
+                              ],
+                            },
+                          ]}
+                        >
+                          SafeRide Guardian
+                        </Animated.Text>
                         <Text style={styles.subtitle}>
                           AI-powered role-based recovery for buses, trains,
                           cabs, autos.
