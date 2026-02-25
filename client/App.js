@@ -116,7 +116,12 @@ const AppContent = () => {
   const [specificRole, setSpecificRole] = useState("");
   const [onDuty, setOnDuty] = useState(true);
 
+  // Animation refs
   const formAnim = useRef(new Animated.Value(0)).current;
+  const shieldShake = useRef(new Animated.Value(0)).current;
+  const shieldRotate = useRef(new Animated.Value(0)).current;
+  const titleFade = useRef(new Animated.Value(0)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
 
   const isRegister = mode === "register";
   const isOfficialRole = role === "TTR/RPF/Police";
