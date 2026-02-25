@@ -318,6 +318,91 @@ const AppContent = () => {
     };
   }, []);
 
+  // Animations for login/register page
+  useEffect(() => {
+    // Form fade-in and slide up animation
+    Animated.spring(formAnim, {
+      toValue: 1,
+      friction: 8,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+
+    // Title fade-in
+    Animated.timing(titleFade, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+
+    // Shield shaking animation (continuous loop)
+    const shakeAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shieldShake, {
+          toValue: 10,
+          duration: 100,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shieldShake, {
+          toValue: -10,
+          duration: 100,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shieldShake, {
+          toValue: 10,
+          duration: 100,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shieldShake, {
+          toValue: 0,
+          duration: 100,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.delay(3000), // Pause for 3 seconds before shaking again
+      ])
+    );
+    shakeAnimation.start();
+
+    // Shield rotate animation (gentle continuous rotation)
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shieldRotate, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(shieldRotate, {
+          toValue: 0,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
+  // Reset animations when switching between login/register
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(formAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.spring(formAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [mode]);
+
   const resetForm = () => {
     setName("");
     setPhone("");
