@@ -3133,7 +3133,7 @@ const AppContent = () => {
                             </View>
                           </View>
                         )}
-                      </View>
+                      </Animated.View>
                     )}
                   </View>
                 </ScrollView>
