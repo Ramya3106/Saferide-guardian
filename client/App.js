@@ -2124,9 +2124,21 @@ const AppContent = () => {
                         >
                           <Text style={styles.primaryButtonText}>Continue</Text>
                         </TouchableOpacity>
-                      </View>
+                      </Animated.View>
                     ) : (
-                      <View>
+                      <Animated.View
+                        style={{
+                          opacity: formAnim,
+                          transform: [
+                            {
+                              translateY: formAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [50, 0],
+                              }),
+                            },
+                          ],
+                        }}
+                      >
                         <Text style={styles.formTitle}>
                           {isRegister
                             ? "Create your account"
