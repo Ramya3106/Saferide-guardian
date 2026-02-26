@@ -665,6 +665,13 @@ const AppContent = () => {
 
   const handleSendResetCode = async () => {
     const trimmedEmail = officialEmail.trim().toLowerCase();
+    const trimmedProfessionalId = professionalId.trim();
+
+    // Validate professional ID
+    if (trimmedProfessionalId.length < 6) {
+      setError("Enter a valid professional ID.");
+      return;
+    }
 
     // Basic email validation
     if (trimmedEmail.length < 5 || !trimmedEmail.includes("@")) {
@@ -672,7 +679,7 @@ const AppContent = () => {
       return;
     }
 
-    // Check if it's an official domain (but don't block if not - let backend validate)
+    // Check if it's an official domain
     if (!isOfficialEmailValid(role, officialEmail)) {
       setError(
         `Please use your official ${getOfficialDomain(role)} email address.`,
@@ -686,7 +693,11 @@ const AppContent = () => {
     setIsSendingResetCode(true);
 
     try {
-      const { data } = await sendCode(trimmedEmail);
+      const { data } = await axios.post(`${API_BASE}/auth/forgot-password`, {
+        role,
+        professionalId: trimmedProfessionalId,
+        officialEmail: trimmedEmail,
+      });
       const sent = Boolean(data?.sent || data?.devCode);
       setIsResetCodeSent(sent);
       if (!sent && data?.message) {
@@ -694,7 +705,7 @@ const AppContent = () => {
       }
     } catch (err) {
       const message =
-        err?.response?.data?.message || "Unable to send verification code.";
+        err?.response?.data?.message || "Unable to send reset code.";
       setError(message);
     } finally {
       setIsSendingResetCode(false);
@@ -703,7 +714,7 @@ const AppContent = () => {
 
   const handleResetPassword = async () => {
     if (resetCode.trim().length !== 6) {
-      setError("Enter valid 6-digit verification code.");
+      setError("Enter valid 6-digit reset code.");
       return;
     }
     if (newPassword.trim().length < 6) {
@@ -718,10 +729,10 @@ const AppContent = () => {
     setError("");
 
     try {
-      // Use the new OTP-based password reset endpoint
-      await axios.post(`${API_BASE}/auth/reset-password-otp`, {
+      // Use the forgot-password reset endpoint
+      await axios.post(`${API_BASE}/auth/reset-password`, {
         officialEmail: officialEmail.trim().toLowerCase(),
-        otpCode: resetCode.trim(),
+        resetCode: resetCode.trim(),
         newPassword: newPassword.trim(),
       });
 
@@ -735,6 +746,7 @@ const AppContent = () => {
         setConfirmNewPassword("");
         setIsResetCodeSent(false);
         setOfficialEmail("");
+        setProfessionalId("");
       }, 2000);
     } catch (err) {
       const message =
@@ -2408,6 +2420,7 @@ const AppContent = () => {
                                     setIsResetCodeSent(false);
                                     setResetSuccess(false);
                                     setOfficialEmail("");
+                                    setProfessionalId("");
                                     setError("");
                                   }}
                                 >
@@ -2431,6 +2444,23 @@ const AppContent = () => {
                                 <>
                                   <View style={styles.inputGroup}>
                                     <Text style={styles.label}>
+                                      Professional ID
+                                    </Text>
+                                    <TextInput
+                                      style={styles.input}
+                                      placeholder={
+                                        role === "Police"
+                                          ? "TNPolice-45678"
+                                          : "TTR-SR-12345"
+                                      }
+                                      placeholderTextColor="#94A3B8"
+                                      value={professionalId}
+                                      onChangeText={setProfessionalId}
+                                      autoCapitalize="characters"
+                                    />
+                                  </View>
+                                  <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>
                                       Official Email
                                     </Text>
                                     <TextInput
@@ -2450,20 +2480,22 @@ const AppContent = () => {
                                   <TouchableOpacity
                                     style={[
                                       styles.primaryButton,
-                                      (officialEmail.trim().length < 5 ||
+                                      (professionalId.trim().length < 6 ||
+                                        officialEmail.trim().length < 5 ||
                                         isSendingResetCode) &&
                                         styles.buttonDisabled,
                                     ]}
                                     onPress={handleSendResetCode}
                                     disabled={
+                                      professionalId.trim().length < 6 ||
                                       officialEmail.trim().length < 5 ||
                                       isSendingResetCode
                                     }
                                   >
                                     <Text style={styles.primaryButtonText}>
                                       {isSendingResetCode
-                                        ? "Sending verification code..."
-                                        : "Send verification code"}
+                                        ? "Sending reset code..."
+                                        : "Send reset code"}
                                     </Text>
                                   </TouchableOpacity>
                                 </>
@@ -2480,11 +2512,11 @@ const AppContent = () => {
                                 <>
                                   <View style={styles.inputGroup}>
                                     <Text style={styles.label}>
-                                      Verification Code
+                                      Reset Code
                                     </Text>
                                     <TextInput
                                       style={styles.input}
-                                      placeholder="Enter 6-digit code"
+                                      placeholder="Enter 6-digit reset code"
                                       placeholderTextColor="#94A3B8"
                                       value={resetCode}
                                       onChangeText={setResetCode}
