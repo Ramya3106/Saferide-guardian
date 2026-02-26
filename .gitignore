@@ -23,5 +23,9 @@ ios/
 *.ipa
 *.aab
 
+# tool-generated
+.expo/
+.qodo/
+
 # misc
 coverage/
