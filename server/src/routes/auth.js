@@ -603,6 +603,9 @@ router.post("/forgot-password", async (req, res) => {
       if (returnDevCode) {
         const resetCode = generateCode();
         const expiresAt = Date.now() + RESET_CODE_TTL_MS;
+
+        console.log("Dev mode - Storing reset code:", { officialEmail, resetCode });
+
         resetPasswordStore.set(officialEmail, {
           code: resetCode,
           expiresAt,
