@@ -431,6 +431,126 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// Verify reset code for official users - For two-step password reset
+router.post("/verify-reset-code", async (req, res) => {
+  try {
+    const officialEmail = (req.body?.officialEmail || "").trim().toLowerCase();
+    const resetCode = String(req.body?.resetCode || "").trim();
+
+    if (!isValidEmail(officialEmail) || resetCode.length !== 6) {
+      return res.status(400).json({
+        valid: false,
+        message: "Invalid email or reset code format.",
+      });
+    }
+
+    const record = resetPasswordStore.get(officialEmail);
+    if (!record) {
+      return res.status(400).json({
+        valid: false,
+        message: "No reset code found. Request a new one.",
+      });
+    }
+
+    if (Date.now() > record.expiresAt) {
+      resetPasswordStore.delete(officialEmail);
+      return res.status(400).json({
+        valid: false,
+        message: "Reset code expired. Request a new one.",
+      });
+    }
+
+    if (record.attempts >= MAX_ATTEMPTS) {
+      resetPasswordStore.delete(officialEmail);
+      return res.status(429).json({
+        valid: false,
+        message: "Too many attempts. Request a new code.",
+      });
+    }
+
+    if (record.code !== resetCode) {
+      record.attempts += 1;
+      resetPasswordStore.set(officialEmail, record);
+      return res.status(400).json({
+        valid: false,
+        message: "Incorrect reset code.",
+      });
+    }
+
+    // Code is valid, don't delete it yet (will be deleted when password is reset)
+    return res.status(200).json({
+      valid: true,
+      message: "Reset code verified successfully.",
+    });
+  } catch (error) {
+    console.error("Verify reset code error:", error.message);
+    return res.status(500).json({
+      valid: false,
+      message: "Unable to verify reset code.",
+    });
+  }
+});
+
+// Verify reset code for regular users - For two-step password reset
+router.post("/verify-reset-code-user", async (req, res) => {
+  try {
+    const email = (req.body?.email || "").trim().toLowerCase();
+    const otpCode = String(req.body?.otpCode || "").trim();
+
+    if (!isValidEmail(email) || otpCode.length !== 6) {
+      return res.status(400).json({
+        valid: false,
+        message: "Invalid email or verification code format.",
+      });
+    }
+
+    const record = verificationStore.get(email);
+    if (!record) {
+      return res.status(400).json({
+        valid: false,
+        message: "No verification code found.",
+      });
+    }
+
+    if (Date.now() > record.expiresAt) {
+      verificationStore.delete(email);
+      return res.status(400).json({
+        valid: false,
+        message: "Code expired. Resend new code.",
+      });
+    }
+
+    if (record.attempts >= MAX_ATTEMPTS) {
+      verificationStore.delete(email);
+      return res.status(429).json({
+        valid: false,
+        message: "Too many attempts. Resend code.",
+      });
+    }
+
+    if (record.code !== otpCode) {
+      record.attempts += 1;
+      verificationStore.set(email, record);
+      return res.status(400).json({
+        valid: false,
+        message: "Incorrect code.",
+      });
+    }
+
+    // Code is valid, don't delete it yet (will be deleted when password is reset)
+    return res.status(200).json({
+      valid: true,
+      message: "Verification code verified successfully.",
+    });
+  } catch (error) {
+    console.error("Verify reset code user error:", error.message);
+    return res.status(500).json({
+      valid: false,
+      message: "Unable to verify code.",
+    });
+  }
+});
+
 module.exports = router;
 
 // Password Reset - Send reset code
