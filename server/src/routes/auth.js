@@ -437,6 +437,8 @@ router.post("/verify-reset-code", async (req, res) => {
     const officialEmail = (req.body?.officialEmail || "").trim().toLowerCase();
     const resetCode = String(req.body?.resetCode || "").trim();
 
+    console.log("Verify reset code request:", { officialEmail, resetCode });
+
     if (!isValidEmail(officialEmail) || resetCode.length !== 6) {
       return res.status(400).json({
         valid: false,
@@ -445,6 +447,9 @@ router.post("/verify-reset-code", async (req, res) => {
     }
 
     const record = resetPasswordStore.get(officialEmail);
+    console.log("Reset code record found:", !!record);
+    console.log("Store contents:", Array.from(resetPasswordStore.keys()));
+
     if (!record) {
       return res.status(400).json({
         valid: false,
@@ -468,6 +473,8 @@ router.post("/verify-reset-code", async (req, res) => {
       });
     }
 
+    console.log("Code comparison:", { stored: record.code, provided: resetCode });
+
     if (record.code !== resetCode) {
       record.attempts += 1;
       resetPasswordStore.set(officialEmail, record);
@@ -478,6 +485,7 @@ router.post("/verify-reset-code", async (req, res) => {
     }
 
     // Code is valid, don't delete it yet (will be deleted when password is reset)
+    console.log("Reset code verified successfully");
     return res.status(200).json({
       valid: true,
       message: "Reset code verified successfully.",
