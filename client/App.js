@@ -2734,13 +2734,6 @@ const AppContent = () => {
                                       </TouchableOpacity>
                                     </>
                                   )}
-                                  >
-                                    <Text style={styles.switchLink}>
-                                      Resend code
-                                    </Text>
-                                  </TouchableOpacity>
-                                </>
-                              )}
                             </View>
                           )}
 
