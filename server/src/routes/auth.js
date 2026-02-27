@@ -624,12 +624,16 @@ router.post("/forgot-password", async (req, res) => {
     const resetCode = generateCode();
     const expiresAt = Date.now() + RESET_CODE_TTL_MS;
 
+    console.log("Storing reset code:", { officialEmail, resetCode, timestamp: new Date().toISOString() });
+
     resetPasswordStore.set(officialEmail, {
       code: resetCode,
       expiresAt,
       attempts: 0,
       userId: user._id.toString(),
     });
+
+    console.log("Reset code stored in memory store");
 
     try {
       await transporter.sendMail({
