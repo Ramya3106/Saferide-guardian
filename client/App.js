@@ -749,11 +749,38 @@ const AppContent = () => {
     }
   };
 
-  const handleResetPassword = async () => {
+  const handleVerifyResetCode = async () => {
     if (resetCode.trim().length !== 6) {
       setError("Enter valid 6-digit reset code.");
       return;
     }
+
+    setError("");
+    setIsVerifyingResetCode(true);
+
+    try {
+      // Verify the reset code with the backend
+      const { data } = await axios.post(`${API_BASE}/auth/verify-reset-code`, {
+        officialEmail: officialEmail.trim().toLowerCase(),
+        resetCode: resetCode.trim(),
+      });
+
+      if (data?.valid) {
+        setIsResetCodeVerified(true);
+        setError("");
+      } else {
+        setError(data?.message || "Invalid reset code.");
+      }
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || "Unable to verify reset code.";
+      setError(message);
+    } finally {
+      setIsVerifyingResetCode(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
     if (newPassword.trim().length < 6) {
       setError("Password must be at least 6 characters.");
       return;
@@ -782,13 +809,14 @@ const AppContent = () => {
         setNewPassword("");
         setConfirmNewPassword("");
         setIsResetCodeSent(false);
+        setIsResetCodeVerified(false);
         setOfficialEmail("");
         setProfessionalId("");
       }, 2000);
     } catch (err) {
       const message =
         err?.response?.data?.message ||
-        "Unable to verify code or reset password.";
+        "Unable to reset password.";
       setError(message);
     }
   };
