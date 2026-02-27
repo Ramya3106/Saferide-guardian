@@ -142,6 +142,8 @@ const AppContent = () => {
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [isResetCodeSent, setIsResetCodeSent] = useState(false);
   const [isSendingResetCode, setIsSendingResetCode] = useState(false);
+  const [isResetCodeVerified, setIsResetCodeVerified] = useState(false);
+  const [isVerifyingResetCode, setIsVerifyingResetCode] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
 
   // Specific role selection for TTR/RPF/Police
