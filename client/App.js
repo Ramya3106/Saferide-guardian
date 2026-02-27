@@ -875,11 +875,17 @@ const AppContent = () => {
     setIsVerifyingResetCode(true);
 
     try {
-      // Verify the reset code with the backend
-      const { data } = await axios.post(`${API_BASE}/auth/verify-reset-code-user`, {
+      const payload = {
         email: email.trim().toLowerCase(),
         otpCode: resetCode.trim(),
-      });
+      };
+
+      console.log("Verifying reset code with payload:", payload);
+
+      // Verify the reset code with the backend
+      const { data } = await axios.post(`${API_BASE}/auth/verify-reset-code-user`, payload);
+
+      console.log("Verification response:", data);
 
       if (data?.valid) {
         setIsResetCodeVerified(true);
@@ -888,6 +894,8 @@ const AppContent = () => {
         setError(data?.message || "Invalid verification code.");
       }
     } catch (err) {
+      console.error("Verification error:", err.response?.data || err.message);
+
       // Handle both successful error responses (with valid: false) and actual errors
       const responseData = err?.response?.data;
       if (responseData?.valid === false) {
