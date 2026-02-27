@@ -482,6 +482,8 @@ const AppContent = () => {
     setShowConfirmNewPassword(false);
     setIsResetCodeSent(false);
     setIsSendingResetCode(false);
+    setIsResetCodeVerified(false);
+    setIsVerifyingResetCode(false);
     setResetSuccess(false);
     setShowRoleSelection(false);
     setSpecificRole("");
