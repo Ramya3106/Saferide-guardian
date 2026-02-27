@@ -851,11 +851,38 @@ const AppContent = () => {
     }
   };
 
-  const handleResetPasswordUser = async () => {
+  const handleVerifyResetCodeUser = async () => {
     if (resetCode.trim().length !== 6) {
       setError("Enter valid 6-digit verification code.");
       return;
     }
+
+    setError("");
+    setIsVerifyingResetCode(true);
+
+    try {
+      // Verify the reset code with the backend
+      const { data } = await axios.post(`${API_BASE}/auth/verify-reset-code-user`, {
+        email: email.trim().toLowerCase(),
+        otpCode: resetCode.trim(),
+      });
+
+      if (data?.valid) {
+        setIsResetCodeVerified(true);
+        setError("");
+      } else {
+        setError(data?.message || "Invalid verification code.");
+      }
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || "Unable to verify code.";
+      setError(message);
+    } finally {
+      setIsVerifyingResetCode(false);
+    }
+  };
+
+  const handleResetPasswordUser = async () => {
     if (newPassword.trim().length < 6) {
       setError("Password must be at least 6 characters.");
       return;
@@ -883,12 +910,13 @@ const AppContent = () => {
         setNewPassword("");
         setConfirmNewPassword("");
         setIsResetCodeSent(false);
+        setIsResetCodeVerified(false);
         setEmail("");
       }, 2000);
     } catch (err) {
       const message =
         err?.response?.data?.message ||
-        "Unable to verify code or reset password.";
+        "Unable to reset password.";
       setError(message);
     }
   };
@@ -2542,112 +2570,158 @@ const AppContent = () => {
                                 </View>
                               ) : (
                                 <>
-                                  <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>
-                                      Reset Code
-                                    </Text>
-                                    <TextInput
-                                      style={styles.input}
-                                      placeholder="Enter 6-digit reset code"
-                                      placeholderTextColor="#94A3B8"
-                                      value={resetCode}
-                                      onChangeText={setResetCode}
-                                      keyboardType="number-pad"
-                                      maxLength={6}
-                                    />
-                                  </View>
-                                  <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>
-                                      New Password
-                                    </Text>
-                                    <View style={styles.passwordRow}>
-                                      <TextInput
-                                        style={[
-                                          styles.input,
-                                          styles.passwordInput,
-                                        ]}
-                                        placeholder="Enter new password"
-                                        placeholderTextColor="#94A3B8"
-                                        value={newPassword}
-                                        onChangeText={setNewPassword}
-                                        secureTextEntry={!showNewPassword}
-                                      />
+                                  {!isResetCodeVerified ? (
+                                    <>
+                                      <View style={styles.inputGroup}>
+                                        <Text style={styles.label}>
+                                          Reset Code
+                                        </Text>
+                                        <TextInput
+                                          style={styles.input}
+                                          placeholder="Enter 6-digit reset code"
+                                          placeholderTextColor="#94A3B8"
+                                          value={resetCode}
+                                          onChangeText={setResetCode}
+                                          keyboardType="number-pad"
+                                          maxLength={6}
+                                        />
+                                        <Text style={styles.helperText}>
+                                          Check your email for the 6-digit code
+                                        </Text>
+                                      </View>
                                       <TouchableOpacity
-                                        style={styles.eyeButton}
-                                        onPress={() =>
-                                          setShowNewPassword((prev) => !prev)
+                                        style={[
+                                          styles.primaryButton,
+                                          (resetCode.trim().length !== 6 ||
+                                            isVerifyingResetCode) &&
+                                            styles.buttonDisabled,
+                                        ]}
+                                        onPress={handleVerifyResetCode}
+                                        disabled={
+                                          resetCode.trim().length !== 6 ||
+                                          isVerifyingResetCode
                                         }
                                       >
-                                        <Ionicons
-                                          name={
-                                            showNewPassword ? "eye-off" : "eye"
-                                          }
-                                          size={20}
-                                          color="#64748B"
-                                        />
+                                        <Text style={styles.primaryButtonText}>
+                                          {isVerifyingResetCode
+                                            ? "Verifying code..."
+                                            : "Verify Code"}
+                                        </Text>
                                       </TouchableOpacity>
-                                    </View>
-                                  </View>
-                                  <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>
-                                      Confirm New Password
-                                    </Text>
-                                    <View style={styles.passwordRow}>
-                                      <TextInput
-                                        style={[
-                                          styles.input,
-                                          styles.passwordInput,
-                                        ]}
-                                        placeholder="Re-enter new password"
-                                        placeholderTextColor="#94A3B8"
-                                        value={confirmNewPassword}
-                                        onChangeText={setConfirmNewPassword}
-                                        secureTextEntry={
-                                          !showConfirmNewPassword
-                                        }
-                                      />
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Text style={styles.sectionSubtitle}>
+                                        Code verified! Now set your new password
+                                      </Text>
+                                      <View style={styles.inputGroup}>
+                                        <Text style={styles.label}>
+                                          New Password
+                                        </Text>
+                                        <View style={styles.passwordRow}>
+                                          <TextInput
+                                            style={[
+                                              styles.input,
+                                              styles.passwordInput,
+                                            ]}
+                                            placeholder="Enter new password"
+                                            placeholderTextColor="#94A3B8"
+                                            value={newPassword}
+                                            onChangeText={setNewPassword}
+                                            secureTextEntry={!showNewPassword}
+                                          />
+                                          <TouchableOpacity
+                                            style={styles.eyeButton}
+                                            onPress={() =>
+                                              setShowNewPassword((prev) => !prev)
+                                            }
+                                          >
+                                            <Ionicons
+                                              name={
+                                                showNewPassword
+                                                  ? "eye-off"
+                                                  : "eye"
+                                              }
+                                              size={20}
+                                              color="#64748B"
+                                            />
+                                          </TouchableOpacity>
+                                        </View>
+                                      </View>
+                                      <View style={styles.inputGroup}>
+                                        <Text style={styles.label}>
+                                          Confirm New Password
+                                        </Text>
+                                        <View style={styles.passwordRow}>
+                                          <TextInput
+                                            style={[
+                                              styles.input,
+                                              styles.passwordInput,
+                                            ]}
+                                            placeholder="Re-enter new password"
+                                            placeholderTextColor="#94A3B8"
+                                            value={confirmNewPassword}
+                                            onChangeText={
+                                              setConfirmNewPassword
+                                            }
+                                            secureTextEntry={
+                                              !showConfirmNewPassword
+                                            }
+                                          />
+                                          <TouchableOpacity
+                                            style={styles.eyeButton}
+                                            onPress={() =>
+                                              setShowConfirmNewPassword(
+                                                (prev) => !prev,
+                                              )
+                                            }
+                                          >
+                                            <Ionicons
+                                              name={
+                                                showConfirmNewPassword
+                                                  ? "eye-off"
+                                                  : "eye"
+                                              }
+                                              size={20}
+                                              color="#64748B"
+                                            />
+                                          </TouchableOpacity>
+                                        </View>
+                                      </View>
                                       <TouchableOpacity
-                                        style={styles.eyeButton}
-                                        onPress={() =>
-                                          setShowConfirmNewPassword(
-                                            (prev) => !prev,
-                                          )
+                                        style={[
+                                          styles.primaryButton,
+                                          (newPassword.trim().length < 6 ||
+                                            confirmNewPassword.trim().length <
+                                              6) &&
+                                            styles.buttonDisabled,
+                                        ]}
+                                        onPress={handleResetPassword}
+                                        disabled={
+                                          newPassword.trim().length < 6 ||
+                                          confirmNewPassword.trim().length < 6
                                         }
                                       >
-                                        <Ionicons
-                                          name={
-                                            showConfirmNewPassword
-                                              ? "eye-off"
-                                              : "eye"
-                                          }
-                                          size={20}
-                                          color="#64748B"
-                                        />
+                                        <Text style={styles.primaryButtonText}>
+                                          Reset Password
+                                        </Text>
                                       </TouchableOpacity>
-                                    </View>
-                                  </View>
-                                  <TouchableOpacity
-                                    style={[
-                                      styles.primaryButton,
-                                      (resetCode.trim().length !== 6 ||
-                                        newPassword.trim().length < 6 ||
-                                        confirmNewPassword.trim().length < 6) &&
-                                        styles.buttonDisabled,
-                                    ]}
-                                    onPress={handleResetPassword}
-                                    disabled={
-                                      resetCode.trim().length !== 6 ||
-                                      newPassword.trim().length < 6 ||
-                                      confirmNewPassword.trim().length < 6
-                                    }
-                                  >
-                                    <Text style={styles.primaryButtonText}>
-                                      Reset Password
-                                    </Text>
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    style={[styles.textButton]}
-                                    onPress={handleSendResetCode}
+                                      <TouchableOpacity
+                                        style={[styles.textButton]}
+                                        onPress={() => {
+                                          setIsResetCodeVerified(false);
+                                          setResetCode("");
+                                          setNewPassword("");
+                                          setConfirmNewPassword("");
+                                          setError("");
+                                        }}
+                                      >
+                                        <Text style={styles.switchLink}>
+                                          Use different code
+                                        </Text>
+                                      </TouchableOpacity>
+                                    </>
+                                  )}
                                   >
                                     <Text style={styles.switchLink}>
                                       Resend code
@@ -2740,117 +2814,158 @@ const AppContent = () => {
                                 </View>
                               ) : (
                                 <>
-                                  <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>
-                                      Verification Code
-                                    </Text>
-                                    <TextInput
-                                      style={styles.input}
-                                      placeholder="Enter 6-digit code"
-                                      placeholderTextColor="#94A3B8"
-                                      value={resetCode}
-                                      onChangeText={setResetCode}
-                                      keyboardType="number-pad"
-                                      maxLength={6}
-                                    />
-                                  </View>
-                                  <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>
-                                      New Password
-                                    </Text>
-                                    <View style={styles.passwordRow}>
-                                      <TextInput
-                                        style={[
-                                          styles.input,
-                                          styles.passwordInput,
-                                        ]}
-                                        placeholder="Enter new password"
-                                        placeholderTextColor="#94A3B8"
-                                        value={newPassword}
-                                        onChangeText={setNewPassword}
-                                        secureTextEntry={!showNewPassword}
-                                      />
+                                  {!isResetCodeVerified ? (
+                                    <>
+                                      <View style={styles.inputGroup}>
+                                        <Text style={styles.label}>
+                                          Verification Code
+                                        </Text>
+                                        <TextInput
+                                          style={styles.input}
+                                          placeholder="Enter 6-digit code"
+                                          placeholderTextColor="#94A3B8"
+                                          value={resetCode}
+                                          onChangeText={setResetCode}
+                                          keyboardType="number-pad"
+                                          maxLength={6}
+                                        />
+                                        <Text style={styles.helperText}>
+                                          Check your email for the 6-digit code
+                                        </Text>
+                                      </View>
                                       <TouchableOpacity
-                                        style={styles.eyeButton}
-                                        onPress={() =>
-                                          setShowNewPassword((prev) => !prev)
+                                        style={[
+                                          styles.primaryButton,
+                                          (resetCode.trim().length !== 6 ||
+                                            isVerifyingResetCode) &&
+                                            styles.buttonDisabled,
+                                        ]}
+                                        onPress={handleVerifyResetCodeUser}
+                                        disabled={
+                                          resetCode.trim().length !== 6 ||
+                                          isVerifyingResetCode
                                         }
                                       >
-                                        <Ionicons
-                                          name={
-                                            showNewPassword ? "eye-off" : "eye"
-                                          }
-                                          size={20}
-                                          color="#64748B"
-                                        />
+                                        <Text style={styles.primaryButtonText}>
+                                          {isVerifyingResetCode
+                                            ? "Verifying code..."
+                                            : "Verify Code"}
+                                        </Text>
                                       </TouchableOpacity>
-                                    </View>
-                                  </View>
-                                  <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>
-                                      Confirm New Password
-                                    </Text>
-                                    <View style={styles.passwordRow}>
-                                      <TextInput
-                                        style={[
-                                          styles.input,
-                                          styles.passwordInput,
-                                        ]}
-                                        placeholder="Re-enter new password"
-                                        placeholderTextColor="#94A3B8"
-                                        value={confirmNewPassword}
-                                        onChangeText={setConfirmNewPassword}
-                                        secureTextEntry={
-                                          !showConfirmNewPassword
-                                        }
-                                      />
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Text style={styles.sectionSubtitle}>
+                                        Code verified! Now set your new password
+                                      </Text>
+                                      <View style={styles.inputGroup}>
+                                        <Text style={styles.label}>
+                                          New Password
+                                        </Text>
+                                        <View style={styles.passwordRow}>
+                                          <TextInput
+                                            style={[
+                                              styles.input,
+                                              styles.passwordInput,
+                                            ]}
+                                            placeholder="Enter new password"
+                                            placeholderTextColor="#94A3B8"
+                                            value={newPassword}
+                                            onChangeText={setNewPassword}
+                                            secureTextEntry={!showNewPassword}
+                                          />
+                                          <TouchableOpacity
+                                            style={styles.eyeButton}
+                                            onPress={() =>
+                                              setShowNewPassword((prev) => !prev)
+                                            }
+                                          >
+                                            <Ionicons
+                                              name={
+                                                showNewPassword
+                                                  ? "eye-off"
+                                                  : "eye"
+                                              }
+                                              size={20}
+                                              color="#64748B"
+                                            />
+                                          </TouchableOpacity>
+                                        </View>
+                                      </View>
+                                      <View style={styles.inputGroup}>
+                                        <Text style={styles.label}>
+                                          Confirm New Password
+                                        </Text>
+                                        <View style={styles.passwordRow}>
+                                          <TextInput
+                                            style={[
+                                              styles.input,
+                                              styles.passwordInput,
+                                            ]}
+                                            placeholder="Re-enter new password"
+                                            placeholderTextColor="#94A3B8"
+                                            value={confirmNewPassword}
+                                            onChangeText={
+                                              setConfirmNewPassword
+                                            }
+                                            secureTextEntry={
+                                              !showConfirmNewPassword
+                                            }
+                                          />
+                                          <TouchableOpacity
+                                            style={styles.eyeButton}
+                                            onPress={() =>
+                                              setShowConfirmNewPassword(
+                                                (prev) => !prev,
+                                              )
+                                            }
+                                          >
+                                            <Ionicons
+                                              name={
+                                                showConfirmNewPassword
+                                                  ? "eye-off"
+                                                  : "eye"
+                                              }
+                                              size={20}
+                                              color="#64748B"
+                                            />
+                                          </TouchableOpacity>
+                                        </View>
+                                      </View>
                                       <TouchableOpacity
-                                        style={styles.eyeButton}
-                                        onPress={() =>
-                                          setShowConfirmNewPassword(
-                                            (prev) => !prev,
-                                          )
+                                        style={[
+                                          styles.primaryButton,
+                                          (newPassword.trim().length < 6 ||
+                                            confirmNewPassword.trim()
+                                              .length < 6) &&
+                                            styles.buttonDisabled,
+                                        ]}
+                                        onPress={handleResetPasswordUser}
+                                        disabled={
+                                          newPassword.trim().length < 6 ||
+                                          confirmNewPassword.trim().length < 6
                                         }
                                       >
-                                        <Ionicons
-                                          name={
-                                            showConfirmNewPassword
-                                              ? "eye-off"
-                                              : "eye"
-                                          }
-                                          size={20}
-                                          color="#64748B"
-                                        />
+                                        <Text style={styles.primaryButtonText}>
+                                          Reset Password
+                                        </Text>
                                       </TouchableOpacity>
-                                    </View>
-                                  </View>
-                                  <TouchableOpacity
-                                    style={[
-                                      styles.primaryButton,
-                                      (resetCode.trim().length !== 6 ||
-                                        newPassword.trim().length < 6 ||
-                                        confirmNewPassword.trim().length < 6) &&
-                                        styles.buttonDisabled,
-                                    ]}
-                                    onPress={handleResetPasswordUser}
-                                    disabled={
-                                      resetCode.trim().length !== 6 ||
-                                      newPassword.trim().length < 6 ||
-                                      confirmNewPassword.trim().length < 6
-                                    }
-                                  >
-                                    <Text style={styles.primaryButtonText}>
-                                      Reset Password
-                                    </Text>
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    style={[styles.textButton]}
-                                    onPress={handleSendResetCodeUser}
-                                  >
-                                    <Text style={styles.switchLink}>
-                                      Resend code
-                                    </Text>
-                                  </TouchableOpacity>
+                                      <TouchableOpacity
+                                        style={[styles.textButton]}
+                                        onPress={() => {
+                                          setIsResetCodeVerified(false);
+                                          setResetCode("");
+                                          setNewPassword("");
+                                          setConfirmNewPassword("");
+                                          setError("");
+                                        }}
+                                      >
+                                        <Text style={styles.switchLink}>
+                                          Use different code
+                                        </Text>
+                                      </TouchableOpacity>
+                                    </>
+                                  )}
                                 </>
                               )}
                             </View>
