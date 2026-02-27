@@ -2734,6 +2734,8 @@ const AppContent = () => {
                                       </TouchableOpacity>
                                     </>
                                   )}
+                                </>
+                              )}
                             </View>
                           )}
 
