@@ -772,9 +772,15 @@ const AppContent = () => {
         setError(data?.message || "Invalid reset code.");
       }
     } catch (err) {
-      const message =
-        err?.response?.data?.message || "Unable to verify reset code.";
-      setError(message);
+      // Handle both successful error responses (with valid: false) and actual errors
+      const responseData = err?.response?.data;
+      if (responseData?.valid === false) {
+        setError(responseData?.message || "Invalid reset code.");
+      } else {
+        const message =
+          err?.response?.data?.message || "Unable to verify reset code.";
+        setError(message);
+      }
     } finally {
       setIsVerifyingResetCode(false);
     }
@@ -874,9 +880,15 @@ const AppContent = () => {
         setError(data?.message || "Invalid verification code.");
       }
     } catch (err) {
-      const message =
-        err?.response?.data?.message || "Unable to verify code.";
-      setError(message);
+      // Handle both successful error responses (with valid: false) and actual errors
+      const responseData = err?.response?.data;
+      if (responseData?.valid === false) {
+        setError(responseData?.message || "Invalid verification code.");
+      } else {
+        const message =
+          err?.response?.data?.message || "Unable to verify code.";
+        setError(message);
+      }
     } finally {
       setIsVerifyingResetCode(false);
     }
