@@ -838,6 +838,8 @@ router.post("/reset-password-user", async (req, res) => {
     const otpCode = String(req.body?.otpCode || "").trim();
     const newPassword = String(req.body?.newPassword || "").trim();
 
+    console.log("Reset password user request:", { email, otpCode: otpCode ? "***" + otpCode.slice(-2) : "none" });
+
     if (!isValidEmail(email) || otpCode.length !== 6) {
       return res.status(400).json({
         message: "Invalid email or verification code.",
@@ -850,11 +852,32 @@ router.post("/reset-password-user", async (req, res) => {
       });
     }
 
-    // Verify OTP code
-    const result = consumeVerificationCode(email, otpCode);
-    if (!result.ok) {
-      return res.status(result.status).json({ message: result.message });
+    // Check if verification code exists and matches (already verified in previous step)
+    const record = verificationStore.get(email);
+    console.log("Reset password user - record found:", !!record);
+    console.log("Reset password user - store keys:", Array.from(verificationStore.keys()));
+
+    if (!record) {
+      return res.status(400).json({
+        message: "No verification code found. Request a new one.",
+      });
     }
+
+    if (Date.now() > record.expiresAt) {
+      verificationStore.delete(email);
+      return res.status(400).json({
+        message: "Code expired. Request a new one.",
+      });
+    }
+
+    if (record.code !== otpCode) {
+      return res.status(400).json({
+        message: "Incorrect verification code.",
+      });
+    }
+
+    // Code is valid, delete it now
+    verificationStore.delete(email);
 
     // Find user by email (for non-official roles)
     const user = await User.findOne({ email });
