@@ -740,21 +740,13 @@ router.post("/reset-password", async (req, res) => {
       });
     }
 
-    if (record.attempts >= MAX_ATTEMPTS) {
-      resetPasswordStore.delete(officialEmail);
-      return res.status(429).json({
-        message: "Too many attempts. Request a new code.",
-      });
-    }
-
     if (record.code !== resetCode) {
-      record.attempts += 1;
-      resetPasswordStore.set(officialEmail, record);
       return res.status(400).json({
         message: "Incorrect reset code.",
       });
     }
 
+    // Code is valid, proceed with password reset
     const user = await User.findById(record.userId);
     if (!user) {
       resetPasswordStore.delete(officialEmail);
@@ -769,6 +761,7 @@ router.post("/reset-password", async (req, res) => {
     user.resetPasswordExpires = undefined;
     await user.save();
 
+    // Delete the code after successful reset
     resetPasswordStore.delete(officialEmail);
 
     console.log(`✅ Password reset successful for: ${officialEmail}`);
