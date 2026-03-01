@@ -807,13 +807,18 @@ const AppContent = () => {
     setError("");
 
     try {
-      // Use the forgot-password reset endpoint
-      await axios.post(`${API_BASE}/auth/reset-password`, {
+      const payload = {
         officialEmail: officialEmail.trim().toLowerCase(),
         resetCode: resetCode.trim(),
         newPassword: newPassword.trim(),
-      });
+      };
+      
+      console.log("Resetting password with:", { email: payload.officialEmail, codeLength: payload.resetCode.length });
 
+      // Use the forgot-password reset endpoint
+      await axios.post(`${API_BASE}/auth/reset-password`, payload);
+
+      console.log("Password reset successful");
       setResetSuccess(true);
       setError("");
       setTimeout(() => {
@@ -923,12 +928,17 @@ const AppContent = () => {
     setError("");
 
     try {
-      await axios.post(`${API_BASE}/auth/reset-password-user`, {
+      const payload = {
         email: email.trim().toLowerCase(),
         otpCode: resetCode.trim(),
         newPassword: newPassword.trim(),
-      });
+      };
 
+      console.log("Resetting password with:", { email: payload.email, codeLength: payload.otpCode.length });
+
+      await axios.post(`${API_BASE}/auth/reset-password-user`, payload);
+
+      console.log("Password reset successful");
       setResetSuccess(true);
       setError("");
       setTimeout(() => {
@@ -942,6 +952,7 @@ const AppContent = () => {
         setEmail("");
       }, 2000);
     } catch (err) {
+      console.error("Password reset user error:", err.response?.data || err.message);
       const message =
         err?.response?.data?.message ||
         "Unable to reset password.";
