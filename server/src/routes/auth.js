@@ -709,6 +709,8 @@ router.post("/reset-password", async (req, res) => {
     const resetCode = String(req.body?.resetCode || "").trim();
     const newPassword = String(req.body?.newPassword || "").trim();
 
+    console.log("Reset password request:", { officialEmail, resetCode: resetCode ? "***" + resetCode.slice(-2) : "none" });
+
     if (!isValidEmail(officialEmail) || resetCode.length !== 6) {
       return res.status(400).json({
         message: "Invalid email or reset code.",
@@ -722,6 +724,9 @@ router.post("/reset-password", async (req, res) => {
     }
 
     const record = resetPasswordStore.get(officialEmail);
+    console.log("Reset password - record found:", !!record);
+    console.log("Reset password - store keys:", Array.from(resetPasswordStore.keys()));
+
     if (!record) {
       return res.status(400).json({
         message: "No reset code found. Request a new one.",
