@@ -833,6 +833,7 @@ const AppContent = () => {
         setProfessionalId("");
       }, 2000);
     } catch (err) {
+      console.error("Password reset error:", err.response?.data || err.message);
       const message =
         err?.response?.data?.message ||
         "Unable to reset password.";
