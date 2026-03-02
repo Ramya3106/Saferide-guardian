@@ -510,7 +510,14 @@ router.post("/verify-reset-code-user", async (req, res) => {
     const email = (req.body?.email || "").trim().toLowerCase();
     const otpCode = String(req.body?.otpCode || "").trim();
 
-    console.log("Verify reset code user request:", { email, otpCode });
+    console.log("Verify reset code user request:", { email, otpCode: otpCode ? "***" + otpCode.slice(-2) : "none" });
+    
+    const storeBeforeCheck = Array.from(verificationStore.entries()).map(([k, v]) => ({ 
+      email: k, 
+      code: v.code,
+      expiresAt: new Date(v.expiresAt).toISOString()
+    }));
+    console.log("Store contents before verification:", storeBeforeCheck);
 
     if (!isValidEmail(email) || otpCode.length !== 6) {
       return res.status(400).json({
@@ -520,8 +527,15 @@ router.post("/verify-reset-code-user", async (req, res) => {
     }
 
     const record = verificationStore.get(email);
-    console.log("Verification code record found:", !!record);
-    console.log("Store contents:", Array.from(verificationStore.keys()));
+    console.log("Verification code record found:", !!record, { email });
+    if (record) {
+      console.log("Record details:", { 
+        code: record.code,
+        expiresAt: new Date(record.expiresAt).toISOString(),
+        isExpired: Date.now() > record.expiresAt,
+        codeMatches: record.code === otpCode
+      });
+    }
 
     if (!record) {
       return res.status(400).json({
@@ -559,7 +573,11 @@ router.post("/verify-reset-code-user", async (req, res) => {
 
     // Code is valid, don't delete it yet (will be deleted when password is reset)
     console.log("✅ Verification code verified successfully for:", email);
-    console.log("Store still contains:", Array.from(verificationStore.entries()).map(([k, v]) => ({ email: k, hasCode: !!v.code })));
+    const storeAfterVerification = Array.from(verificationStore.entries()).map(([k, v]) => ({ 
+      email: k, 
+      code: v.code
+    }));
+    console.log("Store still contains after verification:", storeAfterVerification);
     return res.status(200).json({
       valid: true,
       message: "Verification code verified successfully.",
