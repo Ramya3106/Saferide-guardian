@@ -853,14 +853,30 @@ router.post("/reset-password-user", async (req, res) => {
 
     // Check if verification code exists and matches (already verified in previous step)
     console.log("Looking for code for email:", email);
-    console.log("Current store contents:", Array.from(verificationStore.entries()).map(([k, v]) => ({ email: k, hasCode: !!v.code })));
+    const storeDebug = Array.from(verificationStore.entries()).map(([k, v]) => ({ 
+      email: k, 
+      hasCode: !!v.code,
+      expiresAt: new Date(v.expiresAt).toISOString(),
+      isExpired: Date.now() > v.expiresAt,
+      attempts: v.attempts
+    }));
+    console.log("Store contents before lookup:", storeDebug);
 
     const record = verificationStore.get(email);
     console.log("Reset password user - record found:", !!record);
-    console.log("Reset password user - store keys:", Array.from(verificationStore.keys()));
+    if (record) {
+      console.log("Retrieved record:", {
+        hasCode: !!record.code,
+        expiresAt: new Date(record.expiresAt).toISOString(),
+        isExpired: Date.now() > record.expiresAt,
+        attempts: record.attempts
+      });
+    }
 
     if (!record) {
       console.error(`❌ Verification code not found for email: ${email}`);
+      console.error("Requested email was:", email);
+      console.error("Available emails in store:", Array.from(verificationStore.keys()));
       return res.status(400).json({
         message: "No verification code found. Request a new one.",
       });
