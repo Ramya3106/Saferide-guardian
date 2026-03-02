@@ -127,6 +127,8 @@ router.post("/send-verify-code", async (req, res) => {
       const code = generateCode();
       const expiresAt = Date.now() + VERIFY_CODE_TTL_MS;
       verificationStore.set(email, { code, expiresAt, attempts: 0 });
+      console.log(`✅ DEV MODE: Code stored for ${email}: ${code}`);
+      console.log("Current store contents:", Array.from(verificationStore.entries()).map(([k, v]) => ({ email: k, code: v.code })));
       return res.status(200).json({
         sent: false,
         devCode: code,
@@ -144,6 +146,9 @@ router.post("/send-verify-code", async (req, res) => {
 
   // Store code
   verificationStore.set(email, { code, expiresAt, attempts: 0 });
+
+  console.log(`✅ Code stored for ${email}: ${code}, expires at ${new Date(expiresAt).toISOString()}`);
+  console.log("Current store contents:", Array.from(verificationStore.entries()).map(([k, v]) => ({ email: k, code: v.code, expiresAt: new Date(v.expiresAt).toISOString() })));
 
   // SEND EMAIL
   try {
@@ -553,7 +558,8 @@ router.post("/verify-reset-code-user", async (req, res) => {
     }
 
     // Code is valid, don't delete it yet (will be deleted when password is reset)
-    console.log("Verification code verified successfully");
+    console.log("✅ Verification code verified successfully for:", email);
+    console.log("Store still contains:", Array.from(verificationStore.entries()).map(([k, v]) => ({ email: k, hasCode: !!v.code })));
     return res.status(200).json({
       valid: true,
       message: "Verification code verified successfully.",
@@ -846,11 +852,15 @@ router.post("/reset-password-user", async (req, res) => {
     }
 
     // Check if verification code exists and matches (already verified in previous step)
+    console.log("Looking for code for email:", email);
+    console.log("Current store contents:", Array.from(verificationStore.entries()).map(([k, v]) => ({ email: k, hasCode: !!v.code })));
+
     const record = verificationStore.get(email);
     console.log("Reset password user - record found:", !!record);
     console.log("Reset password user - store keys:", Array.from(verificationStore.keys()));
 
     if (!record) {
+      console.error(`❌ Verification code not found for email: ${email}`);
       return res.status(400).json({
         message: "No verification code found. Request a new one.",
       });
