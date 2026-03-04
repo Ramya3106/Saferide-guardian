@@ -139,7 +139,8 @@ const consumeVerificationCode = (email, code) => {
 router.post("/send-verify-code", async (req, res) => {
   const email = (req.body?.email || "").trim().toLowerCase();
 
-  console.log(`📧 Send verify code request for: ${email}`);
+  console.log(`\n📧 SEND VERIFY CODE for: "${email}"`);
+  console.log("Email type:", typeof email, "Length:", email.length);
 
   if (!isValidEmail(email)) {
     return res.status(400).json({ message: "Enter a valid email address." });
@@ -151,8 +152,12 @@ router.post("/send-verify-code", async (req, res) => {
       const code = generateCode();
       const expiresAt = Date.now() + VERIFY_CODE_TTL_MS;
       verificationStore.set(email, { code, expiresAt, attempts: 0 });
-      console.log(`✅ DEV MODE: Code stored for ${email}: ${code}`);
-      console.log("Current store contents:", Array.from(verificationStore.entries()).map(([k, v]) => ({ email: k, code: v.code })));
+      console.log(`✅ DEV MODE: Code stored for "${email}": ${code}`);
+      console.log("Current store contents:", Array.from(verificationStore.entries()).map(([k, v]) => ({ 
+        email: JSON.stringify(k),
+        emailMatch: k === email,
+        code: v.code 
+      })));
       return res.status(200).json({
         sent: false,
         devCode: code,
