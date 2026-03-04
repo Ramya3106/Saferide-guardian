@@ -176,8 +176,13 @@ router.post("/send-verify-code", async (req, res) => {
   // Store code
   verificationStore.set(email, { code, expiresAt, attempts: 0 });
 
-  console.log(`✅ Code stored for ${email}: ${code}, expires at ${new Date(expiresAt).toISOString()}`);
-  console.log("Current store contents:", Array.from(verificationStore.entries()).map(([k, v]) => ({ email: k, code: v.code, expiresAt: new Date(v.expiresAt).toISOString() })));
+  console.log(`✅ Code stored for "${email}": ${code}, expires at ${new Date(expiresAt).toISOString()}`);
+  console.log("Current store contents:", Array.from(verificationStore.entries()).map(([k, v]) => ({ 
+    email: JSON.stringify(k),
+    emailMatch: k === email,
+    code: v.code, 
+    expiresAt: new Date(v.expiresAt).toISOString() 
+  })));
 
   // SEND EMAIL
   try {
