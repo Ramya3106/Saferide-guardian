@@ -12,6 +12,28 @@ const RESET_CODE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 const MAX_ATTEMPTS = 5;
 const verificationStore = new Map();
 const resetPasswordStore = new Map();
+
+// Periodic logging of store state for debugging
+setInterval(() => {
+  if (verificationStore.size > 0 || resetPasswordStore.size > 0) {
+    console.log("\n📊 STORE STATE CHECK:", new Date().toISOString());
+    console.log("Verification Store:", Array.from(verificationStore.entries()).map(([k, v]) => ({ 
+      email: k, 
+      code: v.code,
+      expiresAt: new Date(v.expiresAt).toISOString(),
+      expiresIn: Math.round((v.expiresAt - Date.now()) / 1000) + "s",
+      isExpired: Date.now() > v.expiresAt
+    })));
+    console.log("Reset Password Store:", Array.from(resetPasswordStore.entries()).map(([k, v]) => ({ 
+      email: k, 
+      code: v.code,
+      expiresAt: new Date(v.expiresAt).toISOString(),
+      expiresIn: Math.round((v.expiresAt - Date.now()) / 1000) + "s",
+      isExpired: Date.now() > v.expiresAt
+    })));
+  }
+}, 30000); // Log every 30 seconds if stores have data
+
 const user = (process.env.EMAIL_USER || "").trim();
 const pass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
 const fromAddress = (process.env.EMAIL_FROM || user).trim();
@@ -595,6 +617,36 @@ router.post("/verify-reset-code-user", async (req, res) => {
 
 module.exports = router;
 
+// DIAGNOSTIC ENDPOINT - Remove in production
+router.get("/debug-store/:email", async (req, res) => {
+  const email = (req.params.email || "").trim().toLowerCase();
+  
+  const verifyRecord = verificationStore.get(email);
+  const resetRecord = resetPasswordStore.get(email);
+  
+  res.json({
+    email,
+    verificationStore: verifyRecord ? {
+      exists: true,
+      code: verifyRecord.code,
+      expiresAt: new Date(verifyRecord.expiresAt).toISOString(),
+      expiresIn: Math.round((verifyRecord.expiresAt - Date.now()) / 1000) + "s",
+      isExpired: Date.now() > verifyRecord.expiresAt,
+      attempts: verifyRecord.attempts
+    } : { exists: false },
+    resetPasswordStore: resetRecord ? {
+      exists: true,
+      code: resetRecord.code,
+      expiresAt: new Date(resetRecord.expiresAt).toISOString(),
+      expiresIn: Math.round((resetRecord.expiresAt - Date.now()) / 1000) + "s",
+      isExpired: Date.now() > resetRecord.expiresAt,
+      attempts: resetRecord.attempts
+    } : { exists: false },
+    allVerificationEmails: Array.from(verificationStore.keys()),
+    allResetPasswordEmails: Array.from(resetPasswordStore.keys())
+  });
+});
+
 // Password Reset - Send reset code
 router.post("/forgot-password", async (req, res) => {
   try {
@@ -872,21 +924,27 @@ router.post("/reset-password-user", async (req, res) => {
     }
 
     // Check if verification code exists and matches (already verified in previous step)
-    console.log("Looking for code for email:", email);
+    console.log(`\n🔍 RESET PASSWORD LOOKUP for: "${email}"`);
+    console.log("Email type:", typeof email, "Length:", email.length);
+    console.log("All emails in store:", Array.from(verificationStore.keys()).map(k => JSON.stringify(k)));
+    
     const storeDebug = Array.from(verificationStore.entries()).map(([k, v]) => ({ 
-      email: k, 
+      email: JSON.stringify(k),
+      emailMatch: k === email,
       hasCode: !!v.code,
+      code: v.code,
       expiresAt: new Date(v.expiresAt).toISOString(),
       isExpired: Date.now() > v.expiresAt,
       attempts: v.attempts
     }));
-    console.log("Store contents before lookup:", storeDebug);
+    console.log("Full store contents:", storeDebug);
 
     const record = verificationStore.get(email);
     console.log("Reset password user - record found:", !!record);
     if (record) {
-      console.log("Retrieved record:", {
+      console.log("✅ Retrieved record:", {
         hasCode: !!record.code,
+        code: record.code,
         expiresAt: new Date(record.expiresAt).toISOString(),
         isExpired: Date.now() > record.expiresAt,
         attempts: record.attempts
@@ -894,9 +952,10 @@ router.post("/reset-password-user", async (req, res) => {
     }
 
     if (!record) {
-      console.error(`❌ Verification code not found for email: ${email}`);
-      console.error("Requested email was:", email);
-      console.error("Available emails in store:", Array.from(verificationStore.keys()));
+      console.error(`\n❌ VERIFICATION CODE NOT FOUND`);
+      console.error("Searched for email:", JSON.stringify(email));
+      console.error("Available emails:", Array.from(verificationStore.keys()).map(k => JSON.stringify(k)));
+      console.error("Store size:", verificationStore.size);
       return res.status(400).json({
         message: "No verification code found. Request a new one.",
       });
