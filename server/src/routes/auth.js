@@ -534,10 +534,14 @@ router.post("/verify-reset-code-user", async (req, res) => {
     const email = (req.body?.email || "").trim().toLowerCase();
     const otpCode = String(req.body?.otpCode || "").trim();
 
-    console.log("Verify reset code user request:", { email, otpCode: otpCode ? "***" + otpCode.slice(-2) : "none" });
+    console.log(`\n🔍 VERIFY RESET CODE for: "${email}"`);
+    console.log("Email type:", typeof email, "Length:", email.length);
+    console.log("OTP Code:", otpCode ? "***" + otpCode.slice(-2) : "none");
+    console.log("All emails in store:", Array.from(verificationStore.keys()).map(k => JSON.stringify(k)));
     
     const storeBeforeCheck = Array.from(verificationStore.entries()).map(([k, v]) => ({ 
-      email: k, 
+      email: JSON.stringify(k),
+      emailMatch: k === email,
       code: v.code,
       expiresAt: new Date(v.expiresAt).toISOString()
     }));
@@ -596,9 +600,11 @@ router.post("/verify-reset-code-user", async (req, res) => {
     }
 
     // Code is valid, don't delete it yet (will be deleted when password is reset)
-    console.log("✅ Verification code verified successfully for:", email);
+    console.log(`✅ Verification code verified successfully for: "${email}"`);
+    console.log("Code will remain in store for password reset step");
     const storeAfterVerification = Array.from(verificationStore.entries()).map(([k, v]) => ({ 
-      email: k, 
+      email: JSON.stringify(k),
+      emailMatch: k === email,
       code: v.code
     }));
     console.log("Store still contains after verification:", storeAfterVerification);
