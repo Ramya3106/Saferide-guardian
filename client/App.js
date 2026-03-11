@@ -856,8 +856,13 @@ const AppContent = () => {
     setIsSendingResetCode(true);
 
     try {
-      const { data } = await sendCode(trimmedEmail);
-      const sent = Boolean(data?.sent || data?.devCode);
+      const { data } = await axios.post(
+        `${API_BASE}/auth/forgot-password-user`,
+        {
+          email: trimmedEmail,
+        },
+      );
+      const sent = Boolean(data?.sent);
       setIsResetCodeSent(sent);
       if (!sent && data?.message) {
         setError(data.message);

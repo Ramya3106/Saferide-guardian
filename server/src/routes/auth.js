@@ -34,9 +34,10 @@ setInterval(() => {
   }
 }, 30000); // Log every 30 seconds if stores have data
 
-const user = (process.env.EMAIL_USER || "").trim();
+const DEFAULT_RESET_SENDER = "divyadharshana3@gmail.com";
+const mailUser = (process.env.EMAIL_USER || DEFAULT_RESET_SENDER).trim();
 const pass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
-const fromAddress = (process.env.EMAIL_FROM || user).trim();
+const fromAddress = (process.env.EMAIL_FROM || DEFAULT_RESET_SENDER).trim();
 const returnDevCode =
   String(process.env.RETURN_VERIFY_CODE || "").toLowerCase() === "true";
 const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
@@ -47,12 +48,12 @@ const OFFICIAL_ROLES = new Set(["TTR/RPF/Police"]);
 const OPERATIONAL_ROLES = new Set(["Driver/Conductor", "Cab/Auto"]);
 
 const createTransporter = () => {
-  if (!user || !pass) return null;
+  if (!mailUser || !pass) return null;
 
   return nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user,
+      user: mailUser,
       pass,
     },
   });
@@ -187,7 +188,7 @@ router.post("/send-verify-code", async (req, res) => {
   // SEND EMAIL
   try {
     await transporter.sendMail({
-      from: fromAddress || user,
+      from: fromAddress || mailUser,
       to: email,
       subject: "SafeRide Guardian - Verification Code",
       text: `Your SafeRide verification code is: ${code}\n\nIt expires in 10 minutes.\n\nSafeRide Team`,
@@ -742,7 +743,7 @@ router.post("/forgot-password", async (req, res) => {
 
     try {
       await transporter.sendMail({
-        from: fromAddress || user,
+        from: fromAddress || mailUser,
         to: officialEmail,
         subject: "SafeRide Guardian - Password Reset Code",
         text: `Your SafeRide password reset code is: ${resetCode}\n\nIt expires in 15 minutes.\n\nIf you didn't request this, please ignore this email.\n\nSafeRide Team`,
@@ -1014,5 +1015,61 @@ router.post("/reset-password-user", async (req, res) => {
   } catch (error) {
     console.error("Reset password user error:", error.message);
     return res.status(500).json({ message: "Unable to reset password." });
+  }
+});
+
+// Password Reset - Send reset code for non-official users from configured Gmail
+router.post("/forgot-password-user", async (req, res) => {
+  try {
+    const email = (req.body?.email || "").trim().toLowerCase();
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: "Enter a valid email address." });
+    }
+
+    const account = await User.findOne({ email });
+    if (!account) {
+      return res.status(404).json({ message: "No account found with this email." });
+    }
+
+    const transporter = createTransporter();
+    if (!transporter) {
+      return res.status(500).json({
+        message: "Email service not configured. Contact support.",
+      });
+    }
+
+    const resetCode = generateCode();
+    const expiresAt = Date.now() + RESET_CODE_TTL_MS;
+    verificationStore.set(email, { code: resetCode, expiresAt, attempts: 0 });
+
+    try {
+      await transporter.sendMail({
+        from: fromAddress || mailUser,
+        to: email,
+        subject: "SafeRide Guardian - Password Reset Code",
+        text: `Your SafeRide password reset code is: ${resetCode}\n\nIt expires in 15 minutes.\n\nIf you did not request this, please ignore this email.\n\nSafeRide Team`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+            <h2>SafeRide Guardian</h2>
+            <p>You requested a password reset. Your code is:</p>
+            <div style="background: #f0f0f0; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
+              ${resetCode}
+            </div>
+            <p>This code expires in <strong>15 minutes</strong>.</p>
+            <p>If you did not request this reset, please ignore this email.</p>
+          </div>
+        `,
+      });
+
+      return res.status(200).json({ sent: true });
+    } catch (error) {
+      verificationStore.delete(email);
+      console.error("Forgot password user email error:", error.message);
+      return res.status(500).json({ message: "Failed to send reset email." });
+    }
+  } catch (error) {
+    console.error("Forgot password user error:", error.message);
+    return res.status(500).json({ message: "Unable to process request." });
   }
 });
