@@ -702,11 +702,13 @@ router.post("/forgot-password", async (req, res) => {
       });
     }
 
-    const user = await User.findOne({
-      role,
-      professionalId,
-      officialEmail,
-    });
+    const user = await findOfficialByProfessionalId(role, professionalId);
+
+    if (user && user.email !== officialEmail) {
+      return res.status(404).json({
+        message: "No account found with these credentials.",
+      });
+    }
 
     if (!user) {
       return res.status(404).json({
@@ -909,7 +911,10 @@ router.post("/reset-password-otp", async (req, res) => {
     }
 
     // Find user by official email
-    const user = await User.findOne({ officialEmail });
+    const user = await User.findOne({
+      role: "TTR/RPF/Police",
+      email: officialEmail,
+    }).select("+password");
     if (!user) {
       return res.status(404).json({
         message: "No account found with this email.",
