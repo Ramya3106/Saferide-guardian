@@ -52,7 +52,7 @@ server.on("error", async (error) => {
   if (error?.code === "EADDRINUSE") {
     const alreadyRunningSafeRide = await isExistingSafeRideServer();
     if (alreadyRunningSafeRide) {
-      console.log(`SafeRide server is already running on port ${PORT}. Reusing existing instance.`);
+      console.log(`SafeRide server is running on port ${PORT}.`);
       process.exit(0);
     }
 
