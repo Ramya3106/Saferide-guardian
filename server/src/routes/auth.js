@@ -35,9 +35,19 @@ setInterval(() => {
 }, 30000); // Log every 30 seconds if stores have data
 
 const DEFAULT_RESET_SENDER = "divyadharshana3@gmail.com";
-const mailUser = (process.env.EMAIL_USER || DEFAULT_RESET_SENDER).trim();
-const pass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
-const fromAddress = (process.env.EMAIL_FROM || DEFAULT_RESET_SENDER).trim();
+const mailUser = (
+  process.env.RESET_EMAIL_USER ||
+  process.env.EMAIL_USER ||
+  DEFAULT_RESET_SENDER
+).trim();
+const pass = String(
+  process.env.RESET_EMAIL_PASS || process.env.EMAIL_PASS || "",
+).replace(/\s+/g, "");
+const fromAddress = (
+  process.env.RESET_EMAIL_FROM ||
+  process.env.EMAIL_FROM ||
+  `SafeRide Guardian <${DEFAULT_RESET_SENDER}>`
+).trim();
 const returnDevCode =
   String(process.env.RETURN_VERIFY_CODE || "").toLowerCase() === "true";
 const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
@@ -58,6 +68,9 @@ const createTransporter = () => {
     },
   });
 };
+
+const getEmailServiceUnavailableMessage = () =>
+  `Email service not configured. Set RESET_EMAIL_PASS or EMAIL_PASS for ${mailUser}.`;
 
 // Generate 6-digit code
 const generateCode = () => String(Math.floor(100000 + Math.random() * 900000));
@@ -167,7 +180,7 @@ router.post("/send-verify-code", async (req, res) => {
     }
 
     return res.status(500).json({
-      message: "Email service not configured. Contact support.",
+      message: getEmailServiceUnavailableMessage(),
     });
   }
 
@@ -723,7 +736,7 @@ router.post("/forgot-password", async (req, res) => {
       }
 
       return res.status(500).json({
-        message: "Email service not configured. Contact support.",
+        message: getEmailServiceUnavailableMessage(),
       });
     }
 
@@ -1035,7 +1048,7 @@ router.post("/forgot-password-user", async (req, res) => {
     const transporter = createTransporter();
     if (!transporter) {
       return res.status(500).json({
-        message: "Email service not configured. Contact support.",
+        message: getEmailServiceUnavailableMessage(),
       });
     }
 
