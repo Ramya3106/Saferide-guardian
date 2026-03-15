@@ -1050,16 +1050,23 @@ const AppContent = () => {
   };
 
   const handleSubmitComplaint = () => {
+    const formattedComplaintTime = formatClockTime(
+      complaintTime,
+      complaintTimeMeridiem,
+    );
+
     if (
       complaintItem.trim().length < 2 ||
       complaintDesc.trim().length < 6 ||
       complaintLocation.trim().length < 2 ||
-      complaintTime.trim().length < 3
+      complaintTime.trim().length < 3 ||
+      !complaintTimeMeridiem
     ) {
       setError("Add item, description, location, and time.");
       return;
     }
     setError("");
+    setComplaintTime(formattedComplaintTime);
     setComplaintSubmitted(true);
     setStaffConfirmed(false);
     setHandoffComplete(false);
