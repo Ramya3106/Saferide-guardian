@@ -1050,11 +1050,6 @@ const AppContent = () => {
   };
 
   const handleSubmitComplaint = () => {
-    const formattedComplaintTime = formatClockTime(
-      complaintTime,
-      complaintTimeMeridiem,
-    );
-
     if (
       complaintItem.trim().length < 2 ||
       complaintDesc.trim().length < 6 ||
@@ -1066,7 +1061,6 @@ const AppContent = () => {
       return;
     }
     setError("");
-    setComplaintTime(formattedComplaintTime);
     setComplaintSubmitted(true);
     setStaffConfirmed(false);
     setHandoffComplete(false);
