@@ -582,7 +582,7 @@ const AppContent = () => {
         ? `${busDeparture.trim()} -> ${busArrival.trim()}`
         : travelRoute.trim();
       const resolvedTravelTiming = isBusTravel
-        ? busStartTime.trim()
+        ? formatClockTime(busStartTime, busStartMeridiem)
         : travelTiming.trim();
 
       try {
