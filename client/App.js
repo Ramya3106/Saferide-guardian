@@ -43,6 +43,17 @@ const verifyCode = (emailAddress, code) =>
   });
 
 const requiredLabel = (text) => `${text} *`;
+const MERIDIEM_OPTIONS = ["AM", "PM"];
+const formatClockTime = (timeValue, meridiem) => {
+  const trimmedTime = (timeValue || "").trim();
+  const trimmedMeridiem = (meridiem || "").trim().toUpperCase();
+
+  if (!trimmedTime) {
+    return "";
+  }
+
+  return trimmedMeridiem ? `${trimmedTime} ${trimmedMeridiem}` : trimmedTime;
+};
 
 // Animated Label Component - must be outside to properly use hooks
 const AnimatedLabel = ({ text, iconName }) => {
@@ -77,6 +88,40 @@ const AnimatedLabel = ({ text, iconName }) => {
   );
 };
 
+const MeridiemSelector = ({ value, onChange }) => (
+  <View style={styles.timePeriodRow}>
+    {MERIDIEM_OPTIONS.map((option) => {
+      const selected = value === option;
+
+      return (
+        <TouchableOpacity
+          key={option}
+          style={[
+            styles.timePeriodOption,
+            selected && styles.timePeriodOptionActive,
+          ]}
+          onPress={() => onChange(option)}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name={selected ? "checkbox" : "square-outline"}
+            size={18}
+            color={selected ? "#2563EB" : "#64748B"}
+          />
+          <Text
+            style={[
+              styles.timePeriodText,
+              selected && styles.timePeriodTextActive,
+            ]}
+          >
+            {option}
+          </Text>
+        </TouchableOpacity>
+      );
+    })}
+  </View>
+);
+
 const AppContent = () => {
   const [mode, setMode] = useState("login");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -103,6 +148,7 @@ const AppContent = () => {
   const [busDeparture, setBusDeparture] = useState("");
   const [busArrival, setBusArrival] = useState("");
   const [busStartTime, setBusStartTime] = useState("");
+  const [busStartMeridiem, setBusStartMeridiem] = useState("");
   const [travelRoute, setTravelRoute] = useState("");
   const [travelTiming, setTravelTiming] = useState("");
   const [driverName, setDriverName] = useState("");
@@ -121,6 +167,7 @@ const AppContent = () => {
   const [complaintDesc, setComplaintDesc] = useState("");
   const [complaintLocation, setComplaintLocation] = useState("");
   const [complaintTime, setComplaintTime] = useState("");
+  const [complaintTimeMeridiem, setComplaintTimeMeridiem] = useState("");
   const [complaintSubmitted, setComplaintSubmitted] = useState(false);
   const [staffConfirmed, setStaffConfirmed] = useState(false);
   const [handoffComplete, setHandoffComplete] = useState(false);
