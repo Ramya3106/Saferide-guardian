@@ -42,6 +42,8 @@ const verifyCode = (emailAddress, code) =>
     code,
   });
 
+const requiredLabel = (text) => `${text} *`;
+
 // Animated Label Component - must be outside to properly use hooks
 const AnimatedLabel = ({ text, iconName }) => {
   const iconPulse = useRef(new Animated.Value(1)).current;
@@ -2327,13 +2329,13 @@ const AppContent = () => {
                         </Text>
 
                         <View style={styles.inputGroup}>
-                          <Text style={styles.label}>Select role</Text>
+                          <Text style={styles.label}>{requiredLabel("Select role")}</Text>
                           {renderRoleSelector()}
                         </View>
 
                         {isRegister && (
                           <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Full name</Text>
+                            <Text style={styles.label}>{requiredLabel("Full name")}</Text>
                             <TextInput
                               style={styles.input}
                               placeholder="Enter your name"
@@ -2347,7 +2349,7 @@ const AppContent = () => {
 
                         {isRegister && (
                           <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Mobile number</Text>
+                            <Text style={styles.label}>{requiredLabel("Mobile number")}</Text>
                             <TextInput
                               style={styles.input}
                               placeholder="+91 98765 43210"
@@ -2361,7 +2363,7 @@ const AppContent = () => {
 
                         {!isOfficialRole && (
                           <View style={styles.inputGroup}>
-                            <AnimatedLabel text="Email address" iconName="mail" />
+                            <AnimatedLabel text={requiredLabel("Email address")} iconName="mail" />
                             <TextInput
                               style={[
                                 styles.input,
@@ -2382,7 +2384,7 @@ const AppContent = () => {
 
                         {isOfficialRole && !forgotPasswordMode && (
                           <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Professional ID</Text>
+                            <Text style={styles.label}>{requiredLabel("Professional ID")}</Text>
                             <TextInput
                               style={styles.input}
                               placeholder={
@@ -2400,7 +2402,7 @@ const AppContent = () => {
 
                         {isRegister && isOfficialRole && (
                           <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Official email</Text>
+                            <Text style={styles.label}>{requiredLabel("Official email")}</Text>
                             <TextInput
                               style={[
                                 styles.input,
@@ -2424,7 +2426,7 @@ const AppContent = () => {
                         {(!loginWithOtp || isRegister || isOfficialRole) &&
                           !forgotPasswordMode && (
                             <View style={styles.inputGroup}>
-                              <AnimatedLabel text="Password" iconName="lock-closed" />
+                              <AnimatedLabel text={requiredLabel("Password")} iconName="lock-closed" />
                               <View style={styles.passwordRow}>
                                 <TextInput
                                   style={[styles.input, styles.passwordInput]}
@@ -2457,7 +2459,7 @@ const AppContent = () => {
 
                         {isRegister && (
                           <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Confirm password</Text>
+                            <Text style={styles.label}>{requiredLabel("Confirm password")}</Text>
                             <View style={styles.passwordRow}>
                               <TextInput
                                 style={[styles.input, styles.passwordInput]}
@@ -2580,7 +2582,7 @@ const AppContent = () => {
                                 <>
                                   <View style={styles.inputGroup}>
                                     <Text style={styles.label}>
-                                      Professional ID
+                                      {requiredLabel("Professional ID")}
                                     </Text>
                                     <TextInput
                                       style={styles.input}
@@ -2597,7 +2599,7 @@ const AppContent = () => {
                                   </View>
                                   <View style={styles.inputGroup}>
                                     <Text style={styles.label}>
-                                      Official Email
+                                      {requiredLabel("Official Email")}
                                     </Text>
                                     <TextInput
                                       style={styles.input}
@@ -2650,7 +2652,7 @@ const AppContent = () => {
                                     <>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
-                                          Reset Code
+                                          {requiredLabel("Reset Code")}
                                         </Text>
                                         <TextInput
                                           style={styles.input}
@@ -2692,7 +2694,7 @@ const AppContent = () => {
                                       </Text>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
-                                          New Password
+                                          {requiredLabel("New Password")}
                                         </Text>
                                         <View style={styles.passwordRow}>
                                           <TextInput
@@ -2726,7 +2728,7 @@ const AppContent = () => {
                                       </View>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
-                                          Confirm New Password
+                                          {requiredLabel("Confirm New Password")}
                                         </Text>
                                         <View style={styles.passwordRow}>
                                           <TextInput
@@ -2840,7 +2842,7 @@ const AppContent = () => {
                               {!isResetCodeSent ? (
                                 <>
                                   <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>Email</Text>
+                                    <Text style={styles.label}>{requiredLabel("Email")}</Text>
                                     <TextInput
                                       style={styles.input}
                                       placeholder="Enter your email"
@@ -2889,7 +2891,7 @@ const AppContent = () => {
                                     <>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
-                                          Verification Code
+                                          {requiredLabel("Verification Code")}
                                         </Text>
                                         <TextInput
                                           style={styles.input}
@@ -2931,7 +2933,7 @@ const AppContent = () => {
                                       </Text>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
-                                          New Password
+                                          {requiredLabel("New Password")}
                                         </Text>
                                         <View style={styles.passwordRow}>
                                           <TextInput
@@ -2965,7 +2967,7 @@ const AppContent = () => {
                                       </View>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
-                                          Confirm New Password
+                                          {requiredLabel("Confirm New Password")}
                                         </Text>
                                         <View style={styles.passwordRow}>
                                           <TextInput
@@ -3078,7 +3080,7 @@ const AppContent = () => {
                               <>
                                 <View style={styles.inputGroup}>
                                   <Text style={styles.label}>
-                                    Verification code
+                                    {requiredLabel("Verification code")}
                                   </Text>
                                   <TextInput
                                     style={[
@@ -3133,7 +3135,7 @@ const AppContent = () => {
                                 Passenger travel details
                               </Text>
                               <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Travel mode</Text>
+                                <Text style={styles.label}>{requiredLabel("Travel mode")}</Text>
                                 <View style={styles.roleRow}>
                                   {["Bus", "Train"].map((item) => (
                                     <TouchableOpacity
@@ -3160,8 +3162,9 @@ const AppContent = () => {
                               </View>
                               <View style={styles.inputGroup}>
                                 <Text style={styles.label}>
-                                  {travelType === "Bus" ? "Bus" : "Train"}{" "}
-                                  number
+                                  {requiredLabel(
+                                    `${travelType === "Bus" ? "Bus" : "Train"} number`,
+                                  )}
                                 </Text>
                                 <TextInput
                                   style={styles.input}
@@ -3175,7 +3178,7 @@ const AppContent = () => {
                                 <Text style={styles.label}>
                                   {travelType === "Bus"
                                     ? "Bus name (optional)"
-                                    : "Train name"}
+                                    : requiredLabel("Train name")}
                                 </Text>
                                 <TextInput
                                   style={styles.input}
@@ -3189,7 +3192,7 @@ const AppContent = () => {
                                 <>
                                   <View style={styles.inputGroup}>
                                     <Text style={styles.label}>
-                                      Departure stop
+                                      {requiredLabel("Departure stop")}
                                     </Text>
                                     <TextInput
                                       style={styles.input}
@@ -3201,7 +3204,7 @@ const AppContent = () => {
                                   </View>
                                   <View style={styles.inputGroup}>
                                     <Text style={styles.label}>
-                                      Arrival stop
+                                      {requiredLabel("Arrival stop")}
                                     </Text>
                                     <TextInput
                                       style={styles.input}
@@ -3213,7 +3216,7 @@ const AppContent = () => {
                                   </View>
                                   <View style={styles.inputGroup}>
                                     <Text style={styles.label}>
-                                      Bus start timing
+                                      {requiredLabel("Bus start timing")}
                                     </Text>
                                     <TextInput
                                       style={styles.input}
@@ -3227,7 +3230,7 @@ const AppContent = () => {
                               ) : (
                                 <>
                                   <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>Route</Text>
+                                    <Text style={styles.label}>{requiredLabel("Route")}</Text>
                                     <TextInput
                                       style={styles.input}
                                       placeholder="Velachery → CMBT"
@@ -3237,7 +3240,7 @@ const AppContent = () => {
                                     />
                                   </View>
                                   <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>Timing</Text>
+                                    <Text style={styles.label}>{requiredLabel("Timing")}</Text>
                                     <TextInput
                                       style={styles.input}
                                       placeholder="09:30AM - 11:45AM"
@@ -3288,7 +3291,7 @@ const AppContent = () => {
                                 Daily duty roster
                               </Text>
                               <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Vehicle number</Text>
+                                <Text style={styles.label}>{requiredLabel("Vehicle number")}</Text>
                                 <TextInput
                                   style={styles.input}
                                   placeholder="TN-01-AB-1234"
@@ -3298,7 +3301,7 @@ const AppContent = () => {
                                 />
                               </View>
                               <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Route</Text>
+                                <Text style={styles.label}>{requiredLabel("Route")}</Text>
                                 <TextInput
                                   style={styles.input}
                                   placeholder="Velachery → CMBT"
@@ -3308,7 +3311,7 @@ const AppContent = () => {
                                 />
                               </View>
                               <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Shift timing</Text>
+                                <Text style={styles.label}>{requiredLabel("Shift timing")}</Text>
                                 <TextInput
                                   style={styles.input}
                                   placeholder="6AM - 2PM"
@@ -3318,7 +3321,7 @@ const AppContent = () => {
                                 />
                               </View>
                               <View style={styles.inputGroup}>
-                                <Text style={styles.label}>From stop</Text>
+                                <Text style={styles.label}>{requiredLabel("From stop")}</Text>
                                 <TextInput
                                   style={styles.input}
                                   placeholder="Velachery"
@@ -3328,7 +3331,7 @@ const AppContent = () => {
                                 />
                               </View>
                               <View style={styles.inputGroup}>
-                                <Text style={styles.label}>To stop</Text>
+                                <Text style={styles.label}>{requiredLabel("To stop")}</Text>
                                 <TextInput
                                   style={styles.input}
                                   placeholder="CMBT"
@@ -3349,7 +3352,7 @@ const AppContent = () => {
                               Admin approval required within 24 hours.
                             </Text>
                             <View style={styles.inputGroup}>
-                              <Text style={styles.label}>Train PNR range</Text>
+                              <Text style={styles.label}>{requiredLabel("Train PNR range")}</Text>
                               <TextInput
                                 style={styles.input}
                                 placeholder="4528193000-4528193999"
@@ -3359,7 +3362,7 @@ const AppContent = () => {
                               />
                             </View>
                             <View style={styles.inputGroup}>
-                              <Text style={styles.label}>Jurisdiction</Text>
+                              <Text style={styles.label}>{requiredLabel("Jurisdiction")}</Text>
                               <TextInput
                                 style={styles.input}
                                 placeholder="Chennai Central Division"
