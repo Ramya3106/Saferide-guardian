@@ -146,15 +146,6 @@ const userSchema = new mongoose.Schema(
 userSchema.index({ role: 1, approvalStatus: 1 });
 userSchema.index({ email: 1, role: 1 });
 
-// Pre-save hook to ensure password is never accidentally exposed
-userSchema.pre('save', function(next) {
-  if (this.isModified('password')) {
-    // Password should already be hashed by bcrypt in the route
-    this.select('+password');
-  }
-  next();
-});
-
 // Method to safely return user data without sensitive fields
 userSchema.methods.toSafeObject = function() {
   const obj = this.toObject();
