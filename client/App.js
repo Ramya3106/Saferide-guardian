@@ -578,6 +578,9 @@ const AppContent = () => {
 
     if (isRegister) {
       const isBusTravel = travelType === "Bus";
+      const registeredEmail = email.trim().toLowerCase();
+      const registeredOfficialEmail = officialEmail.trim().toLowerCase();
+      const registeredProfessionalId = professionalId.trim();
       const resolvedTravelRoute = isBusTravel
         ? `${busDeparture.trim()} -> ${busArrival.trim()}`
         : travelRoute.trim();
@@ -611,21 +614,21 @@ const AppContent = () => {
           jurisdiction: jurisdiction.trim(),
         });
 
+        resetForm();
+        setMode("login");
+        setPendingApproval(isOfficialRole);
+
         if (isOfficialRole) {
-          setPendingApproval(true);
-          setMode("login");
-          setPassword("");
-          setConfirmPassword("");
-          setEmailOtp("");
-          setIsVerified(false);
-          setIsOtpSent(false);
+          setProfessionalId(registeredProfessionalId);
+          setOfficialEmail(registeredOfficialEmail);
           setError(
             "Registration submitted. Admin approval takes up to 24 hours.",
           );
           return;
         }
 
-        setIsAuthenticated(true);
+        setEmail(registeredEmail);
+        setError("Registration successful. Please log in.");
         return;
       } catch (err) {
         const message =
