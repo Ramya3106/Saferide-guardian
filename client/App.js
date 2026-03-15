@@ -3282,13 +3282,20 @@ const AppContent = () => {
                                     <Text style={styles.label}>
                                       {requiredLabel("Bus start timing")}
                                     </Text>
-                                    <TextInput
-                                      style={styles.input}
-                                      placeholder="09:30AM"
-                                      placeholderTextColor="#94A3B8"
-                                      value={busStartTime}
-                                      onChangeText={setBusStartTime}
-                                    />
+                                    <View style={styles.timeFieldRow}>
+                                      <TextInput
+                                        style={[styles.input, styles.timeInput]}
+                                        placeholder="09:30"
+                                        placeholderTextColor="#94A3B8"
+                                        value={busStartTime}
+                                        onChangeText={setBusStartTime}
+                                        maxLength={5}
+                                      />
+                                      <MeridiemSelector
+                                        value={busStartMeridiem}
+                                        onChange={setBusStartMeridiem}
+                                      />
+                                    </View>
                                   </View>
                                 </>
                               ) : (
@@ -3675,6 +3682,39 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     color: "#1E293B",
+  },
+  timeFieldRow: {
+    gap: 10,
+  },
+  timeInput: {
+    width: "100%",
+  },
+  timePeriodRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  timePeriodOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  timePeriodOptionActive: {
+    borderColor: "#93C5FD",
+    backgroundColor: "#EFF6FF",
+  },
+  timePeriodText: {
+    color: "#475569",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  timePeriodTextActive: {
+    color: "#1D4ED8",
   },
   inputDisabled: {
     backgroundColor: "#E2E8F0",
