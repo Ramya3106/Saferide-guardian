@@ -302,7 +302,8 @@ const AppContent = () => {
             travelNumber.trim().length >= 5 &&
             busDeparture.trim().length >= 2 &&
             busArrival.trim().length >= 2 &&
-            busStartTime.trim().length >= 3
+            busStartTime.trim().length >= 3 &&
+            busStartMeridiem.length > 0
           );
         }
 
@@ -345,6 +346,7 @@ const AppContent = () => {
     busArrival,
     busDeparture,
     busStartTime,
+    busStartMeridiem,
     dutyRoute,
     email,
     fromStop,
@@ -508,6 +510,7 @@ const AppContent = () => {
     setBusDeparture("");
     setBusArrival("");
     setBusStartTime("");
+    setBusStartMeridiem("");
     setTravelRoute("");
     setTravelTiming("");
     setDriverName("");
