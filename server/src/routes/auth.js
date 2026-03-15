@@ -77,6 +77,7 @@ const generateCode = () => String(Math.floor(100000 + Math.random() * 900000));
 
 // Email validation
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const normalizeEmail = (value) => (value || "").trim().toLowerCase();
 
 const isOfficialRole = (role) => OFFICIAL_ROLES.has(role);
 
@@ -114,6 +115,49 @@ const findOfficialByProfessionalId = async (role, professionalId) => {
         normalizeProfessionalId(candidate.professionalId) === normalized,
     ) || null
   );
+};
+
+const hasMatchingEmail = (user, emailValue) => {
+  const normalized = normalizeEmail(emailValue);
+
+  if (!user || !normalized) {
+    return false;
+  }
+
+  return [user.email, user.officialEmail].some(
+    (candidate) => normalizeEmail(candidate) === normalized,
+  );
+};
+
+const findUserByEmail = async (
+  emailValue,
+  { role, includePassword = false } = {},
+) => {
+  const normalized = normalizeEmail(emailValue);
+
+  if (!normalized) {
+    return null;
+  }
+
+  let directLookup = User.findOne(
+    role ? { email: normalized, role } : { email: normalized },
+  );
+  if (includePassword) {
+    directLookup = directLookup.select("+password");
+  }
+
+  const directMatch = await directLookup;
+  if (directMatch) {
+    return directMatch;
+  }
+
+  let fallbackLookup = User.find(role ? { role } : {});
+  if (includePassword) {
+    fallbackLookup = fallbackLookup.select("+password");
+  }
+
+  const candidates = await fallbackLookup;
+  return candidates.find((candidate) => hasMatchingEmail(candidate, normalized)) || null;
 };
 
 const consumeVerificationCode = (email, code) => {
@@ -704,7 +748,7 @@ router.post("/forgot-password", async (req, res) => {
 
     const user = await findOfficialByProfessionalId(role, professionalId);
 
-    if (user && user.email !== officialEmail) {
+    if (user && !hasMatchingEmail(user, officialEmail)) {
       return res.status(404).json({
         message: "No account found with these credentials.",
       });
@@ -911,10 +955,10 @@ router.post("/reset-password-otp", async (req, res) => {
     }
 
     // Find user by official email
-    const user = await User.findOne({
+    const user = await findUserByEmail(officialEmail, {
       role: "TTR/RPF/Police",
-      email: officialEmail,
-    }).select("+password");
+      includePassword: true,
+    });
     if (!user) {
       return res.status(404).json({
         message: "No account found with this email.",
@@ -1013,7 +1057,7 @@ router.post("/reset-password-user", async (req, res) => {
     verificationStore.delete(email);
 
     // Find user by email (for non-official roles)
-    const user = await User.findOne({ email });
+    const user = await findUserByEmail(email, { includePassword: true });
     if (!user) {
       return res.status(404).json({
         message: "No account found with this email.",
@@ -1045,7 +1089,7 @@ router.post("/forgot-password-user", async (req, res) => {
       return res.status(400).json({ message: "Enter a valid email address." });
     }
 
-    const account = await User.findOne({ email });
+    const account = await findUserByEmail(email);
     if (!account) {
       return res.status(404).json({ message: "No account found with this email." });
     }
