@@ -1245,13 +1245,20 @@ const AppContent = () => {
           </View>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Time</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="10:05AM"
-              placeholderTextColor="#94A3B8"
-              value={complaintTime}
-              onChangeText={setComplaintTime}
-            />
+            <View style={styles.timeFieldRow}>
+              <TextInput
+                style={[styles.input, styles.timeInput]}
+                placeholder="10:05"
+                placeholderTextColor="#94A3B8"
+                value={complaintTime}
+                onChangeText={setComplaintTime}
+                maxLength={5}
+              />
+              <MeridiemSelector
+                value={complaintTimeMeridiem}
+                onChange={setComplaintTimeMeridiem}
+              />
+            </View>
           </View>
           <TouchableOpacity
             style={styles.primaryButton}
