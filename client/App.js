@@ -491,6 +491,16 @@ const AppContent = () => {
     setError("");
   };
 
+  const applyUserProfile = (profile = {}) => {
+    setName(profile.name || "");
+    setPhone(profile.phone || "");
+    setEmail(profile.email || "");
+    setOfficialEmail(profile.officialEmail || profile.email || "");
+    setProfessionalId(profile.professionalId || "");
+    setJurisdiction(profile.jurisdiction || "");
+    setPnrRange(profile.pnrRange || "");
+  };
+
   const handleSubmit = async () => {
     if (!canSubmit) {
       setError("Please complete all required fields.");
@@ -588,11 +598,8 @@ const AppContent = () => {
           return;
         }
 
-        setName(profile.name || "");
-        setOfficialEmail(profile.officialEmail || profile.email || "");
+        applyUserProfile(profile);
         setProfessionalId(profile.professionalId || professionalId);
-        setJurisdiction(profile.jurisdiction || "");
-        setPnrRange(profile.pnrRange || "");
 
         const inferredRole = inferSpecificRoleFromId(
           profile.professionalId || professionalId,
@@ -608,6 +615,30 @@ const AppContent = () => {
       } catch (err) {
         const message = err?.response?.data?.message || "Unable to log in.";
         setPendingApproval(message.toLowerCase().includes("pending"));
+        setError(message);
+      }
+      return;
+    }
+
+    if (!isRegister && !loginWithOtp) {
+      try {
+        const { data } = await axios.post(`${API_BASE}/auth/login`, {
+          role,
+          email: email.trim().toLowerCase(),
+          password: password.trim(),
+          method: "password",
+        });
+
+        const profile = data?.user;
+        if (!profile) {
+          setError("Unable to load profile for this account.");
+          return;
+        }
+
+        applyUserProfile(profile);
+        setIsAuthenticated(true);
+      } catch (err) {
+        const message = err?.response?.data?.message || "Unable to log in.";
         setError(message);
       }
       return;
