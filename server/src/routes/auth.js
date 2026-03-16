@@ -310,6 +310,9 @@ router.post("/verify-code", (req, res) => {
   return res.status(200).json({ verified: true });
 });
 
+// POST /register endpoint for Postman usage
+// Example: POST http://localhost:5000/api/auth/register
+// Body: { "role": "passenger", "name": "John Doe", ... }
 router.post("/register", async (req, res) => {
   try {
     const role = (req.body?.role || "").trim();
@@ -442,6 +445,9 @@ router.post("/register", async (req, res) => {
   }
 });
 
+// POST /login endpoint for Postman usage
+// Example: POST http://localhost:5000/api/auth/login
+// Body: { "role": "passenger", "password": "yourpassword" }
 router.post("/login", async (req, res) => {
   try {
     const role = (req.body?.role || "").trim();
