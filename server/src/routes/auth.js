@@ -8,7 +8,7 @@ const User = require("../models/User");
 dotenv.config();
 
 const VERIFY_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
-const RESET_CODE_TTL_MS = 10 * 60 * 1000; // 15 minutes
+const RESET_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 5;
 const verificationStore = new Map();
 const resetPasswordStore = new Map();
