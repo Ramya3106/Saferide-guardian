@@ -445,7 +445,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// POST /login endpoint for Postman usage
+
 // Example: POST http://localhost:5000/api/auth/login
 // Body: { "role": "passenger", "password": "yourpassword" }
 router.post("/login", async (req, res) => {
