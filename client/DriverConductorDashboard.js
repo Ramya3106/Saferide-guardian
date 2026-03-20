@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -16,6 +16,10 @@ import {
   Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import axios from "axios";
+import { getApiBase } from "./apiConfig";
+
+const API_BASE = getApiBase();
 
 const DriverConductorDashboard = ({ onLogout }) => {
   // Main states
@@ -33,32 +37,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
   const [passengersOnboard, setPassengersOnboard] = useState("");
 
   // Complaints data
-  const [complaints, setComplaints] = useState([
-    {
-      id: 1025,
-      passengerName: "Ramya V",
-      item: "Wallet",
-      seat: 21,
-      reportedTime: "9:45 AM",
-      status: "pending",
-    },
-    {
-      id: 1026,
-      passengerName: "Suresh K",
-      item: "Phone Charger",
-      seat: 15,
-      reportedTime: "10:12 AM",
-      status: "pending",
-    },
-    {
-      id: 1027,
-      passengerName: "Priya M",
-      item: "Black Laptop Bag",
-      seat: 18,
-      reportedTime: "10:30 AM",
-      status: "pending",
-    },
-  ]);
+  const [complaints, setComplaints] = useState([]);
 
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [verificationStep, setVerificationStep] = useState(null); // null, photo, found, notFound, chat, pickup, qr
@@ -79,6 +58,47 @@ const DriverConductorDashboard = ({ onLogout }) => {
   // Driver-specific states
   const [forwardedComplaints, setForwardedComplaints] = useState([]);
   const [busChecked, setBusChecked] = useState(false);
+
+  const normalizeComplaint = (complaint) => {
+    const createdAt = complaint?.createdAt || complaint?.timestamp || new Date();
+    return {
+      id: complaint?._id || complaint?.id,
+      passengerName: complaint?.passengerName || "Passenger",
+      item: complaint?.itemType || complaint?.description || "Lost item",
+      seat: complaint?.vehicleNumber || complaint?.route || "N/A",
+      reportedTime: new Date(createdAt).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      status: complaint?.status || "pending",
+    };
+  };
+
+  const fetchLiveComplaints = async () => {
+    if (!isOnline || currentStep !== "dashboard") {
+      return;
+    }
+
+    try {
+      const response = await axios.get(`${API_BASE}/passenger/live-alerts`, {
+        params: { staffRole: "driver-conductor" },
+      });
+      const alerts = response?.data?.alerts || [];
+      setComplaints(alerts.map(normalizeComplaint));
+    } catch (error) {
+      console.log("Error fetching driver/conductor live complaints:", error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveComplaints();
+    if (!isOnline || currentStep !== "dashboard") {
+      return;
+    }
+
+    const interval = setInterval(fetchLiveComplaints, 10000);
+    return () => clearInterval(interval);
+  }, [isOnline, currentStep]);
 
   // Handle position selection
   const handlePositionSelection = (pos) => {
