@@ -28,7 +28,6 @@ const complaintSchema = new mongoose.Schema(
     itemType: {
       type: String,
       required: true,
-      enum: ["Phone", "Wallet", "Bag", "Documents", "Other"],
     },
     description: {
       type: String,
