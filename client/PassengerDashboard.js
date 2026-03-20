@@ -8,8 +8,11 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
+  Alert,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 import { getApiBase } from "./apiConfig";
 
@@ -38,6 +41,72 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
   const [departureTime, setDepartureTime] = useState("");
   const [arrivalTime, setArrivalTime] = useState("");
   const [photoUri, setPhotoUri] = useState(null);
+
+  const pickPhoto = async (source) => {
+    try {
+      if (source === "camera") {
+        const cameraPermission =
+          await ImagePicker.requestCameraPermissionsAsync();
+        if (!cameraPermission.granted) {
+          Alert.alert(
+            "Camera Permission Needed",
+            "Allow camera access to capture an item photo.",
+          );
+          return;
+        }
+
+        const cameraResult = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 0.8,
+        });
+
+        if (!cameraResult.canceled && cameraResult.assets?.[0]?.uri) {
+          setPhotoUri(cameraResult.assets[0].uri);
+        }
+        return;
+      }
+
+      const mediaPermission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!mediaPermission.granted) {
+        Alert.alert(
+          "Gallery Permission Needed",
+          "Allow photo library access to select an item photo.",
+        );
+        return;
+      }
+
+      const libraryResult = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (!libraryResult.canceled && libraryResult.assets?.[0]?.uri) {
+        setPhotoUri(libraryResult.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert("Upload Failed", "Unable to select image. Please try again.");
+    }
+  };
+
+  const handleUploadItemPhoto = () => {
+    Alert.alert("Upload Item Photo", "Choose image source", [
+      {
+        text: "Open Camera",
+        onPress: () => pickPhoto("camera"),
+      },
+      {
+        text: "Choose from Gallery",
+        onPress: () => pickPhoto("gallery"),
+      },
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+    ]);
+  };
 
   // Fetch active journey on load
   useEffect(() => {
@@ -124,6 +193,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
           journeyId: activeJourney?._id,
           route: `${fromLocation} → ${toLocation}`,
           submitAuthority,
+          photoUri,
         },
         {
           headers: {
@@ -476,13 +546,25 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                 {/* Upload Photo */}
                 <TouchableOpacity
                   style={styles.uploadPhotoButton}
-                  onPress={() => alert("Camera functionality coming soon!")}
+                  onPress={handleUploadItemPhoto}
                 >
                   <Ionicons name="camera" size={20} color="#2563EB" />
                   <Text style={styles.uploadPhotoText}>
                     📸 Upload Item Photo (Optional)
                   </Text>
                 </TouchableOpacity>
+
+                {photoUri && (
+                  <View style={styles.photoPreviewWrapper}>
+                    <Image source={{ uri: photoUri }} style={styles.photoPreview} />
+                    <View style={styles.photoPreviewMetaRow}>
+                      <Text style={styles.photoUploadedText}>Photo selected</Text>
+                      <TouchableOpacity onPress={() => setPhotoUri(null)}>
+                        <Text style={styles.removePhotoText}>Remove</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
               </View>
             )}
           </ScrollView>
@@ -1049,6 +1131,36 @@ const styles = StyleSheet.create({
   uploadPhotoText: {
     color: "#2563EB",
     fontWeight: "600",
+  },
+  photoPreviewWrapper: {
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    backgroundColor: "#EFF6FF",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 16,
+  },
+  photoPreview: {
+    width: "100%",
+    height: 160,
+    borderRadius: 8,
+    backgroundColor: "#E2E8F0",
+  },
+  photoPreviewMetaRow: {
+    marginTop: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  photoUploadedText: {
+    color: "#1E40AF",
+    fontWeight: "600",
+    fontSize: 12,
+  },
+  removePhotoText: {
+    color: "#DC2626",
+    fontWeight: "600",
+    fontSize: 12,
   },
   submitButton: {
     backgroundColor: "#2563EB",
