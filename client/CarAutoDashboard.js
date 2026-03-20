@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -16,6 +16,10 @@ import {
   Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import axios from "axios";
+import { getApiBase } from "./apiConfig";
+
+const API_BASE = getApiBase();
 
 const CarAutoDashboard = ({ onLogout }) => {
   // Main states
@@ -31,24 +35,7 @@ const CarAutoDashboard = ({ onLogout }) => {
   const [shiftEndTime, setShiftEndTime] = useState("");
 
   // Dashboard states
-  const [complaints, setComplaints] = useState([
-    {
-      id: 1,
-      passengerName: "Ramya V",
-      location: "Near Guindy",
-      item: "Black Handbag",
-      time: "10:15 AM",
-      status: "pending",
-    },
-    {
-      id: 2,
-      passengerName: "Suresh K",
-      location: "Velachery Station",
-      item: "Blue Backpack",
-      time: "11:30 AM",
-      status: "pending",
-    },
-  ]);
+  const [complaints, setComplaints] = useState([]);
 
   const [acceptedComplaint, setAcceptedComplaint] = useState(null);
   const [itemConfirmation, setItemConfirmation] = useState(null);
@@ -67,6 +54,49 @@ const CarAutoDashboard = ({ onLogout }) => {
   const handleVehicleSelection = (type) => {
     setVehicleType(type);
   };
+
+  const normalizeComplaint = (complaint) => {
+    const createdAt = complaint?.createdAt || complaint?.timestamp || new Date();
+    return {
+      id: complaint?._id || complaint?.id,
+      passengerName: complaint?.passengerName || "Passenger",
+      location:
+        complaint?.lastSeenLocation || complaint?.fromLocation || "Unknown location",
+      item: complaint?.itemType || complaint?.description || "Lost item",
+      time: new Date(createdAt).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      status: complaint?.status || "pending",
+    };
+  };
+
+  const fetchLiveComplaints = async () => {
+    if (!vehicleType || !isOnline || currentStep !== "dashboard") {
+      return;
+    }
+
+    try {
+      const staffRole = vehicleType === "cab" ? "cab" : "auto";
+      const response = await axios.get(`${API_BASE}/passenger/live-alerts`, {
+        params: { staffRole },
+      });
+      const alerts = response?.data?.alerts || [];
+      setComplaints(alerts.map(normalizeComplaint));
+    } catch (error) {
+      console.log("Error fetching car/auto live complaints:", error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveComplaints();
+    if (!vehicleType || !isOnline || currentStep !== "dashboard") {
+      return;
+    }
+
+    const interval = setInterval(fetchLiveComplaints, 10000);
+    return () => clearInterval(interval);
+  }, [vehicleType, isOnline, currentStep]);
 
   // Handle continue from vehicle selection
   const handleContinueVehicleSelection = () => {
