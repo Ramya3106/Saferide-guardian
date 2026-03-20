@@ -10,20 +10,13 @@
     "lint": "eslint ."
   },
   "dependencies": {
-<<<<<<< HEAD
     "axios": "^1.13.5",
     "expo": "~54.0.33",
     "expo-constants": "~18.0.10",
-    "react": "19.1.0",
-    "react-native": "0.81.5",
-    "react-native-safe-area-context": "~5.6.0"
-=======
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^6.5.11",
     "@react-navigation/native": "^6.1.9",
     "@react-navigation/native-stack": "^6.9.17",
-    "axios": "^1.6.2",
-    "expo": "~54.0.32",
     "expo-asset": "~12.0.12",
     "expo-camera": "~17.0.10",
     "expo-image-picker": "~17.0.10",
@@ -35,7 +28,6 @@
     "react-native-screens": "~4.16.0",
     "react-native-svg": "15.12.1",
     "socket.io-client": "^4.6.1"
->>>>>>> 92f4d8f1e561eb499056d6654fec148d8137ec02
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
