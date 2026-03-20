@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -14,10 +14,49 @@ import {
   FlatList,
   Modal,
   Image,
+  Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
+const AnimatedIonicon = Animated.createAnimatedComponent(Ionicons);
+
 const DriverConductorDashboard = ({ onLogout }) => {
+  const iconShakeValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(iconShakeValue, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(iconShakeValue, {
+          toValue: -1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(iconShakeValue, {
+          toValue: 0,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.delay(1800),
+      ]),
+    );
+
+    animation.start();
+    return () => animation.stop();
+  }, [iconShakeValue]);
+
+  const iconShakeStyle = {
+    transform: [{ translateX: iconShakeValue }],
+  };
+
+  const ShakyIcon = ({ style, ...props }) => (
+    <AnimatedIonicon {...props} style={[iconShakeStyle, style]} />
+  );
+
   // Main states
   const [currentStep, setCurrentStep] = useState("positionSelection"); // positionSelection, dutySetup, dashboard
   const [position, setPosition] = useState(null); // "driver" or "conductor"
