@@ -111,6 +111,8 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
   // Fetch active journey on load
   useEffect(() => {
     fetchActiveJourney();
+    fetchComplaintHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch active journey data
@@ -203,11 +205,15 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         },
       );
 
-      setCurrentComplaint(response.data.complaint);
+      const createdComplaint = response.data.complaint;
+      setCurrentComplaint(createdComplaint);
+      setComplaints((prev) => [createdComplaint, ...prev]);
       resetComplaintModal();
       alert(`Request submitted successfully to ${submitAuthority}!`);
     } catch (error) {
-      alert("Error creating complaint: " + error.message);
+      const backendMessage =
+        error?.response?.data?.message || error.message || "Unknown error";
+      alert("Error creating complaint: " + backendMessage);
     } finally {
       setLoading(false);
     }
