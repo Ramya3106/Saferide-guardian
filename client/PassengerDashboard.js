@@ -240,7 +240,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
           <Text style={styles.mobileNumber}>📞 {userPhone}</Text>
         </View>
         <TouchableOpacity style={styles.gpsButton} onPress={handleGpsToggle}>
-          <Ionicons
+          <ShakyIcon
             name={gpsEnabled ? "location" : "location-outline"}
             size={20}
             color={gpsEnabled ? "#22C55E" : "#64748B"}
@@ -249,7 +249,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         </TouchableOpacity>
       </View>
       <TouchableOpacity style={styles.notificationBell}>
-        <Ionicons name="notifications-outline" size={24} color="#1E293B" />
+        <ShakyIcon name="notifications-outline" size={24} color="#1E293B" />
         <View style={styles.notificationBadge}>
           <Text style={styles.badgeText}>3</Text>
         </View>
@@ -302,7 +302,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         style={styles.primaryActionButton}
         onPress={() => setShowComplaintModal(true)}
       >
-        <Ionicons name="alert-circle" size={32} color="#FFFFFF" />
+        <ShakyIcon name="alert-circle" size={32} color="#FFFFFF" />
         <Text style={styles.primaryActionText}>I LEFT SOMETHING</Text>
       </TouchableOpacity>
     </View>
@@ -325,7 +325,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                 : `Lost Item - ${transportType?.toUpperCase()}`}
             </Text>
             <TouchableOpacity onPress={resetComplaintModal}>
-              <Ionicons name="close" size={24} color="#1E293B" />
+              <ShakyIcon name="close" size={24} color="#1E293B" />
             </TouchableOpacity>
           </View>
 
@@ -342,7 +342,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                     style={styles.transportButton}
                     onPress={() => handleTransportSelect("train")}
                   >
-                    <Ionicons name="train" size={40} color="#2563EB" />
+                    <ShakyIcon name="train" size={40} color="#2563EB" />
                     <Text style={styles.transportButtonText}>🚆 Train</Text>
                   </TouchableOpacity>
 
@@ -350,7 +350,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                     style={styles.transportButton}
                     onPress={() => handleTransportSelect("car")}
                   >
-                    <Ionicons name="car" size={40} color="#2563EB" />
+                    <ShakyIcon name="car" size={40} color="#2563EB" />
                     <Text style={styles.transportButtonText}>🚗 Car</Text>
                   </TouchableOpacity>
 
@@ -358,7 +358,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                     style={styles.transportButton}
                     onPress={() => handleTransportSelect("bus")}
                   >
-                    <Ionicons name="bus" size={40} color="#2563EB" />
+                    <ShakyIcon name="bus" size={40} color="#2563EB" />
                     <Text style={styles.transportButtonText}>🚌 Bus</Text>
                   </TouchableOpacity>
 
@@ -366,7 +366,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                     style={styles.transportButton}
                     onPress={() => handleTransportSelect("auto")}
                   >
-                    <Ionicons name="bicycle" size={40} color="#2563EB" />
+                    <ShakyIcon name="bicycle" size={40} color="#2563EB" />
                     <Text style={styles.transportButtonText}>🛺 Auto</Text>
                   </TouchableOpacity>
                 </View>
@@ -379,7 +379,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                   style={styles.backButton}
                   onPress={() => setModalStep(1)}
                 >
-                  <Ionicons name="arrow-back" size={20} color="#2563EB" />
+                  <ShakyIcon name="arrow-back" size={20} color="#2563EB" />
                   <Text style={styles.backButtonText}>Change Transport</Text>
                 </TouchableOpacity>
 
@@ -516,7 +516,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                   style={styles.uploadPhotoButton}
                   onPress={() => alert("Camera functionality coming soon!")}
                 >
-                  <Ionicons name="camera" size={20} color="#2563EB" />
+                  <ShakyIcon name="camera" size={20} color="#2563EB" />
                   <Text style={styles.uploadPhotoText}>
                     📸 Upload Item Photo (Optional)
                   </Text>
@@ -612,7 +612,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>🗺️ Live Tracking</Text>
         <View style={styles.mapPlaceholder}>
-          <Ionicons name="map" size={48} color="#CBD5E1" />
+          <ShakyIcon name="map" size={48} color="#CBD5E1" />
           <Text style={styles.mapText}>Live map view</Text>
           <Text style={styles.mapSubtext}>
             Staff location & ETA: {currentComplaint.staffEta || "Pending..."}
@@ -659,7 +659,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         <Text style={styles.sectionTitle}>📱 QR Code Pickup</Text>
         <View style={styles.qrCard}>
           <View style={styles.qrPlaceholder}>
-            <Ionicons name="qr-code" size={80} color="#2563EB" />
+            <ShakyIcon name="qr-code" size={80} color="#2563EB" />
             <Text style={styles.qrText}>Scan this QR to collect item</Text>
             <Text style={styles.qrId}>
               ID: {currentComplaint._id?.substring(0, 8)}
@@ -669,7 +669,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
             style={styles.scanButton}
             onPress={() => alert("Camera scan coming soon!")}
           >
-            <Ionicons name="camera" size={20} color="#FFFFFF" />
+            <ShakyIcon name="camera" size={20} color="#FFFFFF" />
             <Text style={styles.scanButtonText}>📷 Scan Item QR</Text>
           </TouchableOpacity>
         </View>
@@ -690,7 +690,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
           }}
         >
           <Text style={styles.viewAllText}>View All</Text>
-          <Ionicons name="chevron-forward" size={16} color="#2563EB" />
+          <ShakyIcon name="chevron-forward" size={16} color="#2563EB" />
         </TouchableOpacity>
       </View>
 
@@ -736,7 +736,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
           style={styles.emergencyButton}
           onPress={() => alert("Calling emergency hotline...")}
         >
-          <Ionicons name="call" size={28} color="#DC2626" />
+          <ShakyIcon name="call" size={28} color="#DC2626" />
           <Text style={styles.emergencyButtonText}>Emergency Call</Text>
         </TouchableOpacity>
 
@@ -744,7 +744,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
           style={styles.emergencyButton}
           onPress={() => alert("📞 Helpline: +91-XXXX-XXXXX")}
         >
-          <Ionicons name="information-circle" size={28} color="#2563EB" />
+          <ShakyIcon name="information-circle" size={28} color="#2563EB" />
           <Text style={styles.emergencyButtonText}>Helpline</Text>
         </TouchableOpacity>
 
@@ -752,7 +752,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
           style={styles.emergencyButton}
           onPress={() => alert("FAQ coming soon!")}
         >
-          <Ionicons name="help-circle" size={28} color="#7C3AED" />
+          <ShakyIcon name="help-circle" size={28} color="#7C3AED" />
           <Text style={styles.emergencyButtonText}>FAQ & Help</Text>
         </TouchableOpacity>
       </View>
@@ -772,7 +772,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>📋 Complaint History</Text>
             <TouchableOpacity onPress={() => setShowHistoryModal(false)}>
-              <Ionicons name="close" size={24} color="#1E293B" />
+              <ShakyIcon name="close" size={24} color="#1E293B" />
             </TouchableOpacity>
           </View>
 
@@ -842,7 +842,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         {renderEmergencyHelp()}
 
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <Ionicons name="log-out" size={20} color="#FFFFFF" />
+          <ShakyIcon name="log-out" size={20} color="#FFFFFF" />
           <Text style={styles.logoutButtonText}>Log Out</Text>
         </TouchableOpacity>
       </View>
