@@ -227,7 +227,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
           </Text>
           {position === "driver" && (
             <View style={styles.checkmark}>
-              <Ionicons name="checkmark-circle" size={24} color="#2563EB" />
+              <ShakyIcon name="checkmark-circle" size={24} color="#2563EB" />
             </View>
           )}
         </TouchableOpacity>
@@ -246,7 +246,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
           </Text>
           {position === "conductor" && (
             <View style={styles.checkmark}>
-              <Ionicons name="checkmark-circle" size={24} color="#2563EB" />
+              <ShakyIcon name="checkmark-circle" size={24} color="#2563EB" />
             </View>
           )}
         </TouchableOpacity>
@@ -277,7 +277,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
             style={styles.backButton}
             onPress={() => setCurrentStep("positionSelection")}
           >
-            <Ionicons name="arrow-back" size={24} color="#2563EB" />
+            <ShakyIcon name="arrow-back" size={24} color="#2563EB" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Start Today's Duty</Text>
         </View>
@@ -380,7 +380,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
           </View>
         </View>
         <TouchableOpacity style={styles.notificationBell}>
-          <Ionicons name="notifications" size={24} color="#2563EB" />
+          <ShakyIcon name="notifications" size={24} color="#2563EB" />
           {complaints.length > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{complaints.length}</Text>
@@ -554,7 +554,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
               </View>
             </View>
             <TouchableOpacity style={styles.notificationBell}>
-              <Ionicons name="notifications" size={24} color="#2563EB" />
+              <ShakyIcon name="notifications" size={24} color="#2563EB" />
               {complaints.length > 0 && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{complaints.length}</Text>
@@ -704,7 +704,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowQRModal(false)}>
-              <Ionicons name="close" size={28} color="#2563EB" />
+              <ShakyIcon name="close" size={28} color="#2563EB" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>QR Code Handover</Text>
             <View style={{ width: 28 }} />
@@ -714,10 +714,10 @@ const DriverConductorDashboard = ({ onLogout }) => {
             <View style={styles.qrSection}>
               <Text style={styles.qrTitle}>📲 Scan Passenger's QR</Text>
               <View style={styles.qrPlaceholder}>
-                <Ionicons name="qr-code" size={80} color="#CBD5E1" />
+                <ShakyIcon name="qr-code" size={80} color="#CBD5E1" />
               </View>
               <TouchableOpacity style={styles.scanButton}>
-                <Ionicons name="camera" size={24} color="#FFFFFF" />
+                <ShakyIcon name="camera" size={24} color="#FFFFFF" />
                 <Text style={styles.scanButtonText}>Scan QR Code</Text>
               </TouchableOpacity>
             </View>
@@ -727,7 +727,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
             <View style={styles.qrSection}>
               <Text style={styles.qrTitle}>🎫 Or Show Your QR</Text>
               <View style={styles.qrPlaceholder}>
-                <Ionicons name="qr-code" size={80} color="#CBD5E1" />
+                <ShakyIcon name="qr-code" size={80} color="#CBD5E1" />
               </View>
               <Text style={styles.driverQRText}>
                 Conductor QR - Let passenger scan this
@@ -754,7 +754,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
           style={styles.backButton}
           onPress={() => setSelectedComplaint(null)}
         >
-          <Ionicons name="arrow-back" size={24} color="#2563EB" />
+          <ShakyIcon name="arrow-back" size={24} color="#2563EB" />
           <Text style={styles.backButtonText}>Back to Queue</Text>
         </TouchableOpacity>
       </View>
@@ -781,7 +781,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
             </View>
 
             <TouchableOpacity style={styles.uploadPhotoButton}>
-              <Ionicons name="camera" size={40} color="#2563EB" />
+              <ShakyIcon name="camera" size={40} color="#2563EB" />
               <Text style={styles.uploadPhotoText}>Tap to Take Photo</Text>
               <Text style={styles.photoHint}>
                 Photo will be timestamped and GPS tagged
@@ -874,12 +874,12 @@ const DriverConductorDashboard = ({ onLogout }) => {
             </View>
 
             <TouchableOpacity style={styles.locationButton}>
-              <Ionicons name="location" size={24} color="#FFFFFF" />
+              <ShakyIcon name="location" size={24} color="#FFFFFF" />
               <Text style={styles.locationButtonText}>Share Live Location</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.notifyButton}>
-              <Ionicons name="send" size={24} color="#FFFFFF" />
+              <ShakyIcon name="send" size={24} color="#FFFFFF" />
               <Text style={styles.notifyButtonText}>Notify Passenger</Text>
             </TouchableOpacity>
 
