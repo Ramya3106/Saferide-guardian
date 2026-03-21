@@ -17,13 +17,14 @@ const startServer = async () => {
 
     server.on("error", (error) => {
       if (error?.code === "EADDRINUSE") {
-        console.error(
-          `Port ${PORT} is already in use. Stop the existing process or set a different PORT in server/.env.`,
+        console.log(
+          `Server is already running on port ${PORT}. Reusing existing instance.`,
         );
+        process.exit(0);
       } else {
         console.error("Server startup error:", error.message);
+        process.exit(1);
       }
-      process.exit(1);
     });
   } catch (error) {
     console.error("Failed to start server:", error.message);

@@ -212,17 +212,23 @@ router.get("/tracking/:complaintId", async (req, res) => {
       return res.status(404).json({ message: "Complaint not found" });
     }
 
-    // Simulate live tracking data
+    const latestLocation = complaint.sharedLocation || complaint.gpsLocation;
+
     const trackingData = {
       complaintId: complaint._id,
       staffLocation: {
-        latitude: 13.008, // Chennai coordinates example
-        longitude: 80.2588,
-        lastUpdated: new Date(),
+        latitude: latestLocation?.latitude || null,
+        longitude: latestLocation?.longitude || null,
+        lastUpdated: latestLocation?.timestamp || latestLocation?.sharedAt || null,
       },
       meetingPoint: complaint.meetingPoint || "Guindy Station",
       staffEta: complaint.staffEta || "8 mins",
       itemStatus: complaint.itemFound ? "Found ✅" : "Searching 🔍",
+      status: complaint.status,
+      liveLocationAvailable: Boolean(
+        typeof latestLocation?.latitude === "number" &&
+          typeof latestLocation?.longitude === "number",
+      ),
     };
 
     res.json({
@@ -419,6 +425,50 @@ router.post("/journey", async (req, res) => {
   } catch (error) {
     console.error("Error creating journey:", error);
     res.status(500).json({ message: "Error creating journey" });
+  }
+});
+
+// POST /api/passenger/share-location/:complaintId - Share live location
+router.post("/share-location/:complaintId", async (req, res) => {
+  try {
+    const complaintId = req.params.complaintId;
+    const { latitude, longitude, timestamp } = req.body;
+    const numericLat = Number(latitude);
+    const numericLng = Number(longitude);
+
+    if (Number.isNaN(numericLat) || Number.isNaN(numericLng)) {
+      return res.status(400).json({ message: "Latitude and longitude required" });
+    }
+
+    const complaint = await Complaint.findById(complaintId);
+
+    if (!complaint) {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+
+    // Store the shared location
+    complaint.sharedLocation = {
+      latitude: numericLat,
+      longitude: numericLng,
+      timestamp: timestamp ? new Date(timestamp) : new Date(),
+      sharedAt: new Date(),
+    };
+    complaint.status = "Accepted";
+    complaint.staffNotified = true;
+
+    await complaint.save();
+
+    console.log(
+      `📍 Location shared for complaint ${complaintId}: Lat ${latitude}, Lng ${longitude}`
+    );
+
+    res.json({
+      message: "Location shared successfully",
+      complaint: complaint,
+    });
+  } catch (error) {
+    console.error("Error sharing location:", error);
+    res.status(500).json({ message: "Error sharing location" });
   }
 });
 

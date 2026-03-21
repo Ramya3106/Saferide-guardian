@@ -76,7 +76,7 @@ const complaintSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Reported", "Staff Notified", "Found", "Meeting Scheduled", "Recovered", "Closed"],
+      enum: ["Reported", "Staff Notified", "Accepted", "Found", "Meeting Scheduled", "Recovered", "Closed"],
       default: "Reported",
     },
     staffNotified: {
@@ -136,6 +136,12 @@ const complaintSchema = new mongoose.Schema(
       latitude: Number,
       longitude: Number,
       timestamp: Date,
+    },
+    sharedLocation: {
+      latitude: Number,
+      longitude: Number,
+      timestamp: Date,
+      sharedAt: Date,
     },
   },
   {

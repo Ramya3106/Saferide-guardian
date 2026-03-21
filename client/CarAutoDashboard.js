@@ -15,10 +15,12 @@ import {
   Platform,
   FlatList,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { getApiBase } from "./apiConfig";
+import * as Location from "expo-location";
 
 const API_BASE = getApiBase();
 
@@ -44,6 +46,7 @@ const CarAutoDashboard = ({ onLogout }) => {
   const [meetingPoint, setMeetingPoint] = useState("");
   const [pickupTime, setPickupTime] = useState("");
   const [showQRModal, setShowQRModal] = useState(false);
+  const [isShareingLocation, setIsShareingLocation] = useState(false);
   const [recoveryStats, setRecoveryStats] = useState({
     totalToday: 12,
     recovered: 8,
@@ -203,6 +206,47 @@ const CarAutoDashboard = ({ onLogout }) => {
     setMeetingPoint("");
     setPickupTime("");
     setShowQRModal(false);
+  };
+
+  // Handle share live location
+  const handleShareLiveLocation = async () => {
+    setIsShareingLocation(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Denied",
+          "Location permission is required to share your live location."
+        );
+        setIsShareingLocation(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const { latitude, longitude } = location.coords;
+
+      // Send location to backend
+      if (acceptedComplaint) {
+        await axios.post(
+          `${API_BASE}/passenger/share-location/${acceptedComplaint.id}`,
+          {
+            latitude,
+            longitude,
+            timestamp: new Date(),
+          }
+        );
+
+        Alert.alert(
+          "Location Shared ✅",
+          `Shared your live location:\nLat: ${latitude.toFixed(4)}\nLng: ${longitude.toFixed(4)}`
+        );
+      }
+    } catch (error) {
+      console.log("Error sharing location:", error?.message);
+      Alert.alert("Error", "Failed to share location. Please try again.");
+    } finally {
+      setIsShareingLocation(false);
+    }
   };
 
   // Render Vehicle Selection Screen
@@ -611,9 +655,22 @@ const CarAutoDashboard = ({ onLogout }) => {
               />
             </View>
 
-            <TouchableOpacity style={styles.locationButton}>
-              <Ionicons name="location" size={24} color="#FFFFFF" />
-              <Text style={styles.locationButtonText}>Share Live Location</Text>
+            <TouchableOpacity
+              style={[styles.locationButton, isShareingLocation && styles.locationButtonDisabled]}
+              onPress={handleShareLiveLocation}
+              disabled={isShareingLocation}
+            >
+              {isShareingLocation ? (
+                <>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.locationButtonText}>Sharing...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="location" size={24} color="#FFFFFF" />
+                  <Text style={styles.locationButtonText}>Share Live Location</Text>
+                </>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity

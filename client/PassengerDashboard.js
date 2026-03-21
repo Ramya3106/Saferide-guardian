@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -27,7 +28,13 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
   const [gpsEnabled, setGpsEnabled] = useState(true);
   const [showComplaintModal, setShowComplaintModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [showTrackingModal, setShowTrackingModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [selectedTrackingComplaint, setSelectedTrackingComplaint] =
+    useState(null);
+  const [trackingData, setTrackingData] = useState(null);
 
   // Transport selection
   const [transportType, setTransportType] = useState(null); // 'train', 'car', 'bus', 'auto'
@@ -42,6 +49,14 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
   const [departureTime, setDepartureTime] = useState("");
   const [arrivalTime, setArrivalTime] = useState("");
   const [photoUri, setPhotoUri] = useState(null);
+
+  const acceptedComplaints = complaints.filter(
+    (complaint) =>
+      complaint.status === "Accepted" ||
+      (typeof complaint?.sharedLocation?.latitude === "number" &&
+        typeof complaint?.sharedLocation?.longitude === "number"),
+  );
+  const notificationCount = acceptedComplaints.length;
 
   const pickPhoto = async (source) => {
     try {
@@ -117,7 +132,28 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
   }, []);
 
   useEffect(() => {
+    const interval = setInterval(() => {
+      fetchComplaintHistory();
+    }, 8000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userEmail]);
+
+  useEffect(() => {
     const onBackPress = () => {
+      if (showTrackingModal) {
+        setShowTrackingModal(false);
+        setTrackingData(null);
+        setSelectedTrackingComplaint(null);
+        return true;
+      }
+
+      if (showNotificationModal) {
+        setShowNotificationModal(false);
+        return true;
+      }
+
       if (showHistoryModal) {
         setShowHistoryModal(false);
         return true;
@@ -137,7 +173,12 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
     );
 
     return () => subscription.remove();
-  }, [showComplaintModal, showHistoryModal]);
+  }, [
+    showComplaintModal,
+    showHistoryModal,
+    showNotificationModal,
+    showTrackingModal,
+  ]);
 
   // Fetch active journey data
   const fetchActiveJourney = async () => {
@@ -165,6 +206,88 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
       setLoading(false);
     }
   };
+
+  const fetchTrackingData = async (complaintId) => {
+    if (!complaintId) {
+      return null;
+    }
+
+    setTrackingLoading(true);
+    try {
+      const response = await axios.get(
+        `${API_BASE}/passenger/tracking/${complaintId}`,
+        {
+          headers: { "X-User-Email": userEmail },
+        },
+      );
+      const nextTracking = response.data.tracking || null;
+      setTrackingData(nextTracking);
+      return nextTracking;
+    } catch (error) {
+      console.log("Error fetching tracking:", error.message);
+      setTrackingData(null);
+      return null;
+    } finally {
+      setTrackingLoading(false);
+    }
+  };
+
+  const openDriverLiveMap = async (tracking) => {
+    const lat = tracking?.staffLocation?.latitude;
+    const lng = tracking?.staffLocation?.longitude;
+
+    if (typeof lat !== "number" || typeof lng !== "number") {
+      Alert.alert(
+        "Live Location Pending",
+        "Driver has not shared location yet. Please try again in a few seconds.",
+      );
+      return;
+    }
+
+    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+
+    try {
+      const supported = await Linking.canOpenURL(mapUrl);
+      if (!supported) {
+        Alert.alert("Unable to Open Map", "No map app is available.");
+        return;
+      }
+
+      await Linking.openURL(mapUrl);
+    } catch (error) {
+      Alert.alert("Unable to Open Map", "Please try again.");
+    }
+  };
+
+  const handleOpenNotifications = async () => {
+    await fetchComplaintHistory();
+    setShowNotificationModal(true);
+  };
+
+  const handleOpenLiveTracking = async (complaint) => {
+    setSelectedTrackingComplaint(complaint);
+    const nextTracking = await fetchTrackingData(complaint?._id);
+
+    if (nextTracking?.liveLocationAvailable) {
+      await openDriverLiveMap(nextTracking);
+      return;
+    }
+
+    setShowTrackingModal(true);
+  };
+
+  useEffect(() => {
+    if (!showTrackingModal || !selectedTrackingComplaint?._id) {
+      return undefined;
+    }
+
+    const interval = setInterval(() => {
+      fetchTrackingData(selectedTrackingComplaint._id);
+    }, 5000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showTrackingModal, selectedTrackingComplaint?._id]);
 
   // Handle transport selection
   const handleTransportSelect = (type) => {
@@ -310,11 +433,16 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
           <Text style={styles.gpsText}>GPS {gpsEnabled ? "ON" : "OFF"}</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.notificationBell}>
+      <TouchableOpacity
+        style={styles.notificationBell}
+        onPress={handleOpenNotifications}
+      >
         <Ionicons name="notifications-outline" size={24} color="#1E293B" />
-        <View style={styles.notificationBadge}>
-          <Text style={styles.badgeText}>3</Text>
-        </View>
+        {notificationCount > 0 && (
+          <View style={styles.notificationBadge}>
+            <Text style={styles.badgeText}>{notificationCount}</Text>
+          </View>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -899,6 +1027,111 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
     </Modal>
   );
 
+  const renderNotificationModal = () => (
+    <Modal
+      visible={showNotificationModal}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowNotificationModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Notifications</Text>
+            <TouchableOpacity onPress={() => setShowNotificationModal(false)}>
+              <Ionicons name="close" size={24} color="#1E293B" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalBody}>
+            {acceptedComplaints.length === 0 ? (
+              <Text style={styles.emptyText}>No new notifications</Text>
+            ) : (
+              acceptedComplaints.map((complaint) => (
+                <View key={complaint._id} style={styles.notificationItem}>
+                  <Text style={styles.notificationTitle}>
+                    Your complaint has been accepted.
+                  </Text>
+                  <Text style={styles.notificationMeta}>
+                    Item: {complaint.itemType} • {complaint.vehicleNumber}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.liveTrackingButton}
+                    onPress={() => handleOpenLiveTracking(complaint)}
+                  >
+                    <Ionicons name="navigate" size={16} color="#FFFFFF" />
+                    <Text style={styles.liveTrackingButtonText}>
+                      Live Tracking
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ))
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  const renderTrackingModal = () => (
+    <Modal
+      visible={showTrackingModal}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowTrackingModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Live Tracking</Text>
+            <TouchableOpacity
+              onPress={() => {
+                setShowTrackingModal(false);
+                setTrackingData(null);
+                setSelectedTrackingComplaint(null);
+              }}
+            >
+              <Ionicons name="close" size={24} color="#1E293B" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.modalBody}>
+            {trackingLoading ? (
+              <ActivityIndicator
+                size="large"
+                color="#2563EB"
+                style={{ marginTop: 20 }}
+              />
+            ) : trackingData?.liveLocationAvailable ? (
+              <View style={styles.trackingCard}>
+                <Text style={styles.trackingTitle}>Driver Live Location</Text>
+                <Text style={styles.trackingMeta}>
+                  Latitude: {trackingData.staffLocation.latitude}
+                </Text>
+                <Text style={styles.trackingMeta}>
+                  Longitude: {trackingData.staffLocation.longitude}
+                </Text>
+                <Text style={styles.trackingMeta}>
+                  Updated: {new Date(trackingData.staffLocation.lastUpdated).toLocaleTimeString()}
+                </Text>
+                <Text style={styles.trackingMeta}>
+                  Meeting Point: {trackingData.meetingPoint || "Pending"}
+                </Text>
+                <Text style={styles.trackingMeta}>
+                  Status: {trackingData.status || "Accepted"}
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.emptyText}>
+                Waiting for driver live location updates...
+              </Text>
+            )}
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
     <ScrollView style={styles.container}>
       {renderHeader()}
@@ -908,11 +1141,12 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         {renderPrimaryAction()}
         {renderComplaintPanel()}
         {renderComplaintTracker()}
-        {renderLiveTracking()}
         {renderStaffMessages()}
         {renderQRCodePickup()}
         {renderComplaintHistory()}
         {renderHistoryModal()}
+        {renderNotificationModal()}
+        {renderTrackingModal()}
         {renderEmergencyHelp()}
 
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
@@ -1439,6 +1673,58 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600",
     color: "#1E293B",
+  },
+  notificationItem: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  notificationTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0F172A",
+    marginBottom: 4,
+  },
+  notificationMeta: {
+    fontSize: 12,
+    color: "#475569",
+    marginBottom: 10,
+  },
+  liveTrackingButton: {
+    backgroundColor: "#2563EB",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  liveTrackingButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  trackingCard: {
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 10,
+    padding: 14,
+  },
+  trackingTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginBottom: 8,
+  },
+  trackingMeta: {
+    fontSize: 13,
+    color: "#475569",
+    marginBottom: 6,
   },
   historyFullItem: {
     backgroundColor: "#F8FAFC",
