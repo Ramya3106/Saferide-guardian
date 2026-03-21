@@ -310,7 +310,7 @@ router.post("/verify-code", (req, res) => {
   return res.status(200).json({ verified: true });
 });
 
-// Example: POST http://localhost:5000/api/auth/register
+// Example: POST http://localhost:5000/api/auth/conegister
 // Body: { "role": "passenger", "name": "John Doe", ... }
 router.post("/register", async (req, res) => {
   try {
