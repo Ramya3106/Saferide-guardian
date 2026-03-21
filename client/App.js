@@ -8,6 +8,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -204,6 +205,7 @@ const AppContent = () => {
   const formAnim = useRef(new Animated.Value(0)).current;
   const shieldShake = useRef(new Animated.Value(0)).current;
   const shieldRotate = useRef(new Animated.Value(0)).current;
+  const shieldShakeLoopRef = useRef(null);
   const titleFade = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
 
@@ -404,25 +406,8 @@ const AppContent = () => {
     };
   }, []);
 
-  // Animations for login/register page
-  useEffect(() => {
-    // Form fade-in and slide up animation
-    Animated.spring(formAnim, {
-      toValue: 1,
-      friction: 8,
-      tension: 40,
-      useNativeDriver: true,
-    }).start();
-
-    // Title fade-in
-    Animated.timing(titleFade, {
-      toValue: 1,
-      duration: 800,
-      useNativeDriver: true,
-    }).start();
-
-    // Shield shaking animation (continuous loop)
-    const shakeAnimation = Animated.loop(
+  const buildShieldShakeAnimation = () =>
+    Animated.loop(
       Animated.sequence([
         Animated.timing(shieldShake, {
           toValue: 10,
@@ -448,13 +433,44 @@ const AppContent = () => {
           easing: Easing.linear,
           useNativeDriver: true,
         }),
-        Animated.delay(3000), // Pause for 3 seconds before shaking again
       ])
     );
-    shakeAnimation.start();
+
+  const startShieldShake = () => {
+    if (shieldShakeLoopRef.current) {
+      return;
+    }
+    shieldShakeLoopRef.current = buildShieldShakeAnimation();
+    shieldShakeLoopRef.current.start();
+  };
+
+  const stopShieldShake = () => {
+    if (shieldShakeLoopRef.current) {
+      shieldShakeLoopRef.current.stop();
+      shieldShakeLoopRef.current = null;
+    }
+    shieldShake.setValue(0);
+  };
+
+  // Animations for login/register page
+  useEffect(() => {
+    // Form fade-in and slide up animation
+    Animated.spring(formAnim, {
+      toValue: 1,
+      friction: 8,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+
+    // Title fade-in
+    Animated.timing(titleFade, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
 
     // Shield rotate animation (gentle continuous rotation)
-    Animated.loop(
+    const shieldRotateLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(shieldRotate, {
           toValue: 1,
@@ -469,7 +485,13 @@ const AppContent = () => {
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
+    shieldRotateLoop.start();
+
+    return () => {
+      stopShieldShake();
+      shieldRotateLoop.stop();
+    };
   }, []);
 
   // Reset animations when switching between login/register
@@ -2192,29 +2214,34 @@ const AppContent = () => {
                 >
                   <View style={styles.card}>
                     <View style={styles.brandRow}>
-                      <Animated.View
-                        style={[
-                          styles.shieldIconContainer,
-                          {
-                            opacity: titleFade,
-                            transform: [
-                              {
-                                rotate: shieldRotate.interpolate({
-                                  inputRange: [0, 1],
-                                  outputRange: ['-5deg', '5deg'],
-                                }),
-                              },
-                              { translateX: shieldShake },
-                            ],
-                          },
-                        ]}
+                      <Pressable
+                        onHoverIn={startShieldShake}
+                        onHoverOut={stopShieldShake}
                       >
-                        <Ionicons
-                          name="shield-checkmark"
-                          size={48}
-                          color="#2563EB"
-                        />
-                      </Animated.View>
+                        <Animated.View
+                          style={[
+                            styles.shieldIconContainer,
+                            {
+                              opacity: titleFade,
+                              transform: [
+                                {
+                                  rotate: shieldRotate.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: ['-5deg', '5deg'],
+                                  }),
+                                },
+                                { translateX: shieldShake },
+                              ],
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name="shield-checkmark"
+                            size={48}
+                            color="#2563EB"
+                          />
+                        </Animated.View>
+                      </Pressable>
                       <View style={styles.brandTextContainer}>
                         <Animated.Text
                           style={[
