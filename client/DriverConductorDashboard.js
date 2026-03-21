@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  BackHandler,
   View,
   Text,
   StyleSheet,
@@ -99,6 +100,44 @@ const DriverConductorDashboard = ({ onLogout }) => {
     const interval = setInterval(fetchLiveComplaints, 10000);
     return () => clearInterval(interval);
   }, [isOnline, currentStep]);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (showQRModal) {
+        setShowQRModal(false);
+        return true;
+      }
+
+      if (selectedComplaint || verificationStep) {
+        setSelectedComplaint(null);
+        setVerificationStep(null);
+        setItemFound(null);
+        setPickupStop("");
+        setPickupTime("");
+        return true;
+      }
+
+      if (currentStep === "dashboard") {
+        setCurrentStep("dutySetup");
+        setIsOnline(false);
+        return true;
+      }
+
+      if (currentStep === "dutySetup") {
+        setCurrentStep("positionSelection");
+        return true;
+      }
+
+      return false;
+    };
+
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      onBackPress,
+    );
+
+    return () => subscription.remove();
+  }, [currentStep, selectedComplaint, showQRModal, verificationStep]);
 
   // Handle position selection
   const handlePositionSelection = (pos) => {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  BackHandler,
   View,
   Text,
   StyleSheet,
@@ -97,6 +98,44 @@ const CarAutoDashboard = ({ onLogout }) => {
     const interval = setInterval(fetchLiveComplaints, 10000);
     return () => clearInterval(interval);
   }, [vehicleType, isOnline, currentStep]);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (showQRModal) {
+        setShowQRModal(false);
+        return true;
+      }
+
+      if (acceptedComplaint) {
+        setAcceptedComplaint(null);
+        setItemConfirmation(null);
+        setItemFound(null);
+        setMeetingPoint("");
+        setPickupTime("");
+        return true;
+      }
+
+      if (currentStep === "dashboard") {
+        setCurrentStep("dutySetup");
+        setIsOnline(false);
+        return true;
+      }
+
+      if (currentStep === "dutySetup") {
+        setCurrentStep("vehicleSelection");
+        return true;
+      }
+
+      return false;
+    };
+
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      onBackPress,
+    );
+
+    return () => subscription.remove();
+  }, [acceptedComplaint, currentStep, showQRModal]);
 
   // Handle continue from vehicle selection
   const handleContinueVehicleSelection = () => {

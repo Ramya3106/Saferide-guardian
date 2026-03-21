@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
+  BackHandler,
   View,
   Text,
   StyleSheet,
@@ -114,6 +115,29 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
     fetchComplaintHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (showHistoryModal) {
+        setShowHistoryModal(false);
+        return true;
+      }
+
+      if (showComplaintModal) {
+        resetComplaintModal();
+        return true;
+      }
+
+      return false;
+    };
+
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      onBackPress,
+    );
+
+    return () => subscription.remove();
+  }, [showComplaintModal, showHistoryModal]);
 
   // Fetch active journey data
   const fetchActiveJourney = async () => {
