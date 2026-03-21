@@ -7,18 +7,6 @@ const Journey = require("../models/Journey");
 // Middleware to extract user email from headers
 const getUserEmail = (req) => req.headers["x-user-email"] || "";
 
-const localComplaints = [];
-const localJourneys = [];
-
-const isDbConnected = () => mongoose.connection.readyState === 1;
-const sortByCreatedAtDesc = (items) =>
-  [...items].sort(
-    (a, b) => new Date(b.createdAt || b.timestamp) - new Date(a.createdAt || a.timestamp)
-  );
-
-const toIsoLikeId = (prefix) =>
-  `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-
 const resolveTransportFilters = (staffRole) => {
   switch ((staffRole || "").toLowerCase()) {
     case "cab":
@@ -44,19 +32,10 @@ router.get("/dashboard", async (req, res) => {
       return res.status(400).json({ message: "User email required" });
     }
 
-    let journey = null;
-    if (isDbConnected()) {
-      journey = await Journey.findOne({
-        passengerEmail: userEmail,
-        status: "Active",
-      }).sort({ createdAt: -1 });
-    } else {
-      journey = sortByCreatedAtDesc(
-        localJourneys.filter(
-          (item) => item.passengerEmail === userEmail && item.status === "Active"
-        )
-      )[0] || null;
-    }
+    const journey = await Journey.findOne({
+      passengerEmail: userEmail,
+      status: "Active",
+    }).sort({ createdAt: -1 });
 
     if (!journey) {
       return res.json({
@@ -109,83 +88,52 @@ router.post("/complaints", async (req, res) => {
     // Generate unique QR code ID
     const qrCode = `QR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    let complaint;
-    if (isDbConnected()) {
-      complaint = new Complaint({
-        passengerId: userEmail,
-        passengerEmail: userEmail,
-        passengerName: req.headers["x-user-name"] || "Passenger",
-        transportType: transportType || "bus",
-        vehicleNumber,
-        itemType,
-        description,
-        photoUri: photoUri || null,
-        fromLocation: fromLocation || "",
-        toLocation: toLocation || "",
-        departureTime: departureTime || "",
-        arrivalTime: arrivalTime || "",
-        lastSeenLocation: lastSeenLocation || fromLocation || "Unknown",
-        timestamp: timestamp || new Date(),
-        journeyId: journeyId || null,
-        route: route || `${fromLocation} → ${toLocation}`,
-        submitAuthority: submitAuthority || "Staff",
-        qrCode,
-        status: "Reported",
-      });
+    console.log("📝 Creating complaint for email:", userEmail);
 
-      await complaint.save();
+    const complaint = new Complaint({
+      passengerId: userEmail,
+      passengerEmail: userEmail,
+      passengerName: req.headers["x-user-name"] || "Passenger",
+      transportType: transportType || "bus",
+      vehicleNumber,
+      itemType,
+      description,
+      photoUri: photoUri || null,
+      fromLocation: fromLocation || "",
+      toLocation: toLocation || "",
+      departureTime: departureTime || "",
+      arrivalTime: arrivalTime || "",
+      lastSeenLocation: lastSeenLocation || fromLocation || "Unknown",
+      timestamp: timestamp || new Date(),
+      journeyId: journeyId || null,
+      route: route || `${fromLocation} → ${toLocation}`,
+      submitAuthority: submitAuthority || "Staff",
+      qrCode,
+      status: "Reported",
+    });
 
-      complaint.staffNotified = true;
-      complaint.staffId = "STAFF-001";
-      complaint.staffName = submitAuthority || "Staff Member";
-      complaint.staffEta = "8 mins";
-      complaint.status = "Staff Notified";
-      await complaint.save();
-    } else {
-      complaint = {
-        _id: toIsoLikeId("cmp"),
-        passengerId: userEmail,
-        passengerEmail: userEmail,
-        passengerName: req.headers["x-user-name"] || "Passenger",
-        transportType: transportType || "bus",
-        vehicleNumber,
-        itemType,
-        description,
-        photoUri: photoUri || null,
-        fromLocation: fromLocation || "",
-        toLocation: toLocation || "",
-        departureTime: departureTime || "",
-        arrivalTime: arrivalTime || "",
-        lastSeenLocation: lastSeenLocation || fromLocation || "Unknown",
-        timestamp: timestamp || new Date(),
-        journeyId: journeyId || null,
-        route: route || `${fromLocation} → ${toLocation}`,
-        submitAuthority: submitAuthority || "Staff",
-        qrCode,
-        status: "Staff Notified",
-        staffNotified: true,
-        itemFound: false,
-        meetingScheduled: false,
-        itemCollected: false,
-        staffId: "STAFF-001",
-        staffName: submitAuthority || "Staff Member",
-        staffEta: "8 mins",
-        meetingPoint: null,
-        meetingTime: null,
-        messages: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      localComplaints.unshift(complaint);
-    }
+    console.log("💾 Saving complaint to MongoDB...");
+    const savedComplaint = await complaint.save();
+    console.log("✅ First save successful, ID:", savedComplaint._id);
+
+    savedComplaint.staffNotified = true;
+    savedComplaint.staffId = "STAFF-001";
+    savedComplaint.staffName = submitAuthority || "Staff Member";
+    savedComplaint.staffEta = "8 mins";
+    savedComplaint.status = "Staff Notified";
+    
+    console.log("💾 Updating complaint status...");
+    await savedComplaint.save();
+    console.log("✅ Second save successful");
 
     res.status(201).json({
-      complaint: complaint,
+      complaint: savedComplaint,
       message: "Complaint created successfully",
     });
   } catch (error) {
-    console.error("Error creating complaint:", error);
-    res.status(500).json({ message: "Error creating complaint" });
+    console.error("❌ Error creating complaint:", error?.message);
+    console.error("Full error:", error);
+    res.status(500).json({ message: "Error creating complaint: " + error?.message });
   }
 });
 
@@ -197,11 +145,7 @@ router.get("/complaints", async (req, res) => {
       return res.status(400).json({ message: "User email required" });
     }
 
-    const complaints = isDbConnected()
-      ? await Complaint.find({ passengerEmail: userEmail }).sort({ createdAt: -1 })
-      : sortByCreatedAtDesc(
-          localComplaints.filter((item) => item.passengerEmail === userEmail)
-        );
+    const complaints = await Complaint.find({ passengerEmail: userEmail }).sort({ createdAt: -1 });
 
     res.json({
       complaints: complaints,
@@ -219,18 +163,10 @@ router.get("/live-alerts", async (req, res) => {
     const { staffRole } = req.query;
     const transportFilters = resolveTransportFilters(staffRole);
 
-    const complaintList = isDbConnected()
-      ? await Complaint.find({
-          transportType: { $in: transportFilters },
-          status: { $in: ["Reported", "Staff Notified"] },
-        }).sort({ createdAt: -1 })
-      : sortByCreatedAtDesc(
-          localComplaints.filter(
-            (item) =>
-              transportFilters.includes(item.transportType) &&
-              ["Reported", "Staff Notified"].includes(item.status)
-          )
-        );
+    const complaintList = await Complaint.find({
+      transportType: { $in: transportFilters },
+      status: { $in: ["Reported", "Staff Notified"] },
+    }).sort({ createdAt: -1 });
 
     res.json({
       alerts: complaintList,
@@ -248,11 +184,7 @@ router.get("/complaints/:id", async (req, res) => {
     const complaintId = req.params.id;
     const userEmail = getUserEmail(req);
 
-    const complaint = isDbConnected()
-      ? await Complaint.findOne({ _id: complaintId, passengerEmail: userEmail })
-      : localComplaints.find(
-          (item) => item._id === complaintId && item.passengerEmail === userEmail
-        );
+    const complaint = await Complaint.findOne({ _id: complaintId, passengerEmail: userEmail });
 
     if (!complaint) {
       return res.status(404).json({ message: "Complaint not found" });
@@ -274,11 +206,7 @@ router.get("/tracking/:complaintId", async (req, res) => {
     const complaintId = req.params.complaintId;
     const userEmail = getUserEmail(req);
 
-    const complaint = isDbConnected()
-      ? await Complaint.findOne({ _id: complaintId, passengerEmail: userEmail })
-      : localComplaints.find(
-          (item) => item._id === complaintId && item.passengerEmail === userEmail
-        );
+    const complaint = await Complaint.findOne({ _id: complaintId, passengerEmail: userEmail });
 
     if (!complaint) {
       return res.status(404).json({ message: "Complaint not found" });
@@ -313,11 +241,7 @@ router.get("/messages/:complaintId", async (req, res) => {
     const complaintId = req.params.complaintId;
     const userEmail = getUserEmail(req);
 
-    const complaint = isDbConnected()
-      ? await Complaint.findOne({ _id: complaintId, passengerEmail: userEmail })
-      : localComplaints.find(
-          (item) => item._id === complaintId && item.passengerEmail === userEmail
-        );
+    const complaint = await Complaint.findOne({ _id: complaintId, passengerEmail: userEmail });
 
     if (!complaint) {
       return res.status(404).json({ message: "Complaint not found" });
@@ -362,11 +286,7 @@ router.post("/messages/:complaintId", async (req, res) => {
     };
 
     complaint.messages.push(newMessage);
-    if (isDbConnected()) {
-      await complaint.save();
-    } else {
-      complaint.updatedAt = new Date();
-    }
+    await complaint.save();
 
     res.json({
       message: "Message sent successfully",
@@ -384,11 +304,7 @@ router.post("/qr-code/:complaintId", async (req, res) => {
     const complaintId = req.params.complaintId;
     const userEmail = getUserEmail(req);
 
-    const complaint = isDbConnected()
-      ? await Complaint.findOne({ _id: complaintId, passengerEmail: userEmail })
-      : localComplaints.find(
-          (item) => item._id === complaintId && item.passengerEmail === userEmail
-        );
+    const complaint = await Complaint.findOne({ _id: complaintId, passengerEmail: userEmail });
 
     if (!complaint) {
       return res.status(404).json({ message: "Complaint not found" });
@@ -397,11 +313,7 @@ router.post("/qr-code/:complaintId", async (req, res) => {
     // Mark as collected
     complaint.itemCollected = true;
     complaint.status = "Recovered";
-    if (isDbConnected()) {
-      await complaint.save();
-    } else {
-      complaint.updatedAt = new Date();
-    }
+    await complaint.save();
 
     res.json({
       message: "Item collected successfully!",
