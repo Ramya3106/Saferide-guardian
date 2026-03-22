@@ -301,6 +301,16 @@ const AppContent = () => {
 
   const isNewPasswordStrong = metNewPasswordChecks === 4;
 
+  const isRegisterPasswordMatch = useMemo(
+    () => confirmPassword.length > 0 && password === confirmPassword,
+    [confirmPassword, password],
+  );
+
+  const isResetPasswordMatch = useMemo(
+    () => confirmNewPassword.length > 0 && newPassword === confirmNewPassword,
+    [confirmNewPassword, newPassword],
+  );
+
   const canSubmit = useMemo(() => {
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
@@ -309,7 +319,8 @@ const AppContent = () => {
       phone.trim().length >= 8 &&
       trimmedPassword.length >= PASSWORD_MIN_LENGTH &&
       isPasswordStrong &&
-      confirmPassword.trim().length >= PASSWORD_MIN_LENGTH;
+      confirmPassword.trim().length >= PASSWORD_MIN_LENGTH &&
+      isRegisterPasswordMatch;
 
     if (isRegister) {
       if (!baseRegisterReady) {
@@ -394,6 +405,7 @@ const AppContent = () => {
     otpEmail,
     officialEmail,
     password,
+    isRegisterPasswordMatch,
     phone,
     pnrRange,
     professionalId,
@@ -2670,6 +2682,20 @@ const AppContent = () => {
                                 />
                               </TouchableOpacity>
                             </View>
+                            {confirmPassword.length > 0 && (
+                              <Text
+                                style={[
+                                  styles.confirmPasswordText,
+                                  isRegisterPasswordMatch
+                                    ? styles.confirmPasswordTextMatch
+                                    : styles.confirmPasswordTextNoMatch,
+                                ]}
+                              >
+                                {isRegisterPasswordMatch
+                                  ? "✓ Passwords match"
+                                  : "○ Passwords do not match"}
+                              </Text>
+                            )}
                           </View>
                         )}
 
@@ -2999,10 +3025,25 @@ const AppContent = () => {
                                           </TouchableOpacity>
                                         </View>
                                       </View>
+                                      {confirmNewPassword.length > 0 && (
+                                        <Text
+                                          style={[
+                                            styles.confirmPasswordText,
+                                            isResetPasswordMatch
+                                              ? styles.confirmPasswordTextMatch
+                                              : styles.confirmPasswordTextNoMatch,
+                                          ]}
+                                        >
+                                          {isResetPasswordMatch
+                                            ? "✓ Passwords match"
+                                            : "○ Passwords do not match"}
+                                        </Text>
+                                      )}
                                       <TouchableOpacity
                                         style={[
                                           styles.primaryButton,
                                           (!isNewPasswordStrong ||
+                                            !isResetPasswordMatch ||
                                             confirmNewPassword.trim().length <
                                               PASSWORD_MIN_LENGTH) &&
                                             styles.buttonDisabled,
@@ -3010,6 +3051,7 @@ const AppContent = () => {
                                         onPress={handleResetPassword}
                                         disabled={
                                           !isNewPasswordStrong ||
+                                          !isResetPasswordMatch ||
                                           confirmNewPassword.trim().length <
                                             PASSWORD_MIN_LENGTH
                                         }
@@ -3289,10 +3331,25 @@ const AppContent = () => {
                                           </TouchableOpacity>
                                         </View>
                                       </View>
+                                      {confirmNewPassword.length > 0 && (
+                                        <Text
+                                          style={[
+                                            styles.confirmPasswordText,
+                                            isResetPasswordMatch
+                                              ? styles.confirmPasswordTextMatch
+                                              : styles.confirmPasswordTextNoMatch,
+                                          ]}
+                                        >
+                                          {isResetPasswordMatch
+                                            ? "✓ Passwords match"
+                                            : "○ Passwords do not match"}
+                                        </Text>
+                                      )}
                                       <TouchableOpacity
                                         style={[
                                           styles.primaryButton,
                                           (!isNewPasswordStrong ||
+                                            !isResetPasswordMatch ||
                                             confirmNewPassword.trim().length <
                                               PASSWORD_MIN_LENGTH) &&
                                             styles.buttonDisabled,
@@ -3300,6 +3357,7 @@ const AppContent = () => {
                                         onPress={handleResetPasswordUser}
                                         disabled={
                                           !isNewPasswordStrong ||
+                                          !isResetPasswordMatch ||
                                           confirmNewPassword.trim().length <
                                             PASSWORD_MIN_LENGTH
                                         }
@@ -3986,6 +4044,17 @@ const styles = StyleSheet.create({
   },
   passwordRuleTextActive: {
     color: "#10B981",
+  },
+  confirmPasswordText: {
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  confirmPasswordTextMatch: {
+    color: "#10B981",
+  },
+  confirmPasswordTextNoMatch: {
+    color: "#F59E0B",
   },
   textArea: {
     minHeight: 100,
