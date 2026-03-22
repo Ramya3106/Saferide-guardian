@@ -45,6 +45,7 @@ const verifyCode = (emailAddress, code) =>
 
 const requiredLabel = (text) => `${text} *`;
 const MERIDIEM_OPTIONS = ["AM", "PM"];
+const PASSWORD_MIN_LENGTH = 8;
 const formatClockTime = (timeValue, meridiem) => {
   const trimmedTime = (timeValue || "").trim();
   const trimmedMeridiem = (meridiem || "").trim().toUpperCase();
@@ -269,14 +270,33 @@ const AppContent = () => {
     return /^\d{6}$/.test(emailOtp.trim());
   }, [emailOtp]);
 
+  const passwordChecks = useMemo(() => {
+    const value = password || "";
+
+    return {
+      length: value.length >= PASSWORD_MIN_LENGTH,
+      uppercase: /[A-Z]/.test(value),
+      number: /\d/.test(value),
+      special: /[^A-Za-z0-9]/.test(value),
+    };
+  }, [password]);
+
+  const metPasswordChecks = useMemo(
+    () => Object.values(passwordChecks).filter(Boolean).length,
+    [passwordChecks],
+  );
+
+  const isPasswordStrong = metPasswordChecks === 4;
+
   const canSubmit = useMemo(() => {
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
     const baseRegisterReady =
       name.trim().length >= 2 &&
       phone.trim().length >= 8 &&
-      trimmedPassword.length >= 6 &&
-      confirmPassword.trim().length >= 6;
+      trimmedPassword.length >= PASSWORD_MIN_LENGTH &&
+      isPasswordStrong &&
+      confirmPassword.trim().length >= PASSWORD_MIN_LENGTH;
 
     if (isRegister) {
       if (!baseRegisterReady) {
@@ -364,6 +384,7 @@ const AppContent = () => {
     phone,
     pnrRange,
     professionalId,
+    isPasswordStrong,
     role,
     shiftTiming,
     toStop,
@@ -578,6 +599,13 @@ const AppContent = () => {
   const handleSubmit = async () => {
     if (!canSubmit) {
       setError("Please complete all required fields.");
+      return;
+    }
+
+    if (isRegister && !isPasswordStrong) {
+      setError(
+        "Password must have 8+ chars, uppercase, number, and special char.",
+      );
       return;
     }
 
@@ -2542,6 +2570,56 @@ const AppContent = () => {
                                   />
                                 </TouchableOpacity>
                               </View>
+                              <View style={styles.passwordRuleBarRow}>
+                                {[0, 1, 2, 3].map((segment) => (
+                                  <View
+                                    key={segment}
+                                    style={[
+                                      styles.passwordRuleBar,
+                                      segment < metPasswordChecks &&
+                                        styles.passwordRuleBarActive,
+                                    ]}
+                                  />
+                                ))}
+                              </View>
+                              <View style={styles.passwordRuleRow}>
+                                <Text
+                                  style={[
+                                    styles.passwordRuleText,
+                                    passwordChecks.length &&
+                                      styles.passwordRuleTextActive,
+                                  ]}
+                                >
+                                  {passwordChecks.length ? "✓" : "○"} 8+ chars
+                                </Text>
+                                <Text
+                                  style={[
+                                    styles.passwordRuleText,
+                                    passwordChecks.uppercase &&
+                                      styles.passwordRuleTextActive,
+                                  ]}
+                                >
+                                  {passwordChecks.uppercase ? "✓" : "○"} Uppercase
+                                </Text>
+                                <Text
+                                  style={[
+                                    styles.passwordRuleText,
+                                    passwordChecks.number &&
+                                      styles.passwordRuleTextActive,
+                                  ]}
+                                >
+                                  {passwordChecks.number ? "✓" : "○"} Number
+                                </Text>
+                                <Text
+                                  style={[
+                                    styles.passwordRuleText,
+                                    passwordChecks.special &&
+                                      styles.passwordRuleTextActive,
+                                  ]}
+                                >
+                                  {passwordChecks.special ? "✓" : "○"} Special char
+                                </Text>
+                              </View>
                             </View>
                           )}
 
@@ -3758,6 +3836,37 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#CBD5E1",
     backgroundColor: "#F8FAFC",
+  },
+  passwordRuleBarRow: {
+    marginTop: 10,
+    flexDirection: "row",
+    gap: 6,
+  },
+  passwordRuleBar: {
+    flex: 1,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: "#334155",
+    opacity: 0.4,
+  },
+  passwordRuleBarActive: {
+    backgroundColor: "#22C55E",
+    opacity: 1,
+  },
+  passwordRuleRow: {
+    marginTop: 8,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    rowGap: 6,
+  },
+  passwordRuleText: {
+    color: "#94A3B8",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  passwordRuleTextActive: {
+    color: "#10B981",
   },
   textArea: {
     minHeight: 100,
