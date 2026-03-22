@@ -15,6 +15,7 @@ import {
   FlatList,
   Modal,
   Animated,
+  Pressable,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -22,9 +23,10 @@ const AnimatedIonicon = Animated.createAnimatedComponent(Ionicons);
 
 const CarAutoDashboard = ({ onLogout }) => {
   const iconShakeValue = useRef(new Animated.Value(0)).current;
+  const iconShakeLoopRef = useRef(null);
 
-  useEffect(() => {
-    const animation = Animated.loop(
+  const buildIconShakeAnimation = () =>
+    Animated.loop(
       Animated.sequence([
         Animated.timing(iconShakeValue, {
           toValue: 1,
@@ -41,20 +43,35 @@ const CarAutoDashboard = ({ onLogout }) => {
           duration: 100,
           useNativeDriver: true,
         }),
-        Animated.delay(1800),
       ]),
     );
 
-    animation.start();
-    return () => animation.stop();
-  }, [iconShakeValue]);
+  const startIconShake = () => {
+    if (iconShakeLoopRef.current) {
+      return;
+    }
+    iconShakeLoopRef.current = buildIconShakeAnimation();
+    iconShakeLoopRef.current.start();
+  };
+
+  const stopIconShake = () => {
+    if (iconShakeLoopRef.current) {
+      iconShakeLoopRef.current.stop();
+      iconShakeLoopRef.current = null;
+    }
+    iconShakeValue.setValue(0);
+  };
+
+  useEffect(() => () => stopIconShake(), []);
 
   const iconShakeStyle = {
     transform: [{ translateX: iconShakeValue }],
   };
 
   const ShakyIcon = ({ style, ...props }) => (
-    <AnimatedIonicon {...props} style={[iconShakeStyle, style]} />
+    <Pressable onHoverIn={startIconShake} onHoverOut={stopIconShake}>
+      <AnimatedIonicon {...props} style={[iconShakeStyle, style]} />
+    </Pressable>
   );
 
   // Main states
