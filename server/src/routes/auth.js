@@ -10,6 +10,7 @@ dotenv.config();
 const VERIFY_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const RESET_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 5;
+const PASSWORD_MIN_LENGTH = 8;
 const verificationStore = new Map();
 const resetPasswordStore = new Map();
 
@@ -105,6 +106,16 @@ const isValidProfessionalId = (role, idValue) => {
 };
 
 const normalizeProfessionalId = (value) => (value || "").trim().toUpperCase();
+
+const isStrongPassword = (passwordValue) => {
+  const password = String(passwordValue || "");
+  return (
+    password.length >= PASSWORD_MIN_LENGTH &&
+    /[A-Z]/.test(password) &&
+    /\d/.test(password) &&
+    /[^A-Za-z0-9]/.test(password)
+  );
+};
 
 const findOfficialByProfessionalId = async (role, professionalId) => {
   const normalized = normalizeProfessionalId(professionalId);
@@ -319,8 +330,15 @@ router.post("/register", async (req, res) => {
     const phone = (req.body?.phone || "").trim();
     const password = String(req.body?.password || "").trim();
 
-    if (!role || !name || !phone || password.length < 6) {
+    if (!role || !name || !phone || !password) {
       return res.status(400).json({ message: "Missing required fields." });
+    }
+
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({
+        message:
+          "Password must have 8+ chars, uppercase, number, and special char.",
+      });
     }
 
     if (!ROLES.includes(role)) {
@@ -495,7 +513,7 @@ router.post("/login", async (req, res) => {
     }
 
     if (isOfficialRole(role) && !isOtp) {
-      if (password.length < 6) {
+      if (!password) {
         return res.status(400).json({ message: "Password required." });
       }
       const matches = await bcrypt.compare(password, user.password);
@@ -512,7 +530,7 @@ router.post("/login", async (req, res) => {
         return res.status(result.status).json({ message: result.message });
       }
     } else {
-      if (password.length < 6) {
+      if (!password) {
         return res.status(400).json({ message: "Password required." });
       }
       const matches = await bcrypt.compare(password, user.password);
@@ -876,9 +894,10 @@ router.post("/reset-password", async (req, res) => {
       });
     }
 
-    if (newPassword.length < 6) {
+    if (!isStrongPassword(newPassword)) {
       return res.status(400).json({
-        message: "Password must be at least 6 characters.",
+        message:
+          "Password must have 8+ chars, uppercase, number, and special char.",
       });
     }
 
@@ -947,9 +966,10 @@ router.post("/reset-password-otp", async (req, res) => {
       });
     }
 
-    if (newPassword.length < 6) {
+    if (!isStrongPassword(newPassword)) {
       return res.status(400).json({
-        message: "Password must be at least 6 characters.",
+        message:
+          "Password must have 8+ chars, uppercase, number, and special char.",
       });
     }
 
@@ -1001,9 +1021,10 @@ router.post("/reset-password-user", async (req, res) => {
       });
     }
 
-    if (newPassword.length < 6) {
+    if (!isStrongPassword(newPassword)) {
       return res.status(400).json({
-        message: "Password must be at least 6 characters.",
+        message:
+          "Password must have 8+ chars, uppercase, number, and special char.",
       });
     }
 
