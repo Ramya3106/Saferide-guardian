@@ -1,5 +1,8 @@
+
+import React, { useEffect, useState } from "react";
 import React, { useState, useEffect, useRef } from "react";
 import {
+  BackHandler,
   View,
   Text,
   StyleSheet,
@@ -14,10 +17,18 @@ import {
   Platform,
   FlatList,
   Modal,
+
+  ActivityIndicator,
+
   Animated,
   Pressable,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import axios from "axios";
+import { getApiBase } from "./apiConfig";
+import * as Location from "expo-location";
+
+const API_BASE = getApiBase();
 
 const AnimatedIonicon = Animated.createAnimatedComponent(Ionicons);
 
@@ -87,24 +98,7 @@ const CarAutoDashboard = ({ onLogout }) => {
   const [shiftEndTime, setShiftEndTime] = useState("");
 
   // Dashboard states
-  const [complaints, setComplaints] = useState([
-    {
-      id: 1,
-      passengerName: "Ramya V",
-      location: "Near Guindy",
-      item: "Black Handbag",
-      time: "10:15 AM",
-      status: "pending",
-    },
-    {
-      id: 2,
-      passengerName: "Suresh K",
-      location: "Velachery Station",
-      item: "Blue Backpack",
-      time: "11:30 AM",
-      status: "pending",
-    },
-  ]);
+  const [complaints, setComplaints] = useState([]);
 
   const [acceptedComplaint, setAcceptedComplaint] = useState(null);
   const [itemConfirmation, setItemConfirmation] = useState(null);
@@ -112,6 +106,7 @@ const CarAutoDashboard = ({ onLogout }) => {
   const [meetingPoint, setMeetingPoint] = useState("");
   const [pickupTime, setPickupTime] = useState("");
   const [showQRModal, setShowQRModal] = useState(false);
+  const [isShareingLocation, setIsShareingLocation] = useState(false);
   const [recoveryStats, setRecoveryStats] = useState({
     totalToday: 12,
     recovered: 8,
@@ -123,6 +118,87 @@ const CarAutoDashboard = ({ onLogout }) => {
   const handleVehicleSelection = (type) => {
     setVehicleType(type);
   };
+
+  const normalizeComplaint = (complaint) => {
+    const createdAt = complaint?.createdAt || complaint?.timestamp || new Date();
+    return {
+      id: complaint?._id || complaint?.id,
+      passengerName: complaint?.passengerName || "Passenger",
+      location:
+        complaint?.lastSeenLocation || complaint?.fromLocation || "Unknown location",
+      item: complaint?.itemType || complaint?.description || "Lost item",
+      time: new Date(createdAt).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      status: complaint?.status || "pending",
+    };
+  };
+
+  const fetchLiveComplaints = async () => {
+    if (!vehicleType || !isOnline || currentStep !== "dashboard") {
+      return;
+    }
+
+    try {
+      const staffRole = vehicleType === "cab" ? "cab" : "auto";
+      const response = await axios.get(`${API_BASE}/passenger/live-alerts`, {
+        params: { staffRole },
+      });
+      const alerts = response?.data?.alerts || [];
+      setComplaints(alerts.map(normalizeComplaint));
+    } catch (error) {
+      console.log("Error fetching car/auto live complaints:", error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveComplaints();
+    if (!vehicleType || !isOnline || currentStep !== "dashboard") {
+      return;
+    }
+
+    const interval = setInterval(fetchLiveComplaints, 10000);
+    return () => clearInterval(interval);
+  }, [vehicleType, isOnline, currentStep]);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (showQRModal) {
+        setShowQRModal(false);
+        return true;
+      }
+
+      if (acceptedComplaint) {
+        setAcceptedComplaint(null);
+        setItemConfirmation(null);
+        setItemFound(null);
+        setMeetingPoint("");
+        setPickupTime("");
+        return true;
+      }
+
+      if (currentStep === "dashboard") {
+        setCurrentStep("dutySetup");
+        setIsOnline(false);
+        return true;
+      }
+
+      if (currentStep === "dutySetup") {
+        setCurrentStep("vehicleSelection");
+        return true;
+      }
+
+      return false;
+    };
+
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      onBackPress,
+    );
+
+    return () => subscription.remove();
+  }, [acceptedComplaint, currentStep, showQRModal]);
 
   // Handle continue from vehicle selection
   const handleContinueVehicleSelection = () => {
@@ -190,6 +266,47 @@ const CarAutoDashboard = ({ onLogout }) => {
     setMeetingPoint("");
     setPickupTime("");
     setShowQRModal(false);
+  };
+
+  // Handle share live location
+  const handleShareLiveLocation = async () => {
+    setIsShareingLocation(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Denied",
+          "Location permission is required to share your live location."
+        );
+        setIsShareingLocation(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const { latitude, longitude } = location.coords;
+
+      // Send location to backend
+      if (acceptedComplaint) {
+        await axios.post(
+          `${API_BASE}/passenger/share-location/${acceptedComplaint.id}`,
+          {
+            latitude,
+            longitude,
+            timestamp: new Date(),
+          }
+        );
+
+        Alert.alert(
+          "Location Shared ✅",
+          `Shared your live location:\nLat: ${latitude.toFixed(4)}\nLng: ${longitude.toFixed(4)}`
+        );
+      }
+    } catch (error) {
+      console.log("Error sharing location:", error?.message);
+      Alert.alert("Error", "Failed to share location. Please try again.");
+    } finally {
+      setIsShareingLocation(false);
+    }
   };
 
   // Render Vehicle Selection Screen
@@ -598,9 +715,28 @@ const CarAutoDashboard = ({ onLogout }) => {
               />
             </View>
 
+
+            <TouchableOpacity
+              style={[styles.locationButton, isShareingLocation && styles.locationButtonDisabled]}
+              onPress={handleShareLiveLocation}
+              disabled={isShareingLocation}
+            >
+              {isShareingLocation ? (
+                <>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.locationButtonText}>Sharing...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="location" size={24} color="#FFFFFF" />
+                  <Text style={styles.locationButtonText}>Share Live Location</Text>
+                </>
+              )}
+
             <TouchableOpacity style={styles.locationButton}>
               <ShakyIcon name="location" size={24} color="#FFFFFF" />
               <Text style={styles.locationButtonText}>Share Live Location</Text>
+
             </TouchableOpacity>
 
             <TouchableOpacity

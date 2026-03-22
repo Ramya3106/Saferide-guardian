@@ -1,5 +1,7 @@
+import React, { useEffect, useState } from "react";
 import React, { useState, useEffect, useRef } from "react";
 import {
+  BackHandler,
   View,
   Text,
   StyleSheet,
@@ -14,10 +16,16 @@ import {
   FlatList,
   Modal,
   Image,
+  ActivityIndicator,
   Animated,
   Pressable,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import axios from "axios";
+import { getApiBase } from "./apiConfig";
+import * as Location from "expo-location";
+
+const API_BASE = getApiBase();
 
 const AnimatedIonicon = Animated.createAnimatedComponent(Ionicons);
 
@@ -89,32 +97,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
   const [passengersOnboard, setPassengersOnboard] = useState("");
 
   // Complaints data
-  const [complaints, setComplaints] = useState([
-    {
-      id: 1025,
-      passengerName: "Ramya V",
-      item: "Wallet",
-      seat: 21,
-      reportedTime: "9:45 AM",
-      status: "pending",
-    },
-    {
-      id: 1026,
-      passengerName: "Suresh K",
-      item: "Phone Charger",
-      seat: 15,
-      reportedTime: "10:12 AM",
-      status: "pending",
-    },
-    {
-      id: 1027,
-      passengerName: "Priya M",
-      item: "Black Laptop Bag",
-      seat: 18,
-      reportedTime: "10:30 AM",
-      status: "pending",
-    },
-  ]);
+  const [complaints, setComplaints] = useState([]);
 
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [verificationStep, setVerificationStep] = useState(null); // null, photo, found, notFound, chat, pickup, qr
@@ -135,6 +118,86 @@ const DriverConductorDashboard = ({ onLogout }) => {
   // Driver-specific states
   const [forwardedComplaints, setForwardedComplaints] = useState([]);
   const [busChecked, setBusChecked] = useState(false);
+  const [isShareingLocation, setIsShareingLocation] = useState(false);
+
+  const normalizeComplaint = (complaint) => {
+    const createdAt = complaint?.createdAt || complaint?.timestamp || new Date();
+    return {
+      id: complaint?._id || complaint?.id,
+      passengerName: complaint?.passengerName || "Passenger",
+      item: complaint?.itemType || complaint?.description || "Lost item",
+      seat: complaint?.vehicleNumber || complaint?.route || "N/A",
+      reportedTime: new Date(createdAt).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      status: complaint?.status || "pending",
+    };
+  };
+
+  const fetchLiveComplaints = async () => {
+    if (!isOnline || currentStep !== "dashboard") {
+      return;
+    }
+
+    try {
+      const response = await axios.get(`${API_BASE}/passenger/live-alerts`, {
+        params: { staffRole: "driver-conductor" },
+      });
+      const alerts = response?.data?.alerts || [];
+      setComplaints(alerts.map(normalizeComplaint));
+    } catch (error) {
+      console.log("Error fetching driver/conductor live complaints:", error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveComplaints();
+    if (!isOnline || currentStep !== "dashboard") {
+      return;
+    }
+
+    const interval = setInterval(fetchLiveComplaints, 10000);
+    return () => clearInterval(interval);
+  }, [isOnline, currentStep]);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (showQRModal) {
+        setShowQRModal(false);
+        return true;
+      }
+
+      if (selectedComplaint || verificationStep) {
+        setSelectedComplaint(null);
+        setVerificationStep(null);
+        setItemFound(null);
+        setPickupStop("");
+        setPickupTime("");
+        return true;
+      }
+
+      if (currentStep === "dashboard") {
+        setCurrentStep("dutySetup");
+        setIsOnline(false);
+        return true;
+      }
+
+      if (currentStep === "dutySetup") {
+        setCurrentStep("positionSelection");
+        return true;
+      }
+
+      return false;
+    };
+
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      onBackPress,
+    );
+
+    return () => subscription.remove();
+  }, [currentStep, selectedComplaint, showQRModal, verificationStep]);
 
   // Handle position selection
   const handlePositionSelection = (pos) => {
@@ -217,6 +280,47 @@ const DriverConductorDashboard = ({ onLogout }) => {
     setPickupStop("");
     setPickupTime("");
     setShowQRModal(false);
+  };
+
+  // Handle share live location
+  const handleShareLiveLocation = async () => {
+    setIsShareingLocation(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Denied",
+          "Location permission is required to share your live location."
+        );
+        setIsShareingLocation(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const { latitude, longitude } = location.coords;
+
+      // Send location to backend
+      if (selectedComplaint) {
+        await axios.post(
+          `${API_BASE}/passenger/share-location/${selectedComplaint.id}`,
+          {
+            latitude,
+            longitude,
+            timestamp: new Date(),
+          }
+        );
+
+        Alert.alert(
+          "Location Shared ✅",
+          `Shared your live location:\nLat: ${latitude.toFixed(4)}\nLng: ${longitude.toFixed(4)}`
+        );
+      }
+    } catch (error) {
+      console.log("Error sharing location:", error?.message);
+      Alert.alert("Error", "Failed to share location. Please try again.");
+    } finally {
+      setIsShareingLocation(false);
+    }
   };
 
   // Render Position Selection Screen
@@ -890,9 +994,28 @@ const DriverConductorDashboard = ({ onLogout }) => {
               />
             </View>
 
+
+            <TouchableOpacity
+              style={[styles.locationButton, isShareingLocation && styles.locationButtonDisabled]}
+              onPress={handleShareLiveLocation}
+              disabled={isShareingLocation}
+            >
+              {isShareingLocation ? (
+                <>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.locationButtonText}>Sharing...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="location" size={24} color="#FFFFFF" />
+                  <Text style={styles.locationButtonText}>Share Live Location</Text>
+                </>
+              )}
+
             <TouchableOpacity style={styles.locationButton}>
               <ShakyIcon name="location" size={24} color="#FFFFFF" />
               <Text style={styles.locationButtonText}>Share Live Location</Text>
+
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.notifyButton}>

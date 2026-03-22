@@ -1,10 +1,28 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const Complaint = require("../models/Complaint");
 const Journey = require("../models/Journey");
 
 // Middleware to extract user email from headers
 const getUserEmail = (req) => req.headers["x-user-email"] || "";
+
+const resolveTransportFilters = (staffRole) => {
+  switch ((staffRole || "").toLowerCase()) {
+    case "cab":
+      return ["car"];
+    case "auto":
+      return ["auto"];
+    case "bus":
+      return ["bus"];
+    case "train":
+      return ["train"];
+    case "driver-conductor":
+      return ["bus", "train"];
+    default:
+      return ["car", "auto", "bus", "train"];
+  }
+};
 
 // GET /api/passenger/dashboard - Get active journey
 router.get("/dashboard", async (req, res) => {
@@ -14,7 +32,6 @@ router.get("/dashboard", async (req, res) => {
       return res.status(400).json({ message: "User email required" });
     }
 
-    // Find active journey for the passenger
     const journey = await Journey.findOne({
       passengerEmail: userEmail,
       status: "Active",
@@ -50,6 +67,7 @@ router.post("/complaints", async (req, res) => {
       vehicleNumber,
       itemType,
       description,
+      photoUri,
       fromLocation,
       toLocation,
       departureTime,
@@ -70,14 +88,17 @@ router.post("/complaints", async (req, res) => {
     // Generate unique QR code ID
     const qrCode = `QR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+    console.log("📝 Creating complaint for email:", userEmail);
+
     const complaint = new Complaint({
-      passengerId: userEmail, // Using email as ID for now
+      passengerId: userEmail,
       passengerEmail: userEmail,
       passengerName: req.headers["x-user-name"] || "Passenger",
       transportType: transportType || "bus",
       vehicleNumber,
       itemType,
       description,
+      photoUri: photoUri || null,
       fromLocation: fromLocation || "",
       toLocation: toLocation || "",
       departureTime: departureTime || "",
@@ -91,23 +112,28 @@ router.post("/complaints", async (req, res) => {
       status: "Reported",
     });
 
-    await complaint.save();
+    console.log("💾 Saving complaint to MongoDB...");
+    const savedComplaint = await complaint.save();
+    console.log("✅ First save successful, ID:", savedComplaint._id);
 
-    // Simulate staff notification
-    complaint.staffNotified = true;
-    complaint.staffId = "STAFF-001";
-    complaint.staffName = submitAuthority || "Staff Member";
-    complaint.staffEta = "8 mins";
-    complaint.status = "Staff Notified";
-    await complaint.save();
+    savedComplaint.staffNotified = true;
+    savedComplaint.staffId = "STAFF-001";
+    savedComplaint.staffName = submitAuthority || "Staff Member";
+    savedComplaint.staffEta = "8 mins";
+    savedComplaint.status = "Staff Notified";
+    
+    console.log("💾 Updating complaint status...");
+    await savedComplaint.save();
+    console.log("✅ Second save successful");
 
     res.status(201).json({
-      complaint: complaint,
+      complaint: savedComplaint,
       message: "Complaint created successfully",
     });
   } catch (error) {
-    console.error("Error creating complaint:", error);
-    res.status(500).json({ message: "Error creating complaint" });
+    console.error("❌ Error creating complaint:", error?.message);
+    console.error("Full error:", error);
+    res.status(500).json({ message: "Error creating complaint: " + error?.message });
   }
 });
 
@@ -119,9 +145,7 @@ router.get("/complaints", async (req, res) => {
       return res.status(400).json({ message: "User email required" });
     }
 
-    const complaints = await Complaint.find({
-      passengerEmail: userEmail,
-    }).sort({ createdAt: -1 });
+    const complaints = await Complaint.find({ passengerEmail: userEmail }).sort({ createdAt: -1 });
 
     res.json({
       complaints: complaints,
@@ -133,16 +157,34 @@ router.get("/complaints", async (req, res) => {
   }
 });
 
+// GET /api/passenger/live-alerts - Live complaints for staff dashboards
+router.get("/live-alerts", async (req, res) => {
+  try {
+    const { staffRole } = req.query;
+    const transportFilters = resolveTransportFilters(staffRole);
+
+    const complaintList = await Complaint.find({
+      transportType: { $in: transportFilters },
+      status: { $in: ["Reported", "Staff Notified"] },
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      alerts: complaintList,
+      message: "Live alerts retrieved successfully",
+    });
+  } catch (error) {
+    console.error("Error fetching live alerts:", error);
+    res.status(500).json({ message: "Error fetching live alerts" });
+  }
+});
+
 // GET /api/passenger/complaints/:id - Get specific complaint details
 router.get("/complaints/:id", async (req, res) => {
   try {
     const complaintId = req.params.id;
     const userEmail = getUserEmail(req);
 
-    const complaint = await Complaint.findOne({
-      _id: complaintId,
-      passengerEmail: userEmail,
-    });
+    const complaint = await Complaint.findOne({ _id: complaintId, passengerEmail: userEmail });
 
     if (!complaint) {
       return res.status(404).json({ message: "Complaint not found" });
@@ -164,26 +206,29 @@ router.get("/tracking/:complaintId", async (req, res) => {
     const complaintId = req.params.complaintId;
     const userEmail = getUserEmail(req);
 
-    const complaint = await Complaint.findOne({
-      _id: complaintId,
-      passengerEmail: userEmail,
-    });
+    const complaint = await Complaint.findOne({ _id: complaintId, passengerEmail: userEmail });
 
     if (!complaint) {
       return res.status(404).json({ message: "Complaint not found" });
     }
 
-    // Simulate live tracking data
+    const latestLocation = complaint.sharedLocation || complaint.gpsLocation;
+
     const trackingData = {
       complaintId: complaint._id,
       staffLocation: {
-        latitude: 13.008, // Chennai coordinates example
-        longitude: 80.2588,
-        lastUpdated: new Date(),
+        latitude: latestLocation?.latitude || null,
+        longitude: latestLocation?.longitude || null,
+        lastUpdated: latestLocation?.timestamp || latestLocation?.sharedAt || null,
       },
       meetingPoint: complaint.meetingPoint || "Guindy Station",
       staffEta: complaint.staffEta || "8 mins",
       itemStatus: complaint.itemFound ? "Found ✅" : "Searching 🔍",
+      status: complaint.status,
+      liveLocationAvailable: Boolean(
+        typeof latestLocation?.latitude === "number" &&
+          typeof latestLocation?.longitude === "number",
+      ),
     };
 
     res.json({
@@ -202,10 +247,7 @@ router.get("/messages/:complaintId", async (req, res) => {
     const complaintId = req.params.complaintId;
     const userEmail = getUserEmail(req);
 
-    const complaint = await Complaint.findOne({
-      _id: complaintId,
-      passengerEmail: userEmail,
-    });
+    const complaint = await Complaint.findOne({ _id: complaintId, passengerEmail: userEmail });
 
     if (!complaint) {
       return res.status(404).json({ message: "Complaint not found" });
@@ -268,10 +310,7 @@ router.post("/qr-code/:complaintId", async (req, res) => {
     const complaintId = req.params.complaintId;
     const userEmail = getUserEmail(req);
 
-    const complaint = await Complaint.findOne({
-      _id: complaintId,
-      passengerEmail: userEmail,
-    });
+    const complaint = await Complaint.findOne({ _id: complaintId, passengerEmail: userEmail });
 
     if (!complaint) {
       return res.status(404).json({ message: "Complaint not found" });
@@ -338,23 +377,46 @@ router.post("/journey", async (req, res) => {
       });
     }
 
-    const journey = new Journey({
-      passengerId: userEmail,
-      passengerEmail: userEmail,
-      vehicleNumber,
-      route,
-      fromStop: fromStop || "",
-      toStop: toStop || "",
-      currentStop: fromStop || "",
-      startTime: new Date(),
-      estimatedEndTime: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
-      driverName: driverName || null,
-      conductorName: conductorName || null,
-      estimatedDuration: estimatedDuration || "2h",
-      status: "Active",
-    });
+    let journey;
+    if (isDbConnected()) {
+      journey = new Journey({
+        passengerId: userEmail,
+        passengerEmail: userEmail,
+        vehicleNumber,
+        route,
+        fromStop: fromStop || "",
+        toStop: toStop || "",
+        currentStop: fromStop || "",
+        startTime: new Date(),
+        estimatedEndTime: new Date(Date.now() + 2 * 60 * 60 * 1000),
+        driverName: driverName || null,
+        conductorName: conductorName || null,
+        estimatedDuration: estimatedDuration || "2h",
+        status: "Active",
+      });
 
-    await journey.save();
+      await journey.save();
+    } else {
+      journey = {
+        _id: toIsoLikeId("jrny"),
+        passengerId: userEmail,
+        passengerEmail: userEmail,
+        vehicleNumber,
+        route,
+        fromStop: fromStop || "",
+        toStop: toStop || "",
+        currentStop: fromStop || "",
+        startTime: new Date(),
+        estimatedEndTime: new Date(Date.now() + 2 * 60 * 60 * 1000),
+        driverName: driverName || null,
+        conductorName: conductorName || null,
+        estimatedDuration: estimatedDuration || "2h",
+        status: "Active",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      localJourneys.unshift(journey);
+    }
 
     res.status(201).json({
       journey: journey,
@@ -363,6 +425,50 @@ router.post("/journey", async (req, res) => {
   } catch (error) {
     console.error("Error creating journey:", error);
     res.status(500).json({ message: "Error creating journey" });
+  }
+});
+
+// POST /api/passenger/share-location/:complaintId - Share live location
+router.post("/share-location/:complaintId", async (req, res) => {
+  try {
+    const complaintId = req.params.complaintId;
+    const { latitude, longitude, timestamp } = req.body;
+    const numericLat = Number(latitude);
+    const numericLng = Number(longitude);
+
+    if (Number.isNaN(numericLat) || Number.isNaN(numericLng)) {
+      return res.status(400).json({ message: "Latitude and longitude required" });
+    }
+
+    const complaint = await Complaint.findById(complaintId);
+
+    if (!complaint) {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+
+    // Store the shared location
+    complaint.sharedLocation = {
+      latitude: numericLat,
+      longitude: numericLng,
+      timestamp: timestamp ? new Date(timestamp) : new Date(),
+      sharedAt: new Date(),
+    };
+    complaint.status = "Accepted";
+    complaint.staffNotified = true;
+
+    await complaint.save();
+
+    console.log(
+      `📍 Location shared for complaint ${complaintId}: Lat ${latitude}, Lng ${longitude}`
+    );
+
+    res.json({
+      message: "Location shared successfully",
+      complaint: complaint,
+    });
+  } catch (error) {
+    console.error("Error sharing location:", error);
+    res.status(500).json({ message: "Error sharing location" });
   }
 });
 

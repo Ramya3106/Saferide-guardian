@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { getApiBase } from "./apiConfig";
 import {
   Animated,
+  BackHandler,
   Easing,
   Keyboard,
   KeyboardAvoidingView,
@@ -610,6 +611,80 @@ const AppContent = () => {
     setOnDuty(true);
     setError("");
   };
+
+  useEffect(() => {
+    if (Platform.OS !== "android") {
+      return undefined;
+    }
+
+    const onBackPress = () => {
+      if (isAuthenticated) {
+        setIsAuthenticated(false);
+        setMode("login");
+        setComplaintSubmitted(false);
+        setStaffConfirmed(false);
+        setHandoffComplete(false);
+        setStaffComplaintSubmitted(false);
+        setShowRoleSelection(false);
+        setSpecificRole("");
+        resetForm();
+        return true;
+      }
+
+      if (showRoleSelection) {
+        setShowRoleSelection(false);
+        setSpecificRole("");
+        setError("");
+        return true;
+      }
+
+      if (forgotPasswordMode) {
+        setForgotPasswordMode(false);
+        setResetCode("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setShowNewPassword(false);
+        setShowConfirmNewPassword(false);
+        setIsResetCodeSent(false);
+        setIsSendingResetCode(false);
+        setIsResetCodeVerified(false);
+        setIsVerifyingResetCode(false);
+        setResetSuccess(false);
+        setError("");
+        return true;
+      }
+
+      if (!isRegister && loginWithOtp) {
+        setLoginWithOtp(false);
+        setEmailOtp("");
+        setIsVerified(false);
+        setIsOtpSent(false);
+        setError("");
+        return true;
+      }
+
+      if (isRegister) {
+        setMode("login");
+        setError("");
+        return true;
+      }
+
+      return false;
+    };
+
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      onBackPress,
+    );
+
+    return () => subscription.remove();
+  }, [
+    forgotPasswordMode,
+    isAuthenticated,
+    isRegister,
+    loginWithOtp,
+    showRoleSelection,
+  ]);
 
   const applyUserProfile = (profile = {}) => {
     setName(profile.name || "");
