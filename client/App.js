@@ -46,6 +46,16 @@ const verifyCode = (emailAddress, code) =>
 const requiredLabel = (text) => `${text} *`;
 const MERIDIEM_OPTIONS = ["AM", "PM"];
 const PASSWORD_MIN_LENGTH = 8;
+const getPasswordChecks = (value) => {
+  const input = value || "";
+
+  return {
+    length: input.length >= PASSWORD_MIN_LENGTH,
+    uppercase: /[A-Z]/.test(input),
+    number: /\d/.test(input),
+    special: /[^A-Za-z0-9]/.test(input),
+  };
+};
 const formatClockTime = (timeValue, meridiem) => {
   const trimmedTime = (timeValue || "").trim();
   const trimmedMeridiem = (meridiem || "").trim().toUpperCase();
@@ -270,16 +280,7 @@ const AppContent = () => {
     return /^\d{6}$/.test(emailOtp.trim());
   }, [emailOtp]);
 
-  const passwordChecks = useMemo(() => {
-    const value = password || "";
-
-    return {
-      length: value.length >= PASSWORD_MIN_LENGTH,
-      uppercase: /[A-Z]/.test(value),
-      number: /\d/.test(value),
-      special: /[^A-Za-z0-9]/.test(value),
-    };
-  }, [password]);
+  const passwordChecks = useMemo(() => getPasswordChecks(password), [password]);
 
   const metPasswordChecks = useMemo(
     () => Object.values(passwordChecks).filter(Boolean).length,
@@ -287,6 +288,18 @@ const AppContent = () => {
   );
 
   const isPasswordStrong = metPasswordChecks === 4;
+
+  const newPasswordChecks = useMemo(
+    () => getPasswordChecks(newPassword),
+    [newPassword],
+  );
+
+  const metNewPasswordChecks = useMemo(
+    () => Object.values(newPasswordChecks).filter(Boolean).length,
+    [newPasswordChecks],
+  );
+
+  const isNewPasswordStrong = metNewPasswordChecks === 4;
 
   const canSubmit = useMemo(() => {
     const trimmedEmail = email.trim();
@@ -931,8 +944,10 @@ const AppContent = () => {
   };
 
   const handleResetPassword = async () => {
-    if (newPassword.trim().length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (!isNewPasswordStrong) {
+      setError(
+        "Password must have 8+ chars, uppercase, number, and special char.",
+      );
       return;
     }
     if (newPassword !== confirmNewPassword) {
@@ -1058,8 +1073,10 @@ const AppContent = () => {
   };
 
   const handleResetPasswordUser = async () => {
-    if (newPassword.trim().length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (!isNewPasswordStrong) {
+      setError(
+        "Password must have 8+ chars, uppercase, number, and special char.",
+      );
       return;
     }
     if (newPassword !== confirmNewPassword) {
@@ -2891,6 +2908,56 @@ const AppContent = () => {
                                             />
                                           </TouchableOpacity>
                                         </View>
+                                        <View style={styles.passwordRuleBarRow}>
+                                          {[0, 1, 2, 3].map((segment) => (
+                                            <View
+                                              key={segment}
+                                              style={[
+                                                styles.passwordRuleBar,
+                                                segment < metNewPasswordChecks &&
+                                                  styles.passwordRuleBarActive,
+                                              ]}
+                                            />
+                                          ))}
+                                        </View>
+                                        <View style={styles.passwordRuleRow}>
+                                          <Text
+                                            style={[
+                                              styles.passwordRuleText,
+                                              newPasswordChecks.length &&
+                                                styles.passwordRuleTextActive,
+                                            ]}
+                                          >
+                                            {newPasswordChecks.length ? "✓" : "○"} 8+ chars
+                                          </Text>
+                                          <Text
+                                            style={[
+                                              styles.passwordRuleText,
+                                              newPasswordChecks.uppercase &&
+                                                styles.passwordRuleTextActive,
+                                            ]}
+                                          >
+                                            {newPasswordChecks.uppercase ? "✓" : "○"} Uppercase
+                                          </Text>
+                                          <Text
+                                            style={[
+                                              styles.passwordRuleText,
+                                              newPasswordChecks.number &&
+                                                styles.passwordRuleTextActive,
+                                            ]}
+                                          >
+                                            {newPasswordChecks.number ? "✓" : "○"} Number
+                                          </Text>
+                                          <Text
+                                            style={[
+                                              styles.passwordRuleText,
+                                              newPasswordChecks.special &&
+                                                styles.passwordRuleTextActive,
+                                            ]}
+                                          >
+                                            {newPasswordChecks.special ? "✓" : "○"} Special char
+                                          </Text>
+                                        </View>
                                       </View>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
@@ -2935,15 +3002,16 @@ const AppContent = () => {
                                       <TouchableOpacity
                                         style={[
                                           styles.primaryButton,
-                                          (newPassword.trim().length < 6 ||
+                                          (!isNewPasswordStrong ||
                                             confirmNewPassword.trim().length <
-                                              6) &&
+                                              PASSWORD_MIN_LENGTH) &&
                                             styles.buttonDisabled,
                                         ]}
                                         onPress={handleResetPassword}
                                         disabled={
-                                          newPassword.trim().length < 6 ||
-                                          confirmNewPassword.trim().length < 6
+                                          !isNewPasswordStrong ||
+                                          confirmNewPassword.trim().length <
+                                            PASSWORD_MIN_LENGTH
                                         }
                                       >
                                         <Text style={styles.primaryButtonText}>
@@ -3130,6 +3198,56 @@ const AppContent = () => {
                                             />
                                           </TouchableOpacity>
                                         </View>
+                                        <View style={styles.passwordRuleBarRow}>
+                                          {[0, 1, 2, 3].map((segment) => (
+                                            <View
+                                              key={segment}
+                                              style={[
+                                                styles.passwordRuleBar,
+                                                segment < metNewPasswordChecks &&
+                                                  styles.passwordRuleBarActive,
+                                              ]}
+                                            />
+                                          ))}
+                                        </View>
+                                        <View style={styles.passwordRuleRow}>
+                                          <Text
+                                            style={[
+                                              styles.passwordRuleText,
+                                              newPasswordChecks.length &&
+                                                styles.passwordRuleTextActive,
+                                            ]}
+                                          >
+                                            {newPasswordChecks.length ? "✓" : "○"} 8+ chars
+                                          </Text>
+                                          <Text
+                                            style={[
+                                              styles.passwordRuleText,
+                                              newPasswordChecks.uppercase &&
+                                                styles.passwordRuleTextActive,
+                                            ]}
+                                          >
+                                            {newPasswordChecks.uppercase ? "✓" : "○"} Uppercase
+                                          </Text>
+                                          <Text
+                                            style={[
+                                              styles.passwordRuleText,
+                                              newPasswordChecks.number &&
+                                                styles.passwordRuleTextActive,
+                                            ]}
+                                          >
+                                            {newPasswordChecks.number ? "✓" : "○"} Number
+                                          </Text>
+                                          <Text
+                                            style={[
+                                              styles.passwordRuleText,
+                                              newPasswordChecks.special &&
+                                                styles.passwordRuleTextActive,
+                                            ]}
+                                          >
+                                            {newPasswordChecks.special ? "✓" : "○"} Special char
+                                          </Text>
+                                        </View>
                                       </View>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
@@ -3174,15 +3292,16 @@ const AppContent = () => {
                                       <TouchableOpacity
                                         style={[
                                           styles.primaryButton,
-                                          (newPassword.trim().length < 6 ||
-                                            confirmNewPassword.trim()
-                                              .length < 6) &&
+                                          (!isNewPasswordStrong ||
+                                            confirmNewPassword.trim().length <
+                                              PASSWORD_MIN_LENGTH) &&
                                             styles.buttonDisabled,
                                         ]}
                                         onPress={handleResetPasswordUser}
                                         disabled={
-                                          newPassword.trim().length < 6 ||
-                                          confirmNewPassword.trim().length < 6
+                                          !isNewPasswordStrong ||
+                                          confirmNewPassword.trim().length <
+                                            PASSWORD_MIN_LENGTH
                                         }
                                       >
                                         <Text style={styles.primaryButtonText}>
