@@ -8,13 +8,47 @@ const User = require("../models/User");
 dotenv.config();
 
 const VERIFY_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
-const RESET_CODE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const RESET_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 5;
+const PASSWORD_MIN_LENGTH = 8;
 const verificationStore = new Map();
 const resetPasswordStore = new Map();
-const user = (process.env.EMAIL_USER || "").trim();
-const pass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
-const fromAddress = (process.env.EMAIL_FROM || user).trim();
+
+// Periodic logging of store state for debugging
+setInterval(() => {
+  if (verificationStore.size > 0 || resetPasswordStore.size > 0) {
+    console.log("\n📊 STORE STATE CHECK:", new Date().toISOString());
+    console.log("Verification Store:", Array.from(verificationStore.entries()).map(([k, v]) => ({ 
+      email: k, 
+      code: v.code,
+      expiresAt: new Date(v.expiresAt).toISOString(),
+      expiresIn: Math.round((v.expiresAt - Date.now()) / 1000) + "s",
+      isExpired: Date.now() > v.expiresAt
+    })));
+    console.log("Reset Password Store:", Array.from(resetPasswordStore.entries()).map(([k, v]) => ({ 
+      email: k, 
+      code: v.code,
+      expiresAt: new Date(v.expiresAt).toISOString(),
+      expiresIn: Math.round((v.expiresAt - Date.now()) / 1000) + "s",
+      isExpired: Date.now() > v.expiresAt
+    })));
+  }
+}, 30000); // Log every 30 seconds if stores have data
+
+const DEFAULT_RESET_SENDER = "divyadharshana3@gmail.com";
+const mailUser = (
+  process.env.RESET_EMAIL_USER ||
+  process.env.EMAIL_USER ||
+  DEFAULT_RESET_SENDER
+).trim();
+const pass = String(
+  process.env.RESET_EMAIL_PASS || process.env.EMAIL_PASS || "",
+).replace(/\s+/g, "");
+const fromAddress = (
+  process.env.RESET_EMAIL_FROM ||
+  process.env.EMAIL_FROM ||
+  `SafeRide Guardian <${DEFAULT_RESET_SENDER}>`
+).trim();
 const returnDevCode =
   String(process.env.RETURN_VERIFY_CODE || "").toLowerCase() === "true";
 const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
@@ -25,22 +59,26 @@ const OFFICIAL_ROLES = new Set(["TTR/RPF/Police"]);
 const OPERATIONAL_ROLES = new Set(["Driver/Conductor", "Cab/Auto"]);
 
 const createTransporter = () => {
-  if (!user || !pass) return null;
+  if (!mailUser || !pass) return null;
 
   return nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user,
+      user: mailUser,
       pass,
     },
   });
 };
+
+const getEmailServiceUnavailableMessage = () =>
+  `Email service not configured. Set RESET_EMAIL_PASS or EMAIL_PASS for ${mailUser}.`;
 
 // Generate 6-digit code
 const generateCode = () => String(Math.floor(100000 + Math.random() * 900000));
 
 // Email validation
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const normalizeEmail = (value) => (value || "").trim().toLowerCase();
 
 const isOfficialRole = (role) => OFFICIAL_ROLES.has(role);
 
@@ -69,6 +107,16 @@ const isValidProfessionalId = (role, idValue) => {
 
 const normalizeProfessionalId = (value) => (value || "").trim().toUpperCase();
 
+const isStrongPassword = (passwordValue) => {
+  const password = String(passwordValue || "");
+  return (
+    password.length >= PASSWORD_MIN_LENGTH &&
+    /[A-Z]/.test(password) &&
+    /\d/.test(password) &&
+    /[^A-Za-z0-9]/.test(password)
+  );
+};
+
 const findOfficialByProfessionalId = async (role, professionalId) => {
   const normalized = normalizeProfessionalId(professionalId);
   const candidates = await User.find({ role }).select("+password");
@@ -78,6 +126,49 @@ const findOfficialByProfessionalId = async (role, professionalId) => {
         normalizeProfessionalId(candidate.professionalId) === normalized,
     ) || null
   );
+};
+
+const hasMatchingEmail = (user, emailValue) => {
+  const normalized = normalizeEmail(emailValue);
+
+  if (!user || !normalized) {
+    return false;
+  }
+
+  return [user.email, user.officialEmail].some(
+    (candidate) => normalizeEmail(candidate) === normalized,
+  );
+};
+
+const findUserByEmail = async (
+  emailValue,
+  { role, includePassword = false } = {},
+) => {
+  const normalized = normalizeEmail(emailValue);
+
+  if (!normalized) {
+    return null;
+  }
+
+  let directLookup = User.findOne(
+    role ? { email: normalized, role } : { email: normalized },
+  );
+  if (includePassword) {
+    directLookup = directLookup.select("+password");
+  }
+
+  const directMatch = await directLookup;
+  if (directMatch) {
+    return directMatch;
+  }
+
+  let fallbackLookup = User.find(role ? { role } : {});
+  if (includePassword) {
+    fallbackLookup = fallbackLookup.select("+password");
+  }
+
+  const candidates = await fallbackLookup;
+  return candidates.find((candidate) => hasMatchingEmail(candidate, normalized)) || null;
 };
 
 const consumeVerificationCode = (email, code) => {
@@ -117,6 +208,9 @@ const consumeVerificationCode = (email, code) => {
 router.post("/send-verify-code", async (req, res) => {
   const email = (req.body?.email || "").trim().toLowerCase();
 
+  console.log(`\n📧 SEND VERIFY CODE for: "${email}"`);
+  console.log("Email type:", typeof email, "Length:", email.length);
+
   if (!isValidEmail(email)) {
     return res.status(400).json({ message: "Enter a valid email address." });
   }
@@ -127,8 +221,12 @@ router.post("/send-verify-code", async (req, res) => {
       const code = generateCode();
       const expiresAt = Date.now() + VERIFY_CODE_TTL_MS;
       verificationStore.set(email, { code, expiresAt, attempts: 0 });
-      console.log(`✅ DEV MODE: Code stored for ${email}: ${code}`);
-      console.log("Current store contents:", Array.from(verificationStore.entries()).map(([k, v]) => ({ email: k, code: v.code })));
+      console.log(`✅ DEV MODE: Code stored for "${email}": ${code}`);
+      console.log("Current store contents:", Array.from(verificationStore.entries()).map(([k, v]) => ({ 
+        email: JSON.stringify(k),
+        emailMatch: k === email,
+        code: v.code 
+      })));
       return res.status(200).json({
         sent: false,
         devCode: code,
@@ -137,7 +235,7 @@ router.post("/send-verify-code", async (req, res) => {
     }
 
     return res.status(500).json({
-      message: "Email service not configured. Contact support.",
+      message: getEmailServiceUnavailableMessage(),
     });
   }
 
@@ -147,13 +245,18 @@ router.post("/send-verify-code", async (req, res) => {
   // Store code
   verificationStore.set(email, { code, expiresAt, attempts: 0 });
 
-  console.log(`✅ Code stored for ${email}: ${code}, expires at ${new Date(expiresAt).toISOString()}`);
-  console.log("Current store contents:", Array.from(verificationStore.entries()).map(([k, v]) => ({ email: k, code: v.code, expiresAt: new Date(v.expiresAt).toISOString() })));
+  console.log(`✅ Code stored for "${email}": ${code}, expires at ${new Date(expiresAt).toISOString()}`);
+  console.log("Current store contents:", Array.from(verificationStore.entries()).map(([k, v]) => ({ 
+    email: JSON.stringify(k),
+    emailMatch: k === email,
+    code: v.code, 
+    expiresAt: new Date(v.expiresAt).toISOString() 
+  })));
 
   // SEND EMAIL
   try {
     await transporter.sendMail({
-      from: fromAddress || user,
+      from: fromAddress || mailUser,
       to: email,
       subject: "SafeRide Guardian - Verification Code",
       text: `Your SafeRide verification code is: ${code}\n\nIt expires in 10 minutes.\n\nSafeRide Team`,
@@ -218,6 +321,8 @@ router.post("/verify-code", (req, res) => {
   return res.status(200).json({ verified: true });
 });
 
+// Example: POST http://localhost:5000/api/auth/conegister
+// Body: { "role": "passenger", "name": "John Doe", ... }
 router.post("/register", async (req, res) => {
   try {
     const role = (req.body?.role || "").trim();
@@ -225,8 +330,15 @@ router.post("/register", async (req, res) => {
     const phone = (req.body?.phone || "").trim();
     const password = String(req.body?.password || "").trim();
 
-    if (!role || !name || !phone || password.length < 6) {
+    if (!role || !name || !phone || !password) {
       return res.status(400).json({ message: "Missing required fields." });
+    }
+
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({
+        message:
+          "Password must have 8+ chars, uppercase, number, and special char.",
+      });
     }
 
     if (!ROLES.includes(role)) {
@@ -350,6 +462,9 @@ router.post("/register", async (req, res) => {
   }
 });
 
+
+// Example: POST http://localhost:5000/api/auth/login
+// Body: { "role": "passenger", "password": "yourpassword" }
 router.post("/login", async (req, res) => {
   try {
     const role = (req.body?.role || "").trim();
@@ -398,7 +513,7 @@ router.post("/login", async (req, res) => {
     }
 
     if (isOfficialRole(role) && !isOtp) {
-      if (password.length < 6) {
+      if (!password) {
         return res.status(400).json({ message: "Password required." });
       }
       const matches = await bcrypt.compare(password, user.password);
@@ -415,7 +530,7 @@ router.post("/login", async (req, res) => {
         return res.status(result.status).json({ message: result.message });
       }
     } else {
-      if (password.length < 6) {
+      if (!password) {
         return res.status(400).json({ message: "Password required." });
       }
       const matches = await bcrypt.compare(password, user.password);
@@ -510,10 +625,14 @@ router.post("/verify-reset-code-user", async (req, res) => {
     const email = (req.body?.email || "").trim().toLowerCase();
     const otpCode = String(req.body?.otpCode || "").trim();
 
-    console.log("Verify reset code user request:", { email, otpCode: otpCode ? "***" + otpCode.slice(-2) : "none" });
+    console.log(`\n🔍 VERIFY RESET CODE for: "${email}"`);
+    console.log("Email type:", typeof email, "Length:", email.length);
+    console.log("OTP Code:", otpCode ? "***" + otpCode.slice(-2) : "none");
+    console.log("All emails in store:", Array.from(verificationStore.keys()).map(k => JSON.stringify(k)));
     
     const storeBeforeCheck = Array.from(verificationStore.entries()).map(([k, v]) => ({ 
-      email: k, 
+      email: JSON.stringify(k),
+      emailMatch: k === email,
       code: v.code,
       expiresAt: new Date(v.expiresAt).toISOString()
     }));
@@ -572,9 +691,11 @@ router.post("/verify-reset-code-user", async (req, res) => {
     }
 
     // Code is valid, don't delete it yet (will be deleted when password is reset)
-    console.log("✅ Verification code verified successfully for:", email);
+    console.log(`✅ Verification code verified successfully for: "${email}"`);
+    console.log("Code will remain in store for password reset step");
     const storeAfterVerification = Array.from(verificationStore.entries()).map(([k, v]) => ({ 
-      email: k, 
+      email: JSON.stringify(k),
+      emailMatch: k === email,
       code: v.code
     }));
     console.log("Store still contains after verification:", storeAfterVerification);
@@ -592,6 +713,36 @@ router.post("/verify-reset-code-user", async (req, res) => {
 });
 
 module.exports = router;
+
+// DIAGNOSTIC ENDPOINT - Remove in production
+router.get("/debug-store/:email", async (req, res) => {
+  const email = (req.params.email || "").trim().toLowerCase();
+  
+  const verifyRecord = verificationStore.get(email);
+  const resetRecord = resetPasswordStore.get(email);
+  
+  res.json({
+    email,
+    verificationStore: verifyRecord ? {
+      exists: true,
+      code: verifyRecord.code,
+      expiresAt: new Date(verifyRecord.expiresAt).toISOString(),
+      expiresIn: Math.round((verifyRecord.expiresAt - Date.now()) / 1000) + "s",
+      isExpired: Date.now() > verifyRecord.expiresAt,
+      attempts: verifyRecord.attempts
+    } : { exists: false },
+    resetPasswordStore: resetRecord ? {
+      exists: true,
+      code: resetRecord.code,
+      expiresAt: new Date(resetRecord.expiresAt).toISOString(),
+      expiresIn: Math.round((resetRecord.expiresAt - Date.now()) / 1000) + "s",
+      isExpired: Date.now() > resetRecord.expiresAt,
+      attempts: resetRecord.attempts
+    } : { exists: false },
+    allVerificationEmails: Array.from(verificationStore.keys()),
+    allResetPasswordEmails: Array.from(resetPasswordStore.keys())
+  });
+});
 
 // Password Reset - Send reset code
 router.post("/forgot-password", async (req, res) => {
@@ -618,11 +769,13 @@ router.post("/forgot-password", async (req, res) => {
       });
     }
 
-    const user = await User.findOne({
-      role,
-      professionalId,
-      officialEmail,
-    });
+    const user = await findOfficialByProfessionalId(role, professionalId);
+
+    if (user && !hasMatchingEmail(user, officialEmail)) {
+      return res.status(404).json({
+        message: "No account found with these credentials.",
+      });
+    }
 
     if (!user) {
       return res.status(404).json({
@@ -652,7 +805,7 @@ router.post("/forgot-password", async (req, res) => {
       }
 
       return res.status(500).json({
-        message: "Email service not configured. Contact support.",
+        message: getEmailServiceUnavailableMessage(),
       });
     }
 
@@ -672,7 +825,7 @@ router.post("/forgot-password", async (req, res) => {
 
     try {
       await transporter.sendMail({
-        from: fromAddress || user,
+        from: fromAddress || mailUser,
         to: officialEmail,
         subject: "SafeRide Guardian - Password Reset Code",
         text: `Your SafeRide password reset code is: ${resetCode}\n\nIt expires in 15 minutes.\n\nIf you didn't request this, please ignore this email.\n\nSafeRide Team`,
@@ -741,9 +894,10 @@ router.post("/reset-password", async (req, res) => {
       });
     }
 
-    if (newPassword.length < 6) {
+    if (!isStrongPassword(newPassword)) {
       return res.status(400).json({
-        message: "Password must be at least 6 characters.",
+        message:
+          "Password must have 8+ chars, uppercase, number, and special char.",
       });
     }
 
@@ -812,9 +966,10 @@ router.post("/reset-password-otp", async (req, res) => {
       });
     }
 
-    if (newPassword.length < 6) {
+    if (!isStrongPassword(newPassword)) {
       return res.status(400).json({
-        message: "Password must be at least 6 characters.",
+        message:
+          "Password must have 8+ chars, uppercase, number, and special char.",
       });
     }
 
@@ -825,7 +980,10 @@ router.post("/reset-password-otp", async (req, res) => {
     }
 
     // Find user by official email
-    const user = await User.findOne({ officialEmail });
+    const user = await findUserByEmail(officialEmail, {
+      role: "TTR/RPF/Police",
+      includePassword: true,
+    });
     if (!user) {
       return res.status(404).json({
         message: "No account found with this email.",
@@ -863,28 +1021,35 @@ router.post("/reset-password-user", async (req, res) => {
       });
     }
 
-    if (newPassword.length < 6) {
+    if (!isStrongPassword(newPassword)) {
       return res.status(400).json({
-        message: "Password must be at least 6 characters.",
+        message:
+          "Password must have 8+ chars, uppercase, number, and special char.",
       });
     }
 
     // Check if verification code exists and matches (already verified in previous step)
-    console.log("Looking for code for email:", email);
+    console.log(`\n🔍 RESET PASSWORD LOOKUP for: "${email}"`);
+    console.log("Email type:", typeof email, "Length:", email.length);
+    console.log("All emails in store:", Array.from(verificationStore.keys()).map(k => JSON.stringify(k)));
+    
     const storeDebug = Array.from(verificationStore.entries()).map(([k, v]) => ({ 
-      email: k, 
+      email: JSON.stringify(k),
+      emailMatch: k === email,
       hasCode: !!v.code,
+      code: v.code,
       expiresAt: new Date(v.expiresAt).toISOString(),
       isExpired: Date.now() > v.expiresAt,
       attempts: v.attempts
     }));
-    console.log("Store contents before lookup:", storeDebug);
+    console.log("Full store contents:", storeDebug);
 
     const record = verificationStore.get(email);
     console.log("Reset password user - record found:", !!record);
     if (record) {
-      console.log("Retrieved record:", {
+      console.log("✅ Retrieved record:", {
         hasCode: !!record.code,
+        code: record.code,
         expiresAt: new Date(record.expiresAt).toISOString(),
         isExpired: Date.now() > record.expiresAt,
         attempts: record.attempts
@@ -892,9 +1057,10 @@ router.post("/reset-password-user", async (req, res) => {
     }
 
     if (!record) {
-      console.error(`❌ Verification code not found for email: ${email}`);
-      console.error("Requested email was:", email);
-      console.error("Available emails in store:", Array.from(verificationStore.keys()));
+      console.error(`\n❌ VERIFICATION CODE NOT FOUND`);
+      console.error("Searched for email:", JSON.stringify(email));
+      console.error("Available emails:", Array.from(verificationStore.keys()).map(k => JSON.stringify(k)));
+      console.error("Store size:", verificationStore.size);
       return res.status(400).json({
         message: "No verification code found. Request a new one.",
       });
@@ -917,7 +1083,7 @@ router.post("/reset-password-user", async (req, res) => {
     verificationStore.delete(email);
 
     // Find user by email (for non-official roles)
-    const user = await User.findOne({ email });
+    const user = await findUserByEmail(email, { includePassword: true });
     if (!user) {
       return res.status(404).json({
         message: "No account found with this email.",
@@ -937,5 +1103,61 @@ router.post("/reset-password-user", async (req, res) => {
   } catch (error) {
     console.error("Reset password user error:", error.message);
     return res.status(500).json({ message: "Unable to reset password." });
+  }
+});
+
+// Password Reset - Send reset code for non-official users from configured Gmail
+router.post("/forgot-password-user", async (req, res) => {
+  try {
+    const email = (req.body?.email || "").trim().toLowerCase();
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: "Enter a valid email address." });
+    }
+
+    const account = await findUserByEmail(email);
+    if (!account) {
+      return res.status(404).json({ message: "No account found with this email." });
+    }
+
+    const transporter = createTransporter();
+    if (!transporter) {
+      return res.status(500).json({
+        message: getEmailServiceUnavailableMessage(),
+      });
+    }
+
+    const resetCode = generateCode();
+    const expiresAt = Date.now() + RESET_CODE_TTL_MS;
+    verificationStore.set(email, { code: resetCode, expiresAt, attempts: 0 });
+
+    try {
+      await transporter.sendMail({
+        from: fromAddress || mailUser,
+        to: email,
+        subject: "SafeRide Guardian - Password Reset Code",
+        text: `Your SafeRide password reset code is: ${resetCode}\n\nIt expires in 15 minutes.\n\nIf you did not request this, please ignore this email.\n\nSafeRide Team`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+            <h2>SafeRide Guardian</h2>
+            <p>You requested a password reset. Your code is:</p>
+            <div style="background: #f0f0f0; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
+              ${resetCode}
+            </div>
+            <p>This code expires in <strong>15 minutes</strong>.</p>
+            <p>If you did not request this reset, please ignore this email.</p>
+          </div>
+        `,
+      });
+
+      return res.status(200).json({ sent: true });
+    } catch (error) {
+      verificationStore.delete(email);
+      console.error("Forgot password user email error:", error.message);
+      return res.status(500).json({ message: "Failed to send reset email." });
+    }
+  } catch (error) {
+    console.error("Forgot password user error:", error.message);
+    return res.status(500).json({ message: "Unable to process request." });
   }
 });

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   BackHandler,
   View,
@@ -16,6 +17,8 @@ import {
   Modal,
   Image,
   ActivityIndicator,
+  Animated,
+  Pressable,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
@@ -24,7 +27,61 @@ import * as Location from "expo-location";
 
 const API_BASE = getApiBase();
 
+const AnimatedIonicon = Animated.createAnimatedComponent(Ionicons);
+
 const DriverConductorDashboard = ({ onLogout }) => {
+  const iconShakeValue = useRef(new Animated.Value(0)).current;
+  const iconShakeLoopRef = useRef(null);
+
+  const buildIconShakeAnimation = () =>
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(iconShakeValue, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(iconShakeValue, {
+          toValue: -1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(iconShakeValue, {
+          toValue: 0,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+  const startIconShake = () => {
+    if (iconShakeLoopRef.current) {
+      return;
+    }
+    iconShakeLoopRef.current = buildIconShakeAnimation();
+    iconShakeLoopRef.current.start();
+  };
+
+  const stopIconShake = () => {
+    if (iconShakeLoopRef.current) {
+      iconShakeLoopRef.current.stop();
+      iconShakeLoopRef.current = null;
+    }
+    iconShakeValue.setValue(0);
+  };
+
+  useEffect(() => () => stopIconShake(), []);
+
+  const iconShakeStyle = {
+    transform: [{ translateX: iconShakeValue }],
+  };
+
+  const ShakyIcon = ({ style, ...props }) => (
+    <Pressable onHoverIn={startIconShake} onHoverOut={stopIconShake}>
+      <AnimatedIonicon {...props} style={[iconShakeStyle, style]} />
+    </Pressable>
+  );
+
   // Main states
   const [currentStep, setCurrentStep] = useState("positionSelection"); // positionSelection, dutySetup, dashboard
   const [position, setPosition] = useState(null); // "driver" or "conductor"
@@ -291,7 +348,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
           </Text>
           {position === "driver" && (
             <View style={styles.checkmark}>
-              <Ionicons name="checkmark-circle" size={24} color="#2563EB" />
+              <ShakyIcon name="checkmark-circle" size={24} color="#2563EB" />
             </View>
           )}
         </TouchableOpacity>
@@ -310,7 +367,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
           </Text>
           {position === "conductor" && (
             <View style={styles.checkmark}>
-              <Ionicons name="checkmark-circle" size={24} color="#2563EB" />
+              <ShakyIcon name="checkmark-circle" size={24} color="#2563EB" />
             </View>
           )}
         </TouchableOpacity>
@@ -341,7 +398,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
             style={styles.backButton}
             onPress={() => setCurrentStep("positionSelection")}
           >
-            <Ionicons name="arrow-back" size={24} color="#2563EB" />
+            <ShakyIcon name="arrow-back" size={24} color="#2563EB" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Start Today's Duty</Text>
         </View>
@@ -444,7 +501,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
           </View>
         </View>
         <TouchableOpacity style={styles.notificationBell}>
-          <Ionicons name="notifications" size={24} color="#2563EB" />
+          <ShakyIcon name="notifications" size={24} color="#2563EB" />
           {complaints.length > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{complaints.length}</Text>
@@ -618,7 +675,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
               </View>
             </View>
             <TouchableOpacity style={styles.notificationBell}>
-              <Ionicons name="notifications" size={24} color="#2563EB" />
+              <ShakyIcon name="notifications" size={24} color="#2563EB" />
               {complaints.length > 0 && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{complaints.length}</Text>
@@ -768,7 +825,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowQRModal(false)}>
-              <Ionicons name="close" size={28} color="#2563EB" />
+              <ShakyIcon name="close" size={28} color="#2563EB" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>QR Code Handover</Text>
             <View style={{ width: 28 }} />
@@ -778,10 +835,10 @@ const DriverConductorDashboard = ({ onLogout }) => {
             <View style={styles.qrSection}>
               <Text style={styles.qrTitle}>📲 Scan Passenger's QR</Text>
               <View style={styles.qrPlaceholder}>
-                <Ionicons name="qr-code" size={80} color="#CBD5E1" />
+                <ShakyIcon name="qr-code" size={80} color="#CBD5E1" />
               </View>
               <TouchableOpacity style={styles.scanButton}>
-                <Ionicons name="camera" size={24} color="#FFFFFF" />
+                <ShakyIcon name="camera" size={24} color="#FFFFFF" />
                 <Text style={styles.scanButtonText}>Scan QR Code</Text>
               </TouchableOpacity>
             </View>
@@ -791,7 +848,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
             <View style={styles.qrSection}>
               <Text style={styles.qrTitle}>🎫 Or Show Your QR</Text>
               <View style={styles.qrPlaceholder}>
-                <Ionicons name="qr-code" size={80} color="#CBD5E1" />
+                <ShakyIcon name="qr-code" size={80} color="#CBD5E1" />
               </View>
               <Text style={styles.driverQRText}>
                 Conductor QR - Let passenger scan this
@@ -818,7 +875,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
           style={styles.backButton}
           onPress={() => setSelectedComplaint(null)}
         >
-          <Ionicons name="arrow-back" size={24} color="#2563EB" />
+          <ShakyIcon name="arrow-back" size={24} color="#2563EB" />
           <Text style={styles.backButtonText}>Back to Queue</Text>
         </TouchableOpacity>
       </View>
@@ -845,7 +902,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
             </View>
 
             <TouchableOpacity style={styles.uploadPhotoButton}>
-              <Ionicons name="camera" size={40} color="#2563EB" />
+              <ShakyIcon name="camera" size={40} color="#2563EB" />
               <Text style={styles.uploadPhotoText}>Tap to Take Photo</Text>
               <Text style={styles.photoHint}>
                 Photo will be timestamped and GPS tagged
@@ -937,6 +994,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
               />
             </View>
 
+
             <TouchableOpacity
               style={[styles.locationButton, isShareingLocation && styles.locationButtonDisabled]}
               onPress={handleShareLiveLocation}
@@ -953,10 +1011,15 @@ const DriverConductorDashboard = ({ onLogout }) => {
                   <Text style={styles.locationButtonText}>Share Live Location</Text>
                 </>
               )}
+
+            <TouchableOpacity style={styles.locationButton}>
+              <ShakyIcon name="location" size={24} color="#FFFFFF" />
+              <Text style={styles.locationButtonText}>Share Live Location</Text>
+
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.notifyButton}>
-              <Ionicons name="send" size={24} color="#FFFFFF" />
+              <ShakyIcon name="send" size={24} color="#FFFFFF" />
               <Text style={styles.notifyButtonText}>Notify Passenger</Text>
             </TouchableOpacity>
 

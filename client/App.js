@@ -9,6 +9,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -43,6 +44,30 @@ const verifyCode = (emailAddress, code) =>
     code,
   });
 
+const requiredLabel = (text) => `${text} *`;
+const MERIDIEM_OPTIONS = ["AM", "PM"];
+const PASSWORD_MIN_LENGTH = 8;
+const getPasswordChecks = (value) => {
+  const input = value || "";
+
+  return {
+    length: input.length >= PASSWORD_MIN_LENGTH,
+    uppercase: /[A-Z]/.test(input),
+    number: /\d/.test(input),
+    special: /[^A-Za-z0-9]/.test(input),
+  };
+};
+const formatClockTime = (timeValue, meridiem) => {
+  const trimmedTime = (timeValue || "").trim();
+  const trimmedMeridiem = (meridiem || "").trim().toUpperCase();
+
+  if (!trimmedTime) {
+    return "";
+  }
+
+  return trimmedMeridiem ? `${trimmedTime} ${trimmedMeridiem}` : trimmedTime;
+};
+
 // Animated Label Component - must be outside to properly use hooks
 const AnimatedLabel = ({ text, iconName }) => {
   const iconPulse = useRef(new Animated.Value(1)).current;
@@ -76,6 +101,40 @@ const AnimatedLabel = ({ text, iconName }) => {
   );
 };
 
+const MeridiemSelector = ({ value, onChange }) => (
+  <View style={styles.timePeriodRow}>
+    {MERIDIEM_OPTIONS.map((option) => {
+      const selected = value === option;
+
+      return (
+        <TouchableOpacity
+          key={option}
+          style={[
+            styles.timePeriodOption,
+            selected && styles.timePeriodOptionActive,
+          ]}
+          onPress={() => onChange(option)}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name={selected ? "checkbox" : "square-outline"}
+            size={18}
+            color={selected ? "#2563EB" : "#64748B"}
+          />
+          <Text
+            style={[
+              styles.timePeriodText,
+              selected && styles.timePeriodTextActive,
+            ]}
+          >
+            {option}
+          </Text>
+        </TouchableOpacity>
+      );
+    })}
+  </View>
+);
+
 const AppContent = () => {
   const [mode, setMode] = useState("login");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -102,6 +161,7 @@ const AppContent = () => {
   const [busDeparture, setBusDeparture] = useState("");
   const [busArrival, setBusArrival] = useState("");
   const [busStartTime, setBusStartTime] = useState("");
+  const [busStartMeridiem, setBusStartMeridiem] = useState("");
   const [travelRoute, setTravelRoute] = useState("");
   const [travelTiming, setTravelTiming] = useState("");
   const [driverName, setDriverName] = useState("");
@@ -120,6 +180,7 @@ const AppContent = () => {
   const [complaintDesc, setComplaintDesc] = useState("");
   const [complaintLocation, setComplaintLocation] = useState("");
   const [complaintTime, setComplaintTime] = useState("");
+  const [complaintTimeMeridiem, setComplaintTimeMeridiem] = useState("");
   const [complaintSubmitted, setComplaintSubmitted] = useState(false);
   const [staffConfirmed, setStaffConfirmed] = useState(false);
   const [handoffComplete, setHandoffComplete] = useState(false);
@@ -156,6 +217,7 @@ const AppContent = () => {
   const formAnim = useRef(new Animated.Value(0)).current;
   const shieldShake = useRef(new Animated.Value(0)).current;
   const shieldRotate = useRef(new Animated.Value(0)).current;
+  const shieldShakeLoopRef = useRef(null);
   const titleFade = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
 
@@ -219,14 +281,47 @@ const AppContent = () => {
     return /^\d{6}$/.test(emailOtp.trim());
   }, [emailOtp]);
 
+  const passwordChecks = useMemo(() => getPasswordChecks(password), [password]);
+
+  const metPasswordChecks = useMemo(
+    () => Object.values(passwordChecks).filter(Boolean).length,
+    [passwordChecks],
+  );
+
+  const isPasswordStrong = metPasswordChecks === 4;
+
+  const newPasswordChecks = useMemo(
+    () => getPasswordChecks(newPassword),
+    [newPassword],
+  );
+
+  const metNewPasswordChecks = useMemo(
+    () => Object.values(newPasswordChecks).filter(Boolean).length,
+    [newPasswordChecks],
+  );
+
+  const isNewPasswordStrong = metNewPasswordChecks === 4;
+
+  const isRegisterPasswordMatch = useMemo(
+    () => confirmPassword.length > 0 && password === confirmPassword,
+    [confirmPassword, password],
+  );
+
+  const isResetPasswordMatch = useMemo(
+    () => confirmNewPassword.length > 0 && newPassword === confirmNewPassword,
+    [confirmNewPassword, newPassword],
+  );
+
   const canSubmit = useMemo(() => {
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
     const baseRegisterReady =
       name.trim().length >= 2 &&
       phone.trim().length >= 8 &&
-      trimmedPassword.length >= 6 &&
-      confirmPassword.trim().length >= 6;
+      trimmedPassword.length >= PASSWORD_MIN_LENGTH &&
+      isPasswordStrong &&
+      confirmPassword.trim().length >= PASSWORD_MIN_LENGTH &&
+      isRegisterPasswordMatch;
 
     if (isRegister) {
       if (!baseRegisterReady) {
@@ -254,7 +349,8 @@ const AppContent = () => {
             travelNumber.trim().length >= 5 &&
             busDeparture.trim().length >= 2 &&
             busArrival.trim().length >= 2 &&
-            busStartTime.trim().length >= 3
+            busStartTime.trim().length >= 3 &&
+            busStartMeridiem.length > 0
           );
         }
 
@@ -297,6 +393,7 @@ const AppContent = () => {
     busArrival,
     busDeparture,
     busStartTime,
+    busStartMeridiem,
     dutyRoute,
     email,
     fromStop,
@@ -309,9 +406,11 @@ const AppContent = () => {
     otpEmail,
     officialEmail,
     password,
+    isRegisterPasswordMatch,
     phone,
     pnrRange,
     professionalId,
+    isPasswordStrong,
     role,
     shiftTiming,
     toStop,
@@ -354,25 +453,8 @@ const AppContent = () => {
     };
   }, []);
 
-  // Animations for login/register page
-  useEffect(() => {
-    // Form fade-in and slide up animation
-    Animated.spring(formAnim, {
-      toValue: 1,
-      friction: 8,
-      tension: 40,
-      useNativeDriver: true,
-    }).start();
-
-    // Title fade-in
-    Animated.timing(titleFade, {
-      toValue: 1,
-      duration: 800,
-      useNativeDriver: true,
-    }).start();
-
-    // Shield shaking animation (continuous loop)
-    const shakeAnimation = Animated.loop(
+  const buildShieldShakeAnimation = () =>
+    Animated.loop(
       Animated.sequence([
         Animated.timing(shieldShake, {
           toValue: 10,
@@ -398,13 +480,44 @@ const AppContent = () => {
           easing: Easing.linear,
           useNativeDriver: true,
         }),
-        Animated.delay(3000), // Pause for 3 seconds before shaking again
       ])
     );
-    shakeAnimation.start();
+
+  const startShieldShake = () => {
+    if (shieldShakeLoopRef.current) {
+      return;
+    }
+    shieldShakeLoopRef.current = buildShieldShakeAnimation();
+    shieldShakeLoopRef.current.start();
+  };
+
+  const stopShieldShake = () => {
+    if (shieldShakeLoopRef.current) {
+      shieldShakeLoopRef.current.stop();
+      shieldShakeLoopRef.current = null;
+    }
+    shieldShake.setValue(0);
+  };
+
+  // Animations for login/register page
+  useEffect(() => {
+    // Form fade-in and slide up animation
+    Animated.spring(formAnim, {
+      toValue: 1,
+      friction: 8,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+
+    // Title fade-in
+    Animated.timing(titleFade, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
 
     // Shield rotate animation (gentle continuous rotation)
-    Animated.loop(
+    const shieldRotateLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(shieldRotate, {
           toValue: 1,
@@ -419,7 +532,13 @@ const AppContent = () => {
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
+    shieldRotateLoop.start();
+
+    return () => {
+      stopShieldShake();
+      shieldRotateLoop.stop();
+    };
   }, []);
 
   // Reset animations when switching between login/register
@@ -460,6 +579,7 @@ const AppContent = () => {
     setBusDeparture("");
     setBusArrival("");
     setBusStartTime("");
+    setBusStartMeridiem("");
     setTravelRoute("");
     setTravelTiming("");
     setDriverName("");
@@ -566,9 +686,26 @@ const AppContent = () => {
     showRoleSelection,
   ]);
 
+  const applyUserProfile = (profile = {}) => {
+    setName(profile.name || "");
+    setPhone(profile.phone || "");
+    setEmail(profile.email || "");
+    setOfficialEmail(profile.officialEmail || profile.email || "");
+    setProfessionalId(profile.professionalId || "");
+    setJurisdiction(profile.jurisdiction || "");
+    setPnrRange(profile.pnrRange || "");
+  };
+
   const handleSubmit = async () => {
     if (!canSubmit) {
       setError("Please complete all required fields.");
+      return;
+    }
+
+    if (isRegister && !isPasswordStrong) {
+      setError(
+        "Password must have 8+ chars, uppercase, number, and special char.",
+      );
       return;
     }
 
@@ -591,11 +728,14 @@ const AppContent = () => {
 
     if (isRegister) {
       const isBusTravel = travelType === "Bus";
+      const registeredEmail = email.trim().toLowerCase();
+      const registeredOfficialEmail = officialEmail.trim().toLowerCase();
+      const registeredProfessionalId = professionalId.trim();
       const resolvedTravelRoute = isBusTravel
         ? `${busDeparture.trim()} -> ${busArrival.trim()}`
         : travelRoute.trim();
       const resolvedTravelTiming = isBusTravel
-        ? busStartTime.trim()
+        ? formatClockTime(busStartTime, busStartMeridiem)
         : travelTiming.trim();
 
       try {
@@ -624,21 +764,21 @@ const AppContent = () => {
           jurisdiction: jurisdiction.trim(),
         });
 
+        resetForm();
+        setMode("login");
+        setPendingApproval(isOfficialRole);
+
         if (isOfficialRole) {
-          setPendingApproval(true);
-          setMode("login");
-          setPassword("");
-          setConfirmPassword("");
-          setEmailOtp("");
-          setIsVerified(false);
-          setIsOtpSent(false);
+          setProfessionalId(registeredProfessionalId);
+          setOfficialEmail(registeredOfficialEmail);
           setError(
             "Registration submitted. Admin approval takes up to 24 hours.",
           );
           return;
         }
 
-        setIsAuthenticated(true);
+        setEmail(registeredEmail);
+        setError("Registration successful. Please log in.");
         return;
       } catch (err) {
         const message =
@@ -663,11 +803,8 @@ const AppContent = () => {
           return;
         }
 
-        setName(profile.name || "");
-        setOfficialEmail(profile.officialEmail || profile.email || "");
+        applyUserProfile(profile);
         setProfessionalId(profile.professionalId || professionalId);
-        setJurisdiction(profile.jurisdiction || "");
-        setPnrRange(profile.pnrRange || "");
 
         const inferredRole = inferSpecificRoleFromId(
           profile.professionalId || professionalId,
@@ -683,6 +820,30 @@ const AppContent = () => {
       } catch (err) {
         const message = err?.response?.data?.message || "Unable to log in.";
         setPendingApproval(message.toLowerCase().includes("pending"));
+        setError(message);
+      }
+      return;
+    }
+
+    if (!isRegister && !loginWithOtp) {
+      try {
+        const { data } = await axios.post(`${API_BASE}/auth/login`, {
+          role,
+          email: email.trim().toLowerCase(),
+          password: password.trim(),
+          method: "password",
+        });
+
+        const profile = data?.user;
+        if (!profile) {
+          setError("Unable to load profile for this account.");
+          return;
+        }
+
+        applyUserProfile(profile);
+        setIsAuthenticated(true);
+      } catch (err) {
+        const message = err?.response?.data?.message || "Unable to log in.";
         setError(message);
       }
       return;
@@ -870,8 +1031,10 @@ const AppContent = () => {
   };
 
   const handleResetPassword = async () => {
-    if (newPassword.trim().length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (!isNewPasswordStrong) {
+      setError(
+        "Password must have 8+ chars, uppercase, number, and special char.",
+      );
       return;
     }
     if (newPassword !== confirmNewPassword) {
@@ -931,8 +1094,13 @@ const AppContent = () => {
     setIsSendingResetCode(true);
 
     try {
-      const { data } = await sendCode(trimmedEmail);
-      const sent = Boolean(data?.sent || data?.devCode);
+      const { data } = await axios.post(
+        `${API_BASE}/auth/forgot-password-user`,
+        {
+          email: trimmedEmail,
+        },
+      );
+      const sent = Boolean(data?.sent);
       setIsResetCodeSent(sent);
       if (!sent && data?.message) {
         setError(data.message);
@@ -992,8 +1160,10 @@ const AppContent = () => {
   };
 
   const handleResetPasswordUser = async () => {
-    if (newPassword.trim().length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (!isNewPasswordStrong) {
+      setError(
+        "Password must have 8+ chars, uppercase, number, and special char.",
+      );
       return;
     }
     if (newPassword !== confirmNewPassword) {
@@ -1041,7 +1211,8 @@ const AppContent = () => {
       complaintItem.trim().length < 2 ||
       complaintDesc.trim().length < 6 ||
       complaintLocation.trim().length < 2 ||
-      complaintTime.trim().length < 3
+      complaintTime.trim().length < 3 ||
+      !complaintTimeMeridiem
     ) {
       setError("Add item, description, location, and time.");
       return;
@@ -1225,13 +1396,20 @@ const AppContent = () => {
           </View>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Time</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="10:05AM"
-              placeholderTextColor="#94A3B8"
-              value={complaintTime}
-              onChangeText={setComplaintTime}
-            />
+            <View style={styles.timeFieldRow}>
+              <TextInput
+                style={[styles.input, styles.timeInput]}
+                placeholder="10:05"
+                placeholderTextColor="#94A3B8"
+                value={complaintTime}
+                onChangeText={setComplaintTime}
+                maxLength={5}
+              />
+              <MeridiemSelector
+                value={complaintTimeMeridiem}
+                onChange={setComplaintTimeMeridiem}
+              />
+            </View>
           </View>
           <TouchableOpacity
             style={styles.primaryButton}
@@ -2168,29 +2346,34 @@ const AppContent = () => {
                 >
                   <View style={styles.card}>
                     <View style={styles.brandRow}>
-                      <Animated.View
-                        style={[
-                          styles.shieldIconContainer,
-                          {
-                            opacity: titleFade,
-                            transform: [
-                              {
-                                rotate: shieldRotate.interpolate({
-                                  inputRange: [0, 1],
-                                  outputRange: ['-5deg', '5deg'],
-                                }),
-                              },
-                              { translateX: shieldShake },
-                            ],
-                          },
-                        ]}
+                      <Pressable
+                        onHoverIn={startShieldShake}
+                        onHoverOut={stopShieldShake}
                       >
-                        <Ionicons
-                          name="shield-checkmark"
-                          size={48}
-                          color="#2563EB"
-                        />
-                      </Animated.View>
+                        <Animated.View
+                          style={[
+                            styles.shieldIconContainer,
+                            {
+                              opacity: titleFade,
+                              transform: [
+                                {
+                                  rotate: shieldRotate.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: ['-5deg', '5deg'],
+                                  }),
+                                },
+                                { translateX: shieldShake },
+                              ],
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name="shield-checkmark"
+                            size={48}
+                            color="#2563EB"
+                          />
+                        </Animated.View>
+                      </Pressable>
                       <View style={styles.brandTextContainer}>
                         <Animated.Text
                           style={[
@@ -2366,13 +2549,13 @@ const AppContent = () => {
                         </Text>
 
                         <View style={styles.inputGroup}>
-                          <Text style={styles.label}>Select role</Text>
+                          <Text style={styles.label}>{requiredLabel("Select role")}</Text>
                           {renderRoleSelector()}
                         </View>
 
                         {isRegister && (
                           <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Full name</Text>
+                            <Text style={styles.label}>{requiredLabel("Full name")}</Text>
                             <TextInput
                               style={styles.input}
                               placeholder="Enter your name"
@@ -2386,7 +2569,7 @@ const AppContent = () => {
 
                         {isRegister && (
                           <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Mobile number</Text>
+                            <Text style={styles.label}>{requiredLabel("Mobile number")}</Text>
                             <TextInput
                               style={styles.input}
                               placeholder="+91 98765 43210"
@@ -2400,7 +2583,7 @@ const AppContent = () => {
 
                         {!isOfficialRole && (
                           <View style={styles.inputGroup}>
-                            <AnimatedLabel text="Email address" iconName="mail" />
+                            <AnimatedLabel text={requiredLabel("Email address")} iconName="mail" />
                             <TextInput
                               style={[
                                 styles.input,
@@ -2421,7 +2604,7 @@ const AppContent = () => {
 
                         {isOfficialRole && !forgotPasswordMode && (
                           <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Professional ID</Text>
+                            <Text style={styles.label}>{requiredLabel("Professional ID")}</Text>
                             <TextInput
                               style={styles.input}
                               placeholder={
@@ -2439,7 +2622,7 @@ const AppContent = () => {
 
                         {isRegister && isOfficialRole && (
                           <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Official email</Text>
+                            <Text style={styles.label}>{requiredLabel("Official email")}</Text>
                             <TextInput
                               style={[
                                 styles.input,
@@ -2463,7 +2646,7 @@ const AppContent = () => {
                         {(!loginWithOtp || isRegister || isOfficialRole) &&
                           !forgotPasswordMode && (
                             <View style={styles.inputGroup}>
-                              <AnimatedLabel text="Password" iconName="lock-closed" />
+                              <AnimatedLabel text={requiredLabel("Password")} iconName="lock-closed" />
                               <View style={styles.passwordRow}>
                                 <TextInput
                                   style={[styles.input, styles.passwordInput]}
@@ -2491,12 +2674,62 @@ const AppContent = () => {
                                   />
                                 </TouchableOpacity>
                               </View>
+                              <View style={styles.passwordRuleBarRow}>
+                                {[0, 1, 2, 3].map((segment) => (
+                                  <View
+                                    key={segment}
+                                    style={[
+                                      styles.passwordRuleBar,
+                                      segment < metPasswordChecks &&
+                                        styles.passwordRuleBarActive,
+                                    ]}
+                                  />
+                                ))}
+                              </View>
+                              <View style={styles.passwordRuleRow}>
+                                <Text
+                                  style={[
+                                    styles.passwordRuleText,
+                                    passwordChecks.length &&
+                                      styles.passwordRuleTextActive,
+                                  ]}
+                                >
+                                  {passwordChecks.length ? "✓" : "○"} 8+ chars
+                                </Text>
+                                <Text
+                                  style={[
+                                    styles.passwordRuleText,
+                                    passwordChecks.uppercase &&
+                                      styles.passwordRuleTextActive,
+                                  ]}
+                                >
+                                  {passwordChecks.uppercase ? "✓" : "○"} Uppercase
+                                </Text>
+                                <Text
+                                  style={[
+                                    styles.passwordRuleText,
+                                    passwordChecks.number &&
+                                      styles.passwordRuleTextActive,
+                                  ]}
+                                >
+                                  {passwordChecks.number ? "✓" : "○"} Number
+                                </Text>
+                                <Text
+                                  style={[
+                                    styles.passwordRuleText,
+                                    passwordChecks.special &&
+                                      styles.passwordRuleTextActive,
+                                  ]}
+                                >
+                                  {passwordChecks.special ? "✓" : "○"} Special char
+                                </Text>
+                              </View>
                             </View>
                           )}
 
                         {isRegister && (
                           <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Confirm password</Text>
+                            <Text style={styles.label}>{requiredLabel("Confirm password")}</Text>
                             <View style={styles.passwordRow}>
                               <TextInput
                                 style={[styles.input, styles.passwordInput]}
@@ -2524,6 +2757,20 @@ const AppContent = () => {
                                 />
                               </TouchableOpacity>
                             </View>
+                            {confirmPassword.length > 0 && (
+                              <Text
+                                style={[
+                                  styles.confirmPasswordText,
+                                  isRegisterPasswordMatch
+                                    ? styles.confirmPasswordTextMatch
+                                    : styles.confirmPasswordTextNoMatch,
+                                ]}
+                              >
+                                {isRegisterPasswordMatch
+                                  ? "✓ Passwords match"
+                                  : "○ Passwords do not match"}
+                              </Text>
+                            )}
                           </View>
                         )}
 
@@ -2619,7 +2866,7 @@ const AppContent = () => {
                                 <>
                                   <View style={styles.inputGroup}>
                                     <Text style={styles.label}>
-                                      Professional ID
+                                      {requiredLabel("Professional ID")}
                                     </Text>
                                     <TextInput
                                       style={styles.input}
@@ -2636,7 +2883,7 @@ const AppContent = () => {
                                   </View>
                                   <View style={styles.inputGroup}>
                                     <Text style={styles.label}>
-                                      Official Email
+                                      {requiredLabel("Official Email")}
                                     </Text>
                                     <TextInput
                                       style={styles.input}
@@ -2689,7 +2936,7 @@ const AppContent = () => {
                                     <>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
-                                          Reset Code
+                                          {requiredLabel("Reset Code")}
                                         </Text>
                                         <TextInput
                                           style={styles.input}
@@ -2731,7 +2978,7 @@ const AppContent = () => {
                                       </Text>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
-                                          New Password
+                                          {requiredLabel("New Password")}
                                         </Text>
                                         <View style={styles.passwordRow}>
                                           <TextInput
@@ -2762,10 +3009,60 @@ const AppContent = () => {
                                             />
                                           </TouchableOpacity>
                                         </View>
+                                        <View style={styles.passwordRuleBarRow}>
+                                          {[0, 1, 2, 3].map((segment) => (
+                                            <View
+                                              key={segment}
+                                              style={[
+                                                styles.passwordRuleBar,
+                                                segment < metNewPasswordChecks &&
+                                                  styles.passwordRuleBarActive,
+                                              ]}
+                                            />
+                                          ))}
+                                        </View>
+                                        <View style={styles.passwordRuleRow}>
+                                          <Text
+                                            style={[
+                                              styles.passwordRuleText,
+                                              newPasswordChecks.length &&
+                                                styles.passwordRuleTextActive,
+                                            ]}
+                                          >
+                                            {newPasswordChecks.length ? "✓" : "○"} 8+ chars
+                                          </Text>
+                                          <Text
+                                            style={[
+                                              styles.passwordRuleText,
+                                              newPasswordChecks.uppercase &&
+                                                styles.passwordRuleTextActive,
+                                            ]}
+                                          >
+                                            {newPasswordChecks.uppercase ? "✓" : "○"} Uppercase
+                                          </Text>
+                                          <Text
+                                            style={[
+                                              styles.passwordRuleText,
+                                              newPasswordChecks.number &&
+                                                styles.passwordRuleTextActive,
+                                            ]}
+                                          >
+                                            {newPasswordChecks.number ? "✓" : "○"} Number
+                                          </Text>
+                                          <Text
+                                            style={[
+                                              styles.passwordRuleText,
+                                              newPasswordChecks.special &&
+                                                styles.passwordRuleTextActive,
+                                            ]}
+                                          >
+                                            {newPasswordChecks.special ? "✓" : "○"} Special char
+                                          </Text>
+                                        </View>
                                       </View>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
-                                          Confirm New Password
+                                          {requiredLabel("Confirm New Password")}
                                         </Text>
                                         <View style={styles.passwordRow}>
                                           <TextInput
@@ -2803,18 +3100,35 @@ const AppContent = () => {
                                           </TouchableOpacity>
                                         </View>
                                       </View>
+                                      {confirmNewPassword.length > 0 && (
+                                        <Text
+                                          style={[
+                                            styles.confirmPasswordText,
+                                            isResetPasswordMatch
+                                              ? styles.confirmPasswordTextMatch
+                                              : styles.confirmPasswordTextNoMatch,
+                                          ]}
+                                        >
+                                          {isResetPasswordMatch
+                                            ? "✓ Passwords match"
+                                            : "○ Passwords do not match"}
+                                        </Text>
+                                      )}
                                       <TouchableOpacity
                                         style={[
                                           styles.primaryButton,
-                                          (newPassword.trim().length < 6 ||
+                                          (!isNewPasswordStrong ||
+                                            !isResetPasswordMatch ||
                                             confirmNewPassword.trim().length <
-                                              6) &&
+                                              PASSWORD_MIN_LENGTH) &&
                                             styles.buttonDisabled,
                                         ]}
                                         onPress={handleResetPassword}
                                         disabled={
-                                          newPassword.trim().length < 6 ||
-                                          confirmNewPassword.trim().length < 6
+                                          !isNewPasswordStrong ||
+                                          !isResetPasswordMatch ||
+                                          confirmNewPassword.trim().length <
+                                            PASSWORD_MIN_LENGTH
                                         }
                                       >
                                         <Text style={styles.primaryButtonText}>
@@ -2879,7 +3193,7 @@ const AppContent = () => {
                               {!isResetCodeSent ? (
                                 <>
                                   <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>Email</Text>
+                                    <Text style={styles.label}>{requiredLabel("Email")}</Text>
                                     <TextInput
                                       style={styles.input}
                                       placeholder="Enter your email"
@@ -2928,7 +3242,7 @@ const AppContent = () => {
                                     <>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
-                                          Verification Code
+                                          {requiredLabel("Verification Code")}
                                         </Text>
                                         <TextInput
                                           style={styles.input}
@@ -2970,7 +3284,7 @@ const AppContent = () => {
                                       </Text>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
-                                          New Password
+                                          {requiredLabel("New Password")}
                                         </Text>
                                         <View style={styles.passwordRow}>
                                           <TextInput
@@ -3001,10 +3315,60 @@ const AppContent = () => {
                                             />
                                           </TouchableOpacity>
                                         </View>
+                                        <View style={styles.passwordRuleBarRow}>
+                                          {[0, 1, 2, 3].map((segment) => (
+                                            <View
+                                              key={segment}
+                                              style={[
+                                                styles.passwordRuleBar,
+                                                segment < metNewPasswordChecks &&
+                                                  styles.passwordRuleBarActive,
+                                              ]}
+                                            />
+                                          ))}
+                                        </View>
+                                        <View style={styles.passwordRuleRow}>
+                                          <Text
+                                            style={[
+                                              styles.passwordRuleText,
+                                              newPasswordChecks.length &&
+                                                styles.passwordRuleTextActive,
+                                            ]}
+                                          >
+                                            {newPasswordChecks.length ? "✓" : "○"} 8+ chars
+                                          </Text>
+                                          <Text
+                                            style={[
+                                              styles.passwordRuleText,
+                                              newPasswordChecks.uppercase &&
+                                                styles.passwordRuleTextActive,
+                                            ]}
+                                          >
+                                            {newPasswordChecks.uppercase ? "✓" : "○"} Uppercase
+                                          </Text>
+                                          <Text
+                                            style={[
+                                              styles.passwordRuleText,
+                                              newPasswordChecks.number &&
+                                                styles.passwordRuleTextActive,
+                                            ]}
+                                          >
+                                            {newPasswordChecks.number ? "✓" : "○"} Number
+                                          </Text>
+                                          <Text
+                                            style={[
+                                              styles.passwordRuleText,
+                                              newPasswordChecks.special &&
+                                                styles.passwordRuleTextActive,
+                                            ]}
+                                          >
+                                            {newPasswordChecks.special ? "✓" : "○"} Special char
+                                          </Text>
+                                        </View>
                                       </View>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
-                                          Confirm New Password
+                                          {requiredLabel("Confirm New Password")}
                                         </Text>
                                         <View style={styles.passwordRow}>
                                           <TextInput
@@ -3042,18 +3406,35 @@ const AppContent = () => {
                                           </TouchableOpacity>
                                         </View>
                                       </View>
+                                      {confirmNewPassword.length > 0 && (
+                                        <Text
+                                          style={[
+                                            styles.confirmPasswordText,
+                                            isResetPasswordMatch
+                                              ? styles.confirmPasswordTextMatch
+                                              : styles.confirmPasswordTextNoMatch,
+                                          ]}
+                                        >
+                                          {isResetPasswordMatch
+                                            ? "✓ Passwords match"
+                                            : "○ Passwords do not match"}
+                                        </Text>
+                                      )}
                                       <TouchableOpacity
                                         style={[
                                           styles.primaryButton,
-                                          (newPassword.trim().length < 6 ||
-                                            confirmNewPassword.trim()
-                                              .length < 6) &&
+                                          (!isNewPasswordStrong ||
+                                            !isResetPasswordMatch ||
+                                            confirmNewPassword.trim().length <
+                                              PASSWORD_MIN_LENGTH) &&
                                             styles.buttonDisabled,
                                         ]}
                                         onPress={handleResetPasswordUser}
                                         disabled={
-                                          newPassword.trim().length < 6 ||
-                                          confirmNewPassword.trim().length < 6
+                                          !isNewPasswordStrong ||
+                                          !isResetPasswordMatch ||
+                                          confirmNewPassword.trim().length <
+                                            PASSWORD_MIN_LENGTH
                                         }
                                       >
                                         <Text style={styles.primaryButtonText}>
@@ -3117,7 +3498,7 @@ const AppContent = () => {
                               <>
                                 <View style={styles.inputGroup}>
                                   <Text style={styles.label}>
-                                    Verification code
+                                    {requiredLabel("Verification code")}
                                   </Text>
                                   <TextInput
                                     style={[
@@ -3172,7 +3553,7 @@ const AppContent = () => {
                                 Passenger travel details
                               </Text>
                               <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Travel mode</Text>
+                                <Text style={styles.label}>{requiredLabel("Travel mode")}</Text>
                                 <View style={styles.roleRow}>
                                   {["Bus", "Train"].map((item) => (
                                     <TouchableOpacity
@@ -3199,8 +3580,9 @@ const AppContent = () => {
                               </View>
                               <View style={styles.inputGroup}>
                                 <Text style={styles.label}>
-                                  {travelType === "Bus" ? "Bus" : "Train"}{" "}
-                                  number
+                                  {requiredLabel(
+                                    `${travelType === "Bus" ? "Bus" : "Train"} number`,
+                                  )}
                                 </Text>
                                 <TextInput
                                   style={styles.input}
@@ -3214,7 +3596,7 @@ const AppContent = () => {
                                 <Text style={styles.label}>
                                   {travelType === "Bus"
                                     ? "Bus name (optional)"
-                                    : "Train name"}
+                                    : requiredLabel("Train name")}
                                 </Text>
                                 <TextInput
                                   style={styles.input}
@@ -3228,7 +3610,7 @@ const AppContent = () => {
                                 <>
                                   <View style={styles.inputGroup}>
                                     <Text style={styles.label}>
-                                      Departure stop
+                                      {requiredLabel("Departure stop")}
                                     </Text>
                                     <TextInput
                                       style={styles.input}
@@ -3240,7 +3622,7 @@ const AppContent = () => {
                                   </View>
                                   <View style={styles.inputGroup}>
                                     <Text style={styles.label}>
-                                      Arrival stop
+                                      {requiredLabel("Arrival stop")}
                                     </Text>
                                     <TextInput
                                       style={styles.input}
@@ -3252,21 +3634,28 @@ const AppContent = () => {
                                   </View>
                                   <View style={styles.inputGroup}>
                                     <Text style={styles.label}>
-                                      Bus start timing
+                                      {requiredLabel("Bus start timing")}
                                     </Text>
-                                    <TextInput
-                                      style={styles.input}
-                                      placeholder="09:30AM"
-                                      placeholderTextColor="#94A3B8"
-                                      value={busStartTime}
-                                      onChangeText={setBusStartTime}
-                                    />
+                                    <View style={styles.timeFieldRow}>
+                                      <TextInput
+                                        style={[styles.input, styles.timeInput]}
+                                        placeholder="09:30"
+                                        placeholderTextColor="#94A3B8"
+                                        value={busStartTime}
+                                        onChangeText={setBusStartTime}
+                                        maxLength={5}
+                                      />
+                                      <MeridiemSelector
+                                        value={busStartMeridiem}
+                                        onChange={setBusStartMeridiem}
+                                      />
+                                    </View>
                                   </View>
                                 </>
                               ) : (
                                 <>
                                   <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>Route</Text>
+                                    <Text style={styles.label}>{requiredLabel("Route")}</Text>
                                     <TextInput
                                       style={styles.input}
                                       placeholder="Velachery → CMBT"
@@ -3276,7 +3665,7 @@ const AppContent = () => {
                                     />
                                   </View>
                                   <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>Timing</Text>
+                                    <Text style={styles.label}>{requiredLabel("Timing")}</Text>
                                     <TextInput
                                       style={styles.input}
                                       placeholder="09:30AM - 11:45AM"
@@ -3327,7 +3716,7 @@ const AppContent = () => {
                                 Daily duty roster
                               </Text>
                               <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Vehicle number</Text>
+                                <Text style={styles.label}>{requiredLabel("Vehicle number")}</Text>
                                 <TextInput
                                   style={styles.input}
                                   placeholder="TN-01-AB-1234"
@@ -3337,7 +3726,7 @@ const AppContent = () => {
                                 />
                               </View>
                               <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Route</Text>
+                                <Text style={styles.label}>{requiredLabel("Route")}</Text>
                                 <TextInput
                                   style={styles.input}
                                   placeholder="Velachery → CMBT"
@@ -3347,7 +3736,7 @@ const AppContent = () => {
                                 />
                               </View>
                               <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Shift timing</Text>
+                                <Text style={styles.label}>{requiredLabel("Shift timing")}</Text>
                                 <TextInput
                                   style={styles.input}
                                   placeholder="6AM - 2PM"
@@ -3357,7 +3746,7 @@ const AppContent = () => {
                                 />
                               </View>
                               <View style={styles.inputGroup}>
-                                <Text style={styles.label}>From stop</Text>
+                                <Text style={styles.label}>{requiredLabel("From stop")}</Text>
                                 <TextInput
                                   style={styles.input}
                                   placeholder="Velachery"
@@ -3367,7 +3756,7 @@ const AppContent = () => {
                                 />
                               </View>
                               <View style={styles.inputGroup}>
-                                <Text style={styles.label}>To stop</Text>
+                                <Text style={styles.label}>{requiredLabel("To stop")}</Text>
                                 <TextInput
                                   style={styles.input}
                                   placeholder="CMBT"
@@ -3388,7 +3777,7 @@ const AppContent = () => {
                               Admin approval required within 24 hours.
                             </Text>
                             <View style={styles.inputGroup}>
-                              <Text style={styles.label}>Train PNR range</Text>
+                              <Text style={styles.label}>{requiredLabel("Train PNR range")}</Text>
                               <TextInput
                                 style={styles.input}
                                 placeholder="4528193000-4528193999"
@@ -3398,7 +3787,7 @@ const AppContent = () => {
                               />
                             </View>
                             <View style={styles.inputGroup}>
-                              <Text style={styles.label}>Jurisdiction</Text>
+                              <Text style={styles.label}>{requiredLabel("Jurisdiction")}</Text>
                               <TextInput
                                 style={styles.input}
                                 placeholder="Chennai Central Division"
@@ -3648,6 +4037,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     color: "#1E293B",
   },
+  timeFieldRow: {
+    gap: 10,
+  },
+  timeInput: {
+    width: "100%",
+  },
+  timePeriodRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  timePeriodOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  timePeriodOptionActive: {
+    borderColor: "#93C5FD",
+    backgroundColor: "#EFF6FF",
+  },
+  timePeriodText: {
+    color: "#475569",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  timePeriodTextActive: {
+    color: "#1D4ED8",
+  },
   inputDisabled: {
     backgroundColor: "#E2E8F0",
     color: "#94A3B8",
@@ -3666,6 +4088,48 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#CBD5E1",
     backgroundColor: "#F8FAFC",
+  },
+  passwordRuleBarRow: {
+    marginTop: 10,
+    flexDirection: "row",
+    gap: 6,
+  },
+  passwordRuleBar: {
+    flex: 1,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: "#334155",
+    opacity: 0.4,
+  },
+  passwordRuleBarActive: {
+    backgroundColor: "#22C55E",
+    opacity: 1,
+  },
+  passwordRuleRow: {
+    marginTop: 8,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    rowGap: 6,
+  },
+  passwordRuleText: {
+    color: "#94A3B8",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  passwordRuleTextActive: {
+    color: "#10B981",
+  },
+  confirmPasswordText: {
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  confirmPasswordTextMatch: {
+    color: "#10B981",
+  },
+  confirmPasswordTextNoMatch: {
+    color: "#F59E0B",
   },
   textArea: {
     minHeight: 100,
