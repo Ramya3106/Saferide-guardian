@@ -65,12 +65,10 @@ server.on("error", async (error) => {
 });
 
 if (!MONGO_URI) {
-  console.error("Missing MONGO_URI in .env. Backend requires MongoDB.");
-  process.exit(1);
+  console.warn("Missing MONGO_URI in .env. Skipping database connection.");
+} else {
+  connectDb(MONGO_URI).catch((error) => {
+    console.warn("Continuing without database connection.");
+    console.warn("MongoDB error:", error.message);
+  });
 }
-
-connectDb(MONGO_URI).catch((error) => {
-  console.error("MongoDB connection failed. Stopping server.");
-  console.error("MongoDB error:", error.message);
-  server.close(() => process.exit(1));
-});
