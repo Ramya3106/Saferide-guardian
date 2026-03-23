@@ -26,6 +26,7 @@ import {
 import PassengerDashboard from "./PassengerDashboard";
 import CarAutoDashboard from "./CarAutoDashboard";
 import DriverConductorDashboard from "./DriverConductorDashboard";
+import PasswordVerification from "./PasswordVerification";
 
 const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
 const OFFICIAL_DOMAINS = {
@@ -2674,56 +2675,10 @@ const AppContent = () => {
                                   />
                                 </TouchableOpacity>
                               </View>
-                              <View style={styles.passwordRuleBarRow}>
-                                {[0, 1, 2, 3].map((segment) => (
-                                  <View
-                                    key={segment}
-                                    style={[
-                                      styles.passwordRuleBar,
-                                      segment < metPasswordChecks &&
-                                        styles.passwordRuleBarActive,
-                                    ]}
-                                  />
-                                ))}
-                              </View>
-                              <View style={styles.passwordRuleRow}>
-                                <Text
-                                  style={[
-                                    styles.passwordRuleText,
-                                    passwordChecks.length &&
-                                      styles.passwordRuleTextActive,
-                                  ]}
-                                >
-                                  {passwordChecks.length ? "✓" : "○"} 8+ chars
-                                </Text>
-                                <Text
-                                  style={[
-                                    styles.passwordRuleText,
-                                    passwordChecks.uppercase &&
-                                      styles.passwordRuleTextActive,
-                                  ]}
-                                >
-                                  {passwordChecks.uppercase ? "✓" : "○"} Uppercase
-                                </Text>
-                                <Text
-                                  style={[
-                                    styles.passwordRuleText,
-                                    passwordChecks.number &&
-                                      styles.passwordRuleTextActive,
-                                  ]}
-                                >
-                                  {passwordChecks.number ? "✓" : "○"} Number
-                                </Text>
-                                <Text
-                                  style={[
-                                    styles.passwordRuleText,
-                                    passwordChecks.special &&
-                                      styles.passwordRuleTextActive,
-                                  ]}
-                                >
-                                  {passwordChecks.special ? "✓" : "○"} Special char
-                                </Text>
-                              </View>
+                              <PasswordVerification
+                                checks={passwordChecks}
+                                metCount={metPasswordChecks}
+                              />
                             </View>
                           )}
 
@@ -3009,56 +2964,10 @@ const AppContent = () => {
                                             />
                                           </TouchableOpacity>
                                         </View>
-                                        <View style={styles.passwordRuleBarRow}>
-                                          {[0, 1, 2, 3].map((segment) => (
-                                            <View
-                                              key={segment}
-                                              style={[
-                                                styles.passwordRuleBar,
-                                                segment < metNewPasswordChecks &&
-                                                  styles.passwordRuleBarActive,
-                                              ]}
-                                            />
-                                          ))}
-                                        </View>
-                                        <View style={styles.passwordRuleRow}>
-                                          <Text
-                                            style={[
-                                              styles.passwordRuleText,
-                                              newPasswordChecks.length &&
-                                                styles.passwordRuleTextActive,
-                                            ]}
-                                          >
-                                            {newPasswordChecks.length ? "✓" : "○"} 8+ chars
-                                          </Text>
-                                          <Text
-                                            style={[
-                                              styles.passwordRuleText,
-                                              newPasswordChecks.uppercase &&
-                                                styles.passwordRuleTextActive,
-                                            ]}
-                                          >
-                                            {newPasswordChecks.uppercase ? "✓" : "○"} Uppercase
-                                          </Text>
-                                          <Text
-                                            style={[
-                                              styles.passwordRuleText,
-                                              newPasswordChecks.number &&
-                                                styles.passwordRuleTextActive,
-                                            ]}
-                                          >
-                                            {newPasswordChecks.number ? "✓" : "○"} Number
-                                          </Text>
-                                          <Text
-                                            style={[
-                                              styles.passwordRuleText,
-                                              newPasswordChecks.special &&
-                                                styles.passwordRuleTextActive,
-                                            ]}
-                                          >
-                                            {newPasswordChecks.special ? "✓" : "○"} Special char
-                                          </Text>
-                                        </View>
+                                        <PasswordVerification
+                                          checks={newPasswordChecks}
+                                          metCount={metNewPasswordChecks}
+                                        />
                                       </View>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
@@ -3315,56 +3224,10 @@ const AppContent = () => {
                                             />
                                           </TouchableOpacity>
                                         </View>
-                                        <View style={styles.passwordRuleBarRow}>
-                                          {[0, 1, 2, 3].map((segment) => (
-                                            <View
-                                              key={segment}
-                                              style={[
-                                                styles.passwordRuleBar,
-                                                segment < metNewPasswordChecks &&
-                                                  styles.passwordRuleBarActive,
-                                              ]}
-                                            />
-                                          ))}
-                                        </View>
-                                        <View style={styles.passwordRuleRow}>
-                                          <Text
-                                            style={[
-                                              styles.passwordRuleText,
-                                              newPasswordChecks.length &&
-                                                styles.passwordRuleTextActive,
-                                            ]}
-                                          >
-                                            {newPasswordChecks.length ? "✓" : "○"} 8+ chars
-                                          </Text>
-                                          <Text
-                                            style={[
-                                              styles.passwordRuleText,
-                                              newPasswordChecks.uppercase &&
-                                                styles.passwordRuleTextActive,
-                                            ]}
-                                          >
-                                            {newPasswordChecks.uppercase ? "✓" : "○"} Uppercase
-                                          </Text>
-                                          <Text
-                                            style={[
-                                              styles.passwordRuleText,
-                                              newPasswordChecks.number &&
-                                                styles.passwordRuleTextActive,
-                                            ]}
-                                          >
-                                            {newPasswordChecks.number ? "✓" : "○"} Number
-                                          </Text>
-                                          <Text
-                                            style={[
-                                              styles.passwordRuleText,
-                                              newPasswordChecks.special &&
-                                                styles.passwordRuleTextActive,
-                                            ]}
-                                          >
-                                            {newPasswordChecks.special ? "✓" : "○"} Special char
-                                          </Text>
-                                        </View>
+                                        <PasswordVerification
+                                          checks={newPasswordChecks}
+                                          metCount={metNewPasswordChecks}
+                                        />
                                       </View>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
