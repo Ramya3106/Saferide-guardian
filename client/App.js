@@ -900,19 +900,13 @@ const AppContent = () => {
           return;
         }
 
-        applyUserProfile(profile);
-        setProfessionalId(profile.professionalId || professionalId);
-
         const inferredRole = inferSpecificRoleFromId(
           profile.professionalId || professionalId,
         );
 
-        if (inferredRole) {
-          setSpecificRole(inferredRole);
-          setShowRoleSelection(false);
-          setIsAuthenticated(true);
-        } else {
-          setShowRoleSelection(true);
+        const otpInitiated = await initiatePostLoginOtp(profile, inferredRole);
+        if (otpInitiated) {
+          setProfessionalId(profile.professionalId || professionalId);
         }
       } catch (err) {
         const message = err?.response?.data?.message || "Unable to log in.";
@@ -937,8 +931,7 @@ const AppContent = () => {
           return;
         }
 
-        applyUserProfile(profile);
-        setIsAuthenticated(true);
+        await initiatePostLoginOtp(profile);
       } catch (err) {
         const message = err?.response?.data?.message || "Unable to log in.";
         setError(message);
@@ -1029,6 +1022,16 @@ const AppContent = () => {
     try {
       await verifyCode(otpEmail, emailOtp.trim());
       setIsVerified(true);
+
+      if (isPostLoginOtpStep && pendingLoginProfile) {
+        completeLoginAfterOtp(pendingLoginProfile, pendingLoginSpecificRole);
+        setIsPostLoginOtpStep(false);
+        setLoginWithOtp(false);
+        setPendingLoginProfile(null);
+        setPendingLoginSpecificRole("");
+        setEmailOtp("");
+        setIsOtpSent(false);
+      }
     } catch (err) {
       const message = err?.response?.data?.message || "Unable to verify code.";
       setIsVerified(false);
@@ -2743,8 +2746,7 @@ const AppContent = () => {
                           </View>
                         )}
 
-                        {(!loginWithOtp || isRegister || isOfficialRole) &&
-                          !forgotPasswordMode && (
+                        {showPasswordInput && (
                             <View style={styles.inputGroup}>
                               <AnimatedLabel text={requiredLabel("Password")} iconName="lock-closed" />
                               <View style={styles.passwordRow}>
@@ -2828,7 +2830,7 @@ const AppContent = () => {
                           </View>
                         )}
 
-                        {!isRegister && !isOfficialRole && (
+                        {!isRegister && !isOfficialRole && !isPostLoginOtpStep && (
                           <View style={styles.otpToggleRow}>
                             <Text style={styles.helperText}>
                               {loginWithOtp
@@ -3429,12 +3431,16 @@ const AppContent = () => {
                             <Text style={styles.cardTitle}>
                               {isRegister
                                 ? "Email verification"
-                                : "OTP sign-in"}
+                                : isPostLoginOtpStep
+                                  ? "Login verification"
+                                  : "OTP sign-in"}
                             </Text>
                             <Text style={styles.sectionSubtitle}>
                               {isRegister
                                 ? "We'll send a verification code to your email address"
-                                : "We'll send a one-time code to your email"}
+                                : isPostLoginOtpStep
+                                  ? "A one-time code was sent to your email. Verify to complete login."
+                                  : "We'll send a one-time code to your email"}
                             </Text>
                             {!isOtpSent ? (
                               <TouchableOpacity
