@@ -154,6 +154,9 @@ const AppContent = () => {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [loginWithOtp, setLoginWithOtp] = useState(false);
+  const [isPostLoginOtpStep, setIsPostLoginOtpStep] = useState(false);
+  const [pendingLoginProfile, setPendingLoginProfile] = useState(null);
+  const [pendingLoginSpecificRole, setPendingLoginSpecificRole] = useState("");
   const [pendingApproval, setPendingApproval] = useState(false);
 
   const [travelType, setTravelType] = useState("");
@@ -226,7 +229,11 @@ const AppContent = () => {
   const isOfficialRole = role === "TTR/RPF/Police";
   const isOperationalStaff = role === "Driver/Conductor" || role === "Cab/Auto";
   const otpEmail = (isOfficialRole ? officialEmail : email).trim();
-  const isOtpContext = isRegister || (!isRegister && loginWithOtp);
+  const isOtpContext = isRegister || (!isRegister && (loginWithOtp || isPostLoginOtpStep));
+  const showPasswordInput =
+    !forgotPasswordMode &&
+    (isRegister || !isPostLoginOtpStep) &&
+    (!loginWithOtp || isRegister || isOfficialRole);
 
   const getOfficialDomain = (selectedRole) => {
     const domains = OFFICIAL_DOMAINS[selectedRole];
@@ -377,6 +384,10 @@ const AppContent = () => {
       return false;
     }
 
+    if (isPostLoginOtpStep) {
+      return isVerified;
+    }
+
     if (isOfficialRole) {
       return (
         isProfessionalIdValid(role, professionalId) &&
@@ -401,6 +412,7 @@ const AppContent = () => {
     isOfficialRole,
     isRegister,
     isVerified,
+    isPostLoginOtpStep,
     jurisdiction,
     loginWithOtp,
     name,
@@ -574,6 +586,9 @@ const AppContent = () => {
     setIsOtpSent(false);
     setIsSendingOtp(false);
     setLoginWithOtp(false);
+    setIsPostLoginOtpStep(false);
+    setPendingLoginProfile(null);
+    setPendingLoginSpecificRole("");
     setTravelType("");
     setTravelNumber("");
     setTravelName("");
@@ -657,6 +672,9 @@ const AppContent = () => {
 
       if (!isRegister && loginWithOtp) {
         setLoginWithOtp(false);
+        setIsPostLoginOtpStep(false);
+        setPendingLoginProfile(null);
+        setPendingLoginSpecificRole("");
         setEmailOtp("");
         setIsVerified(false);
         setIsOtpSent(false);
@@ -684,6 +702,7 @@ const AppContent = () => {
     isAuthenticated,
     isRegister,
     loginWithOtp,
+    isPostLoginOtpStep,
     showRoleSelection,
   ]);
 
@@ -695,6 +714,83 @@ const AppContent = () => {
     setProfessionalId(profile.professionalId || "");
     setJurisdiction(profile.jurisdiction || "");
     setPnrRange(profile.pnrRange || "");
+  };
+
+  const completeLoginAfterOtp = (profile = {}, inferredRole = "") => {
+    applyUserProfile(profile);
+
+    if (isOfficialRole) {
+      if (inferredRole) {
+        setSpecificRole(inferredRole);
+        setShowRoleSelection(false);
+        setIsAuthenticated(true);
+        return;
+      }
+
+      setShowRoleSelection(true);
+      return;
+    }
+
+    setIsAuthenticated(true);
+  };
+
+  const initiatePostLoginOtp = async (profile = {}, inferredRole = "") => {
+    const resolvedEmail = (
+      isOfficialRole
+        ? profile.officialEmail || profile.email || ""
+        : profile.email || email
+    )
+      .trim()
+      .toLowerCase();
+
+    if (!isValidEmail(resolvedEmail)) {
+      setError("Unable to send OTP. Account email is missing or invalid.");
+      return false;
+    }
+
+    if (isOfficialRole) {
+      setOfficialEmail(resolvedEmail);
+    } else {
+      setEmail(resolvedEmail);
+    }
+
+    setPendingLoginProfile(profile);
+    setPendingLoginSpecificRole(inferredRole);
+    setIsPostLoginOtpStep(true);
+    setLoginWithOtp(true);
+    setEmailOtp("");
+    setIsVerified(false);
+    setIsOtpSent(false);
+    setIsSendingOtp(true);
+
+    try {
+      const { data } = await sendCode(resolvedEmail);
+      const sent = Boolean(data?.sent || data?.devCode);
+      setIsOtpSent(sent);
+
+      if (!sent) {
+        setError(data?.message || "Unable to send OTP.");
+        setIsPostLoginOtpStep(false);
+        setLoginWithOtp(false);
+        setPendingLoginProfile(null);
+        setPendingLoginSpecificRole("");
+        return false;
+      }
+
+      setError("");
+      return true;
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || "Unable to send verification code.";
+      setError(message);
+      setIsPostLoginOtpStep(false);
+      setLoginWithOtp(false);
+      setPendingLoginProfile(null);
+      setPendingLoginSpecificRole("");
+      return false;
+    } finally {
+      setIsSendingOtp(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -875,6 +971,9 @@ const AppContent = () => {
     setIsOtpSent(false);
     setIsSendingOtp(false);
     setLoginWithOtp(false);
+    setIsPostLoginOtpStep(false);
+    setPendingLoginProfile(null);
+    setPendingLoginSpecificRole("");
     setPendingApproval(false);
     setError("");
   };
