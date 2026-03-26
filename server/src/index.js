@@ -52,28 +52,29 @@ const startServer = async () => {
 
   try {
     await connectDb(MONGO_URI);
-    const server = app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-
-    server.on("error", async (error) => {
-      if (error?.code === "EADDRINUSE") {
-        const alreadyRunningSafeRide = await isExistingSafeRideServer();
-        if (alreadyRunningSafeRide) {
-          process.exit(0);
-        }
-
-        console.error(`Port ${PORT} is already in use by another process.`);
-        process.exit(1);
-      } else {
-        console.error("Server startup error:", error.message);
-        process.exit(1);
-      }
-    });
   } catch (error) {
-    console.error("Failed to start server:", error.message);
+    console.error("Failed to connect MongoDB:", error.message);
     process.exit(1);
   }
+
+  const server = app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+
+  server.on("error", async (error) => {
+    if (error?.code === "EADDRINUSE") {
+      const alreadyRunningSafeRide = await isExistingSafeRideServer();
+      if (alreadyRunningSafeRide) {
+        process.exit(0);
+      }
+
+      console.error(`Port ${PORT} is already in use by another process.`);
+      process.exit(1);
+    } else {
+      console.error("Server startup error:", error.message);
+      process.exit(1);
+    }
+  });
 };
 
 startServer();
