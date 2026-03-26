@@ -58,7 +58,7 @@ const startServer = async () => {
   }
 
   const server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    process.stdout.write(`Server running on port ${PORT}\n`);
   });
 
   server.on("error", async (error) => {
