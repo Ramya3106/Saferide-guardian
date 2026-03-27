@@ -500,13 +500,6 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
             <Text style={styles.badgeText}>{notificationCount}</Text>
           </View>
         )}
-
-      <TouchableOpacity style={styles.notificationBell}>
-        <ShakyIcon name="notifications-outline" size={24} color="#1E293B" />
-        <View style={styles.notificationBadge}>
-          <Text style={styles.badgeText}>3</Text>
-        </View>
-
       </TouchableOpacity>
     </View>
   );
