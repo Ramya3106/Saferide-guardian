@@ -10,7 +10,7 @@ dotenv.config();
 const VERIFY_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const RESET_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 5;
-const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MIN_LENGTH = 6;
 const verificationStore = new Map();
 const resetPasswordStore = new Map();
 
@@ -109,12 +109,7 @@ const normalizeProfessionalId = (value) => (value || "").trim().toUpperCase();
 
 const isStrongPassword = (passwordValue) => {
   const password = String(passwordValue || "");
-  return (
-    password.length >= PASSWORD_MIN_LENGTH &&
-    /[A-Z]/.test(password) &&
-    /\d/.test(password) &&
-    /[^A-Za-z0-9]/.test(password)
-  );
+  return password.length === PASSWORD_MIN_LENGTH;
 };
 
 const findOfficialByProfessionalId = async (role, professionalId) => {
@@ -336,8 +331,7 @@ router.post("/register", async (req, res) => {
 
     if (!isStrongPassword(password)) {
       return res.status(400).json({
-        message:
-          "Password must have 8+ chars, uppercase, number, and special char.",
+        message: "Password must be exactly 6 characters.",
       });
     }
 
@@ -896,8 +890,7 @@ router.post("/reset-password", async (req, res) => {
 
     if (!isStrongPassword(newPassword)) {
       return res.status(400).json({
-        message:
-          "Password must have 8+ chars, uppercase, number, and special char.",
+        message: "Password must be exactly 6 characters.",
       });
     }
 
@@ -968,8 +961,7 @@ router.post("/reset-password-otp", async (req, res) => {
 
     if (!isStrongPassword(newPassword)) {
       return res.status(400).json({
-        message:
-          "Password must have 8+ chars, uppercase, number, and special char.",
+        message: "Password must be exactly 6 characters.",
       });
     }
 
@@ -1023,8 +1015,7 @@ router.post("/reset-password-user", async (req, res) => {
 
     if (!isStrongPassword(newPassword)) {
       return res.status(400).json({
-        message:
-          "Password must have 8+ chars, uppercase, number, and special char.",
+        message: "Password must be exactly 6 characters.",
       });
     }
 
