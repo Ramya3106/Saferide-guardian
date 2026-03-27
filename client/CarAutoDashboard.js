@@ -731,6 +731,7 @@ const CarAutoDashboard = ({ onLogout }) => {
                   <Text style={styles.locationButtonText}>Share Live Location</Text>
                 </>
               )}
+            </TouchableOpacity>
 
             <TouchableOpacity style={styles.locationButton}>
               <ShakyIcon name="location" size={24} color="#FFFFFF" />
