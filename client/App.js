@@ -1135,9 +1135,7 @@ const AppContent = () => {
     }
     if (newPassword !== confirmNewPassword) {
       setError("Passwords do not match.");
-      return;
-    }
-
+      setError("Password must be exactly 6 characters.");
     setError("");
 
     try {
@@ -1262,9 +1260,7 @@ const AppContent = () => {
       );
       return;
     }
-    if (newPassword !== confirmNewPassword) {
-      setError("Passwords do not match.");
-      return;
+      setError("Password must be exactly 6 characters.");
     }
 
     setError("");
