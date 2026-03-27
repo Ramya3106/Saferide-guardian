@@ -1257,12 +1257,12 @@ const AppContent = () => {
 
   const handleResetPasswordUser = async () => {
     if (!isNewPasswordStrong) {
-      setError(
-        "Password must have 8+ chars, uppercase, number, and special char.",
-      );
+      setError("Password must be exactly 6 characters.");
       return;
     }
-      setError("Password must be exactly 6 characters.");
+    if (newPassword !== confirmNewPassword) {
+      setError("Passwords do not match.");
+      return;
     }
 
     setError("");
