@@ -47,15 +47,12 @@ const verifyCode = (emailAddress, code) =>
 
 const requiredLabel = (text) => `${text} *`;
 const MERIDIEM_OPTIONS = ["AM", "PM"];
-const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MIN_LENGTH = 6;
 const getPasswordChecks = (value) => {
   const input = value || "";
 
   return {
-    length: input.length >= PASSWORD_MIN_LENGTH,
-    uppercase: /[A-Z]/.test(input),
-    number: /\d/.test(input),
-    special: /[^A-Za-z0-9]/.test(input),
+    length: input.length === PASSWORD_MIN_LENGTH,
   };
 };
 const formatClockTime = (timeValue, meridiem) => {
@@ -296,7 +293,7 @@ const AppContent = () => {
     [passwordChecks],
   );
 
-  const isPasswordStrong = metPasswordChecks === 4;
+  const isPasswordStrong = metPasswordChecks === 1;
 
   const newPasswordChecks = useMemo(
     () => getPasswordChecks(newPassword),
@@ -308,7 +305,7 @@ const AppContent = () => {
     [newPasswordChecks],
   );
 
-  const isNewPasswordStrong = metNewPasswordChecks === 4;
+  const isNewPasswordStrong = metNewPasswordChecks === 1;
 
   const isRegisterPasswordMatch = useMemo(
     () => confirmPassword.length > 0 && password === confirmPassword,
@@ -326,9 +323,9 @@ const AppContent = () => {
     const baseRegisterReady =
       name.trim().length >= 2 &&
       phone.trim().length >= 8 &&
-      trimmedPassword.length >= PASSWORD_MIN_LENGTH &&
+      trimmedPassword.length === PASSWORD_MIN_LENGTH &&
       isPasswordStrong &&
-      confirmPassword.trim().length >= PASSWORD_MIN_LENGTH &&
+      confirmPassword.trim().length === PASSWORD_MIN_LENGTH &&
       isRegisterPasswordMatch;
 
     if (isRegister) {
