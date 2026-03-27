@@ -797,9 +797,7 @@ const AppContent = () => {
     }
 
     if (isRegister && !isPasswordStrong) {
-      setError(
-        "Password must have 8+ chars, uppercase, number, and special char.",
-      );
+      setError("Password must be exactly 6 characters.");
       return;
     }
 
@@ -1132,9 +1130,7 @@ const AppContent = () => {
 
   const handleResetPassword = async () => {
     if (!isNewPasswordStrong) {
-      setError(
-        "Password must have 8+ chars, uppercase, number, and special char.",
-      );
+      setError("Password must be exactly 6 characters.");
       return;
     }
     if (newPassword !== confirmNewPassword) {
