@@ -2767,10 +2767,12 @@ const AppContent = () => {
                                   />
                                 </TouchableOpacity>
                               </View>
-                              <PasswordVerification
-                                checks={passwordChecks}
-                                metCount={metPasswordChecks}
-                              />
+                              {isRegister && !isPasswordStrong && (
+                                <PasswordVerification
+                                  checks={passwordChecks}
+                                  metCount={metPasswordChecks}
+                                />
+                              )}
                             </View>
                           )}
 
@@ -3056,10 +3058,6 @@ const AppContent = () => {
                                             />
                                           </TouchableOpacity>
                                         </View>
-                                        <PasswordVerification
-                                          checks={newPasswordChecks}
-                                          metCount={metNewPasswordChecks}
-                                        />
                                       </View>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
@@ -3316,10 +3314,6 @@ const AppContent = () => {
                                             />
                                           </TouchableOpacity>
                                         </View>
-                                        <PasswordVerification
-                                          checks={newPasswordChecks}
-                                          metCount={metNewPasswordChecks}
-                                        />
                                       </View>
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
