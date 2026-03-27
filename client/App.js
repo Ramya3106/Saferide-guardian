@@ -53,6 +53,9 @@ const getPasswordChecks = (value) => {
 
   return {
     length: input.length === PASSWORD_MIN_LENGTH,
+    uppercase: /[A-Z]/.test(input),
+    number: /\d/.test(input),
+    special: /[^A-Za-z0-9]/.test(input),
   };
 };
 const formatClockTime = (timeValue, meridiem) => {
@@ -293,7 +296,7 @@ const AppContent = () => {
     [passwordChecks],
   );
 
-  const isPasswordStrong = metPasswordChecks === 1;
+  const isPasswordStrong = metPasswordChecks === 4;
 
   const newPasswordChecks = useMemo(
     () => getPasswordChecks(newPassword),
@@ -305,7 +308,7 @@ const AppContent = () => {
     [newPasswordChecks],
   );
 
-  const isNewPasswordStrong = metNewPasswordChecks === 1;
+  const isNewPasswordStrong = metNewPasswordChecks === 4;
 
   const isRegisterPasswordMatch = useMemo(
     () => confirmPassword.length > 0 && password === confirmPassword,
@@ -797,7 +800,9 @@ const AppContent = () => {
     }
 
     if (isRegister && !isPasswordStrong) {
-      setError("Password must be exactly 6 characters.");
+      setError(
+        "Password must be exactly 6 chars with uppercase, number, and special char.",
+      );
       return;
     }
 
@@ -1130,7 +1135,9 @@ const AppContent = () => {
 
   const handleResetPassword = async () => {
     if (!isNewPasswordStrong) {
-      setError("Password must be exactly 6 characters.");
+      setError(
+        "Password must be exactly 6 chars with uppercase, number, and special char.",
+      );
       return;
     }
     if (newPassword !== confirmNewPassword) {
@@ -1257,7 +1264,9 @@ const AppContent = () => {
 
   const handleResetPasswordUser = async () => {
     if (!isNewPasswordStrong) {
-      setError("Password must be exactly 6 characters.");
+      setError(
+        "Password must be exactly 6 chars with uppercase, number, and special char.",
+      );
       return;
     }
     if (newPassword !== confirmNewPassword) {
