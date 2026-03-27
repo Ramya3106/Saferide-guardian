@@ -2,13 +2,16 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 const RULES = [
-  { key: "length", label: "Exactly 6 characters" },
+  { key: "length", label: "Exactly 6 chars" },
+  { key: "uppercase", label: "Uppercase" },
+  { key: "number", label: "Number" },
+  { key: "special", label: "Special char" },
 ];
 
 const PasswordVerification = ({ checks, metCount }) => (
   <>
     <View style={styles.barRow}>
-      {RULES.map((_, segment) => (
+      {[0, 1, 2, 3].map((segment) => (
         <View
           key={segment}
           style={[styles.bar, segment < metCount && styles.barActive]}
