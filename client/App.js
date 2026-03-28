@@ -154,6 +154,7 @@ const AppContent = () => {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [loginWithOtp, setLoginWithOtp] = useState(false);
+  const [otpResendCountdown, setOtpResendCountdown] = useState(0);
   const [isPostLoginOtpStep, setIsPostLoginOtpStep] = useState(false);
   const [pendingLoginProfile, setPendingLoginProfile] = useState(null);
   const [pendingLoginSpecificRole, setPendingLoginSpecificRole] = useState("");
