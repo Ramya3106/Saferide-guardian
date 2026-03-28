@@ -707,6 +707,17 @@ const AppContent = () => {
     showRoleSelection,
   ]);
 
+  // OTP Resend Countdown Timer
+  useEffect(() => {
+    let interval;
+    if (otpResendCountdown > 0) {
+      interval = setInterval(() => {
+        setOtpResendCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [otpResendCountdown]);
+
   const applyUserProfile = (profile = {}) => {
     setName(profile.name || "");
     setPhone(profile.phone || "");
