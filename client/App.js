@@ -3515,13 +3515,11 @@ const AppContent = () => {
                                   disabled={otpResendCountdown > 0}
                                 >
                                   {!isVerified && (
-                                    <View style={styles.resendCodeContainer}>
-                                      <Text style={styles.switchLink}>
-                                        {otpResendCountdown > 0
-                                          ? `Resend code (${otpResendCountdown}s)`
-                                          : "Resend code"}
-                                      </Text>
-                                    </View>
+                                    <Text style={styles.switchLink}>
+                                      {otpResendCountdown > 0
+                                        ? `Resend code (${otpResendCountdown}s)`
+                                        : "Resend code"}
+                                    </Text>
                                   )}
                                 </TouchableOpacity>
                               </>
