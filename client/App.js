@@ -3505,14 +3505,23 @@ const AppContent = () => {
                                   </Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                  style={[styles.textButton]}
+                                  style={[
+                                    styles.textButton,
+                                    otpResendCountdown > 0 &&
+                                      styles.buttonDisabled,
+                                  ]}
                                   onPress={handleSendOtp}
                                   activeOpacity={0.85}
+                                  disabled={otpResendCountdown > 0}
                                 >
                                   {!isVerified && (
-                                    <Text style={styles.switchLink}>
-                                      Resend code
-                                    </Text>
+                                    <View style={styles.resendCodeContainer}>
+                                      <Text style={styles.switchLink}>
+                                        {otpResendCountdown > 0
+                                          ? `Resend code (${otpResendCountdown}s)`
+                                          : "Resend code"}
+                                      </Text>
+                                    </View>
                                   )}
                                 </TouchableOpacity>
                               </>
