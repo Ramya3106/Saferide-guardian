@@ -1011,7 +1011,9 @@ const AppContent = () => {
       const { data } = await sendCode(otpEmail);
       const sent = Boolean(data?.sent || data?.devCode);
       setIsOtpSent(sent);
-      if (!sent && data?.message) {
+      if (sent) {
+        setOtpResendCountdown(60); // Start 60-second countdown
+      } else if (data?.message) {
         setError(data.message);
       }
     } catch (err) {
