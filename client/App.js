@@ -155,6 +155,7 @@ const AppContent = () => {
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [loginWithOtp, setLoginWithOtp] = useState(false);
   const [otpResendCountdown, setOtpResendCountdown] = useState(0);
+  const [resetResendCountdown, setResetResendCountdown] = useState(0);
   const [isPostLoginOtpStep, setIsPostLoginOtpStep] = useState(false);
   const [pendingLoginProfile, setPendingLoginProfile] = useState(null);
   const [pendingLoginSpecificRole, setPendingLoginSpecificRole] = useState("");
@@ -718,6 +719,22 @@ const AppContent = () => {
     return () => clearInterval(interval);
   }, [otpResendCountdown]);
 
+  useEffect(() => {
+    let interval;
+    if (resetResendCountdown > 0) {
+      interval = setInterval(() => {
+        setResetResendCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resetResendCountdown]);
+
+  useEffect(() => {
+    if (!forgotPasswordMode && resetResendCountdown > 0) {
+      setResetResendCountdown(0);
+    }
+  }, [forgotPasswordMode, resetResendCountdown]);
+
   const applyUserProfile = (profile = {}) => {
     setName(profile.name || "");
     setPhone(profile.phone || "");
@@ -1092,10 +1109,60 @@ const AppContent = () => {
       setIsResetCodeSent(sent);
       if (!sent && data?.message) {
         setError(data.message);
+      } else if (sent) {
+        setResetResendCountdown(60);
       }
     } catch (err) {
       const message =
         err?.response?.data?.message || "Unable to send reset code.";
+      setError(message);
+    } finally {
+      setIsSendingResetCode(false);
+    }
+  };
+
+  const handleResendResetCode = async () => {
+    const trimmedEmail = officialEmail.trim().toLowerCase();
+    const trimmedProfessionalId = professionalId.trim();
+
+    if (trimmedProfessionalId.length < 6) {
+      setError("Enter a valid professional ID.");
+      return;
+    }
+
+    if (trimmedEmail.length < 5 || !trimmedEmail.includes("@")) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
+    if (!isOfficialEmailValid(role, officialEmail)) {
+      setError(
+        `Please use your official ${getOfficialDomain(role)} email address.`,
+      );
+      return;
+    }
+
+    setError("");
+    setResetCode("");
+    setIsResetCodeVerified(false);
+    setIsSendingResetCode(true);
+
+    try {
+      const { data } = await axios.post(`${API_BASE}/auth/forgot-password`, {
+        role,
+        professionalId: trimmedProfessionalId,
+        officialEmail: trimmedEmail,
+      });
+      const sent = Boolean(data?.sent || data?.devCode);
+      setIsResetCodeSent(sent);
+      if (!sent && data?.message) {
+        setError(data.message);
+      } else if (sent) {
+        setResetResendCountdown(60);
+      }
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || "Unable to resend reset code.";
       setError(message);
     } finally {
       setIsSendingResetCode(false);
@@ -1178,6 +1245,7 @@ const AppContent = () => {
       setError("");
       setTimeout(() => {
         setForgotPasswordMode(false);
+        setResetResendCountdown(0);
         setResetSuccess(false);
         setResetCode("");
         setNewPassword("");
@@ -1221,10 +1289,48 @@ const AppContent = () => {
       setIsResetCodeSent(sent);
       if (!sent && data?.message) {
         setError(data.message);
+      } else if (sent) {
+        setResetResendCountdown(60);
       }
     } catch (err) {
       const message =
         err?.response?.data?.message || "Unable to send verification code.";
+      setError(message);
+    } finally {
+      setIsSendingResetCode(false);
+    }
+  };
+
+  const handleResendResetCodeUser = async () => {
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (trimmedEmail.length < 5 || !trimmedEmail.includes("@")) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
+    setError("");
+    setResetCode("");
+    setIsResetCodeVerified(false);
+    setIsSendingResetCode(true);
+
+    try {
+      const { data } = await axios.post(
+        `${API_BASE}/auth/forgot-password-user`,
+        {
+          email: trimmedEmail,
+        },
+      );
+      const sent = Boolean(data?.sent);
+      setIsResetCodeSent(sent);
+      if (!sent && data?.message) {
+        setError(data.message);
+      } else if (sent) {
+        setResetResendCountdown(60);
+      }
+    } catch (err) {
+      const message =
+        err?.response?.data?.message || "Unable to resend verification code.";
       setError(message);
     } finally {
       setIsSendingResetCode(false);
@@ -1306,6 +1412,7 @@ const AppContent = () => {
       setError("");
       setTimeout(() => {
         setForgotPasswordMode(false);
+        setResetResendCountdown(0);
         setResetSuccess(false);
         setResetCode("");
         setNewPassword("");
@@ -3042,6 +3149,27 @@ const AppContent = () => {
                                             : "Verify Code"}
                                         </Text>
                                       </TouchableOpacity>
+                                      <TouchableOpacity
+                                        style={[
+                                          styles.textButton,
+                                          (resetResendCountdown > 0 ||
+                                            isSendingResetCode) &&
+                                            styles.buttonDisabled,
+                                        ]}
+                                        onPress={handleResendResetCode}
+                                        disabled={
+                                          resetResendCountdown > 0 ||
+                                          isSendingResetCode
+                                        }
+                                      >
+                                        <Text style={styles.switchLink}>
+                                          {isSendingResetCode
+                                            ? "Sending code..."
+                                            : resetResendCountdown > 0
+                                              ? `Resend code (${resetResendCountdown}s)`
+                                              : "Resend code"}
+                                        </Text>
+                                      </TouchableOpacity>
                                     </>
                                   ) : (
                                     <>
@@ -3296,6 +3424,27 @@ const AppContent = () => {
                                           {isVerifyingResetCode
                                             ? "Verifying code..."
                                             : "Verify Code"}
+                                        </Text>
+                                      </TouchableOpacity>
+                                      <TouchableOpacity
+                                        style={[
+                                          styles.textButton,
+                                          (resetResendCountdown > 0 ||
+                                            isSendingResetCode) &&
+                                            styles.buttonDisabled,
+                                        ]}
+                                        onPress={handleResendResetCodeUser}
+                                        disabled={
+                                          resetResendCountdown > 0 ||
+                                          isSendingResetCode
+                                        }
+                                      >
+                                        <Text style={styles.switchLink}>
+                                          {isSendingResetCode
+                                            ? "Sending code..."
+                                            : resetResendCountdown > 0
+                                              ? `Resend code (${resetResendCountdown}s)`
+                                              : "Resend code"}
                                         </Text>
                                       </TouchableOpacity>
                                     </>
