@@ -3210,12 +3210,6 @@ const AppContent = () => {
                                           </TouchableOpacity>
                                         </View>
                                       </View>
-                                      {!isNewPasswordStrong && (
-                                        <PasswordVerification
-                                          checks={newPasswordChecks}
-                                          metCount={metNewPasswordChecks}
-                                        />
-                                      )}
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
                                           {requiredLabel("Confirm New Password")}
@@ -3256,6 +3250,12 @@ const AppContent = () => {
                                           </TouchableOpacity>
                                         </View>
                                       </View>
+                                      {!isNewPasswordStrong && (
+                                        <PasswordVerification
+                                          checks={newPasswordChecks}
+                                          metCount={metNewPasswordChecks}
+                                        />
+                                      )}
                                       {confirmNewPassword.length > 0 && (
                                         <Text
                                           style={[
@@ -3493,12 +3493,6 @@ const AppContent = () => {
                                           </TouchableOpacity>
                                         </View>
                                       </View>
-                                      {!isNewPasswordStrong && (
-                                        <PasswordVerification
-                                          checks={newPasswordChecks}
-                                          metCount={metNewPasswordChecks}
-                                        />
-                                      )}
                                       <View style={styles.inputGroup}>
                                         <Text style={styles.label}>
                                           {requiredLabel("Confirm New Password")}
@@ -3539,6 +3533,12 @@ const AppContent = () => {
                                           </TouchableOpacity>
                                         </View>
                                       </View>
+                                      {!isNewPasswordStrong && (
+                                        <PasswordVerification
+                                          checks={newPasswordChecks}
+                                          metCount={metNewPasswordChecks}
+                                        />
+                                      )}
                                       {confirmNewPassword.length > 0 && (
                                         <Text
                                           style={[
