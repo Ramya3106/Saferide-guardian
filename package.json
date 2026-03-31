@@ -1,8 +1,6 @@
 {
   "dependencies": {
-<<<<<<< HEAD
     "expo": "^55.0.2"
-=======
     "axios": "^1.6.2",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
@@ -20,6 +18,5 @@
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
->>>>>>> 92f4d8f1e561eb499056d6654fec148d8137ec02
   }
 }
