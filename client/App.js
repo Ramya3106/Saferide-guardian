@@ -376,7 +376,6 @@ const AppContent = () => {
       if (isOperationalStaff) {
         return (
           vehicleNumber.trim().length >= 5 &&
-          dutyRoute.trim().length >= 3 &&
           shiftTiming.trim().length >= 3 &&
           fromStop.trim().length >= 2 &&
           toStop.trim().length >= 2
@@ -863,6 +862,7 @@ const AppContent = () => {
       const resolvedTravelTiming = isBusTravel
         ? formatClockTime(busStartTime, busStartMeridiem)
         : travelTiming.trim();
+      const resolvedDutyRoute = `${fromStop.trim()} -> ${toStop.trim()}`;
 
       try {
         await axios.post(`${API_BASE}/auth/register`, {
@@ -882,7 +882,7 @@ const AppContent = () => {
           driverName: driverName.trim(),
           conductorName: conductorName.trim(),
           vehicleNumber: vehicleNumber.trim(),
-          dutyRoute: dutyRoute.trim(),
+          dutyRoute: resolvedDutyRoute,
           shiftTiming: shiftTiming.trim(),
           fromStop: fromStop.trim(),
           toStop: toStop.trim(),
@@ -3867,16 +3867,6 @@ const AppContent = () => {
                                   placeholderTextColor="#94A3B8"
                                   value={vehicleNumber}
                                   onChangeText={setVehicleNumber}
-                                />
-                              </View>
-                              <View style={styles.inputGroup}>
-                                <Text style={styles.label}>{requiredLabel("Route")}</Text>
-                                <TextInput
-                                  style={styles.input}
-                                  placeholder="Velachery → CMBT"
-                                  placeholderTextColor="#94A3B8"
-                                  value={dutyRoute}
-                                  onChangeText={setDutyRoute}
                                 />
                               </View>
                               <View style={styles.inputGroup}>
