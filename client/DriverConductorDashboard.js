@@ -31,6 +31,9 @@ const AnimatedIonicon = Animated.createAnimatedComponent(Ionicons);
 const DriverConductorDashboard = ({ onLogout }) => {
   const iconShakeValue = useRef(new Animated.Value(0)).current;
   const iconShakeLoopRef = useRef(null);
+  const screenFadeAnim = useRef(new Animated.Value(0)).current;
+  const screenSlideAnim = useRef(new Animated.Value(18)).current;
+  const stepFadeAnim = useRef(new Animated.Value(1)).current;
 
   const buildIconShakeAnimation = () =>
     Animated.loop(
@@ -70,6 +73,21 @@ const DriverConductorDashboard = ({ onLogout }) => {
   };
 
   useEffect(() => () => stopIconShake(), []);
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(screenFadeAnim, {
+        toValue: 1,
+        duration: 360,
+        useNativeDriver: true,
+      }),
+      Animated.timing(screenSlideAnim, {
+        toValue: 0,
+        duration: 360,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [screenFadeAnim, screenSlideAnim]);
 
   const iconShakeStyle = {
     transform: [{ translateX: iconShakeValue }],
@@ -197,6 +215,15 @@ const DriverConductorDashboard = ({ onLogout }) => {
 
     return () => subscription.remove();
   }, [currentStep, selectedComplaint, showQRModal, verificationStep]);
+
+  useEffect(() => {
+    stepFadeAnim.setValue(0);
+    Animated.timing(stepFadeAnim, {
+      toValue: 1,
+      duration: 260,
+      useNativeDriver: true,
+    }).start();
+  }, [currentStep, position, stepFadeAnim]);
 
   // Handle position selection
   const handlePositionSelection = (pos) => {
@@ -1064,16 +1091,31 @@ const DriverConductorDashboard = ({ onLogout }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {currentStep === "positionSelection" && renderPositionSelection()}
-      {currentStep === "dutySetup" && renderDutySetup()}
-      {currentStep === "dashboard" && position === "driver" && renderDriverDashboard()}
-      {currentStep === "dashboard" && position === "conductor" && renderConductorDashboard()}
-    </SafeAreaView>
+    <Animated.View
+      style={[
+        styles.animatedScreen,
+        {
+          opacity: screenFadeAnim,
+          transform: [{ translateY: screenSlideAnim }],
+        },
+      ]}
+    >
+      <SafeAreaView style={styles.container}>
+        <Animated.View style={[styles.flex1, { opacity: stepFadeAnim }]}>
+          {currentStep === "positionSelection" && renderPositionSelection()}
+          {currentStep === "dutySetup" && renderDutySetup()}
+          {currentStep === "dashboard" && position === "driver" && renderDriverDashboard()}
+          {currentStep === "dashboard" && position === "conductor" && renderConductorDashboard()}
+        </Animated.View>
+      </SafeAreaView>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
+  animatedScreen: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
