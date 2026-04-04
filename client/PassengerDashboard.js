@@ -27,6 +27,8 @@ const AnimatedIonicon = Animated.createAnimatedComponent(Ionicons);
 const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
   const iconShakeValue = useRef(new Animated.Value(0)).current;
   const iconShakeLoopRef = useRef(null);
+  const screenFadeAnim = useRef(new Animated.Value(0)).current;
+  const screenSlideAnim = useRef(new Animated.Value(18)).current;
 
   const buildIconShakeAnimation = () =>
     Animated.loop(
@@ -66,6 +68,21 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
   };
 
   useEffect(() => () => stopIconShake(), []);
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(screenFadeAnim, {
+        toValue: 1,
+        duration: 380,
+        useNativeDriver: true,
+      }),
+      Animated.timing(screenSlideAnim, {
+        toValue: 0,
+        duration: 380,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [screenFadeAnim, screenSlideAnim]);
 
   const iconShakeStyle = {
     transform: [{ translateX: iconShakeValue }],
@@ -1190,32 +1207,45 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
   );
 
   return (
-    <ScrollView style={styles.container}>
-      {renderHeader()}
+    <Animated.View
+      style={[
+        styles.animatedScreen,
+        {
+          opacity: screenFadeAnim,
+          transform: [{ translateY: screenSlideAnim }],
+        },
+      ]}
+    >
+      <ScrollView style={styles.container}>
+        {renderHeader()}
 
-      <View style={styles.content}>
-        {renderActiveJourney()}
-        {renderPrimaryAction()}
-        {renderComplaintPanel()}
-        {renderComplaintTracker()}
-        {renderStaffMessages()}
-        {renderQRCodePickup()}
-        {renderComplaintHistory()}
-        {renderHistoryModal()}
-        {renderNotificationModal()}
-        {renderTrackingModal()}
-        {renderEmergencyHelp()}
+        <View style={styles.content}>
+          {renderActiveJourney()}
+          {renderPrimaryAction()}
+          {renderComplaintPanel()}
+          {renderComplaintTracker()}
+          {renderStaffMessages()}
+          {renderQRCodePickup()}
+          {renderComplaintHistory()}
+          {renderHistoryModal()}
+          {renderNotificationModal()}
+          {renderTrackingModal()}
+          {renderEmergencyHelp()}
 
-        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <ShakyIcon name="log-out" size={20} color="#FFFFFF" />
-          <Text style={styles.logoutButtonText}>Log Out</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+            <ShakyIcon name="log-out" size={20} color="#FFFFFF" />
+            <Text style={styles.logoutButtonText}>Log Out</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
+  animatedScreen: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",

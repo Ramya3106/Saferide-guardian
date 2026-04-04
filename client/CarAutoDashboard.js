@@ -34,6 +34,9 @@ const AnimatedIonicon = Animated.createAnimatedComponent(Ionicons);
 const CarAutoDashboard = ({ onLogout }) => {
   const iconShakeValue = useRef(new Animated.Value(0)).current;
   const iconShakeLoopRef = useRef(null);
+  const screenFadeAnim = useRef(new Animated.Value(0)).current;
+  const screenSlideAnim = useRef(new Animated.Value(18)).current;
+  const stepFadeAnim = useRef(new Animated.Value(1)).current;
 
   const buildIconShakeAnimation = () =>
     Animated.loop(
@@ -73,6 +76,21 @@ const CarAutoDashboard = ({ onLogout }) => {
   };
 
   useEffect(() => () => stopIconShake(), []);
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(screenFadeAnim, {
+        toValue: 1,
+        duration: 360,
+        useNativeDriver: true,
+      }),
+      Animated.timing(screenSlideAnim, {
+        toValue: 0,
+        duration: 360,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [screenFadeAnim, screenSlideAnim]);
 
   const iconShakeStyle = {
     transform: [{ translateX: iconShakeValue }],
@@ -198,6 +216,15 @@ const CarAutoDashboard = ({ onLogout }) => {
 
     return () => subscription.remove();
   }, [acceptedComplaint, currentStep, showQRModal]);
+
+  useEffect(() => {
+    stepFadeAnim.setValue(0);
+    Animated.timing(stepFadeAnim, {
+      toValue: 1,
+      duration: 260,
+      useNativeDriver: true,
+    }).start();
+  }, [currentStep, stepFadeAnim]);
 
   // Handle continue from vehicle selection
   const handleContinueVehicleSelection = () => {
@@ -844,15 +871,30 @@ const CarAutoDashboard = ({ onLogout }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {currentStep === "vehicleSelection" && renderVehicleSelection()}
-      {currentStep === "dutySetup" && renderDutySetup()}
-      {currentStep === "dashboard" && renderDashboard()}
-    </SafeAreaView>
+    <Animated.View
+      style={[
+        styles.animatedScreen,
+        {
+          opacity: screenFadeAnim,
+          transform: [{ translateY: screenSlideAnim }],
+        },
+      ]}
+    >
+      <SafeAreaView style={styles.container}>
+        <Animated.View style={[styles.flex1, { opacity: stepFadeAnim }]}>
+          {currentStep === "vehicleSelection" && renderVehicleSelection()}
+          {currentStep === "dutySetup" && renderDutySetup()}
+          {currentStep === "dashboard" && renderDashboard()}
+        </Animated.View>
+      </SafeAreaView>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
+  animatedScreen: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
