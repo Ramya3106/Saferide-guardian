@@ -986,6 +986,25 @@ const AppContent = () => {
     resetForm();
   };
 
+  const handleOpenTrainGuideDemo = () => {
+    setRole("TTR/RPF/Police");
+    setSpecificRole("TTR");
+    setShowRoleSelection(false);
+    setForgotPasswordMode(false);
+    setOnDuty(true);
+    setError("");
+
+    // Demo-friendly defaults for guide presentation.
+    setName((prev) => prev.trim() || "Guide Demo Officer");
+    setProfessionalId("TTR-SR-12345");
+    setOfficialEmail("guide.demo@railnet.gov.in");
+    setTravelNumber("12631");
+    setPnrRange("4528193000-4528193999");
+    setJurisdiction("Chennai Central Division");
+
+    setIsAuthenticated(true);
+  };
+
   const handleRoleChange = (nextRole) => {
     setRole(nextRole);
     setEmailOtp("");
@@ -3976,6 +3995,17 @@ const AppContent = () => {
                                 </Text>
                               </TouchableOpacity>
                             </View>
+
+                            {!isRegister && role === "TTR/RPF/Police" && (
+                              <TouchableOpacity
+                                style={styles.textButton}
+                                onPress={handleOpenTrainGuideDemo}
+                              >
+                                <Text style={styles.switchLink}>
+                                  Open train demo without professional details
+                                </Text>
+                              </TouchableOpacity>
+                            )}
                           </View>
                         )}
                       </Animated.View>
