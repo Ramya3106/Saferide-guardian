@@ -49,8 +49,12 @@ const fromAddress = (
   process.env.EMAIL_FROM ||
   `SafeRide Guardian <${DEFAULT_RESET_SENDER}>`
 ).trim();
+const returnVerifyCodeEnv = String(
+  process.env.RETURN_VERIFY_CODE || "",
+).toLowerCase();
 const returnDevCode =
-  String(process.env.RETURN_VERIFY_CODE || "").toLowerCase() === "true";
+  returnVerifyCodeEnv === "true" ||
+  (returnVerifyCodeEnv !== "false" && process.env.NODE_ENV !== "production");
 const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
 const OFFICIAL_DOMAINS = {
   "TTR/RPF/Police": ["railnet.gov.in", "tnpolice.gov.in"],
