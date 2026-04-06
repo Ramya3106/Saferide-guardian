@@ -805,7 +805,11 @@ const AppContent = () => {
         return false;
       }
 
-      setError("");
+      if (data?.devCode && typeof __DEV__ !== "undefined" && __DEV__) {
+        setError(`Dev verification code: ${data.devCode}`);
+      } else {
+        setError("");
+      }
       return true;
     } catch (err) {
       const message =
@@ -1049,6 +1053,9 @@ const AppContent = () => {
       setIsOtpSent(sent);
       if (sent) {
         setOtpResendCountdown(60); // Start 60-second countdown
+        if (data?.devCode && typeof __DEV__ !== "undefined" && __DEV__) {
+          setError(`Dev verification code: ${data.devCode}`);
+        }
       } else if (data?.message) {
         setError(data.message);
       }

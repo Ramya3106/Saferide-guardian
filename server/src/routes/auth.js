@@ -55,6 +55,7 @@ const returnVerifyCodeEnv = String(
 const returnDevCode =
   returnVerifyCodeEnv === "true" ||
   (returnVerifyCodeEnv !== "false" && process.env.NODE_ENV !== "production");
+const allowDevEmailFallback = process.env.NODE_ENV !== "production";
 const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
 const OFFICIAL_DOMAINS = {
   "TTR/RPF/Police": ["railnet.gov.in", "tnpolice.gov.in"],
@@ -216,7 +217,7 @@ router.post("/send-verify-code", async (req, res) => {
 
   const transporter = createTransporter();
   if (!transporter) {
-    if (returnDevCode) {
+    if (allowDevEmailFallback) {
       const code = generateCode();
       const expiresAt = Date.now() + VERIFY_CODE_TTL_MS;
       verificationStore.set(email, { code, expiresAt, attempts: 0 });
@@ -281,7 +282,7 @@ router.post("/send-verify-code", async (req, res) => {
   } catch (error) {
     console.error("❌ Email error:", error);
     verificationStore.delete(email); // Cleanup on fail
-    if (returnDevCode) {
+    if (allowDevEmailFallback) {
       const fallbackCode = generateCode();
       const expiresAt = Date.now() + VERIFY_CODE_TTL_MS;
       verificationStore.set(email, {
@@ -783,7 +784,7 @@ router.post("/forgot-password", async (req, res) => {
 
     const transporter = createTransporter();
     if (!transporter) {
-      if (returnDevCode) {
+      if (allowDevEmailFallback) {
         const resetCode = generateCode();
         const expiresAt = Date.now() + RESET_CODE_TTL_MS;
 
@@ -851,7 +852,7 @@ router.post("/forgot-password", async (req, res) => {
       console.error("❌ Email error:", error);
       resetPasswordStore.delete(officialEmail);
 
-      if (returnDevCode) {
+      if (allowDevEmailFallback) {
         const fallbackCode = generateCode();
         const expiresAt = Date.now() + RESET_CODE_TTL_MS;
         resetPasswordStore.set(officialEmail, {
