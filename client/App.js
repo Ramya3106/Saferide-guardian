@@ -793,7 +793,7 @@ const AppContent = () => {
 
     try {
       const { data } = await sendCode(resolvedEmail);
-      const sent = Boolean(data?.sent || data?.devCode);
+      const sent = Boolean(data?.sent);
       setIsOtpSent(sent);
 
       if (!sent) {
@@ -805,11 +805,7 @@ const AppContent = () => {
         return false;
       }
 
-      if (data?.devCode && typeof __DEV__ !== "undefined" && __DEV__) {
-        setError(`Dev verification code: ${data.devCode}`);
-      } else {
-        setError("");
-      }
+      setError("");
       return true;
     } catch (err) {
       const message =
@@ -1049,13 +1045,10 @@ const AppContent = () => {
 
     try {
       const { data } = await sendCode(otpEmail);
-      const sent = Boolean(data?.sent || data?.devCode);
+      const sent = Boolean(data?.sent);
       setIsOtpSent(sent);
       if (sent) {
         setOtpResendCountdown(60); // Start 60-second countdown
-        if (data?.devCode && typeof __DEV__ !== "undefined" && __DEV__) {
-          setError(`Dev verification code: ${data.devCode}`);
-        }
       } else if (data?.message) {
         setError(data.message);
       }
@@ -1131,7 +1124,7 @@ const AppContent = () => {
         professionalId: trimmedProfessionalId,
         officialEmail: trimmedEmail,
       });
-      const sent = Boolean(data?.sent || data?.devCode);
+      const sent = Boolean(data?.sent);
       setIsResetCodeSent(sent);
       if (!sent && data?.message) {
         setError(data.message);
@@ -1179,7 +1172,7 @@ const AppContent = () => {
         professionalId: trimmedProfessionalId,
         officialEmail: trimmedEmail,
       });
-      const sent = Boolean(data?.sent || data?.devCode);
+      const sent = Boolean(data?.sent);
       setIsResetCodeSent(sent);
       if (!sent && data?.message) {
         setError(data.message);
