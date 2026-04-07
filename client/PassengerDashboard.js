@@ -93,6 +93,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
       <AnimatedIonicon {...props} style={[iconShakeStyle, style]} />
     </Pressable>
   );
+  
 
   // State management
   const [activeJourney, setActiveJourney] = useState(null);
