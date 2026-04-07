@@ -49,13 +49,6 @@ const fromAddress = (
   process.env.EMAIL_FROM ||
   `SafeRide Guardian <${DEFAULT_RESET_SENDER}>`
 ).trim();
-const returnVerifyCodeEnv = String(
-  process.env.RETURN_VERIFY_CODE || "",
-).toLowerCase();
-const returnDevCode =
-  returnVerifyCodeEnv === "true" ||
-  (returnVerifyCodeEnv !== "false" && process.env.NODE_ENV !== "production");
-const allowDevEmailFallback = process.env.NODE_ENV !== "production";
 const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
 const OFFICIAL_DOMAINS = {
   "TTR/RPF/Police": ["railnet.gov.in", "tnpolice.gov.in"],
@@ -217,23 +210,6 @@ router.post("/send-verify-code", async (req, res) => {
 
   const transporter = createTransporter();
   if (!transporter) {
-    if (allowDevEmailFallback) {
-      const code = generateCode();
-      const expiresAt = Date.now() + VERIFY_CODE_TTL_MS;
-      verificationStore.set(email, { code, expiresAt, attempts: 0 });
-      console.log(`✅ DEV MODE: Code stored for "${email}": ${code}`);
-      console.log("Current store contents:", Array.from(verificationStore.entries()).map(([k, v]) => ({ 
-        email: JSON.stringify(k),
-        emailMatch: k === email,
-        code: v.code 
-      })));
-      return res.status(200).json({
-        sent: false,
-        devCode: code,
-        message: "Email service not configured. Using dev code.",
-      });
-    }
-
     return res.status(500).json({
       message: getEmailServiceUnavailableMessage(),
     });
@@ -277,26 +253,10 @@ router.post("/send-verify-code", async (req, res) => {
     console.log(`✅ Verification code sent to ${email}`);
     return res.status(200).json({
       sent: true,
-      ...(returnDevCode ? { devCode: code } : {}),
     });
   } catch (error) {
     console.error("❌ Email error:", error);
     verificationStore.delete(email); // Cleanup on fail
-    if (allowDevEmailFallback) {
-      const fallbackCode = generateCode();
-      const expiresAt = Date.now() + VERIFY_CODE_TTL_MS;
-      verificationStore.set(email, {
-        code: fallbackCode,
-        expiresAt,
-        attempts: 0,
-      });
-      return res.status(200).json({
-        sent: false,
-        devCode: fallbackCode,
-        message: "Email failed. Using dev code.",
-      });
-    }
-
     return res.status(500).json({
       message: "Failed to send verification email.",
     });
@@ -784,25 +744,6 @@ router.post("/forgot-password", async (req, res) => {
 
     const transporter = createTransporter();
     if (!transporter) {
-      if (allowDevEmailFallback) {
-        const resetCode = generateCode();
-        const expiresAt = Date.now() + RESET_CODE_TTL_MS;
-
-        console.log("Dev mode - Storing reset code:", { officialEmail, resetCode });
-
-        resetPasswordStore.set(officialEmail, {
-          code: resetCode,
-          expiresAt,
-          attempts: 0,
-          userId: user._id.toString(),
-        });
-        return res.status(200).json({
-          sent: false,
-          devCode: resetCode,
-          message: "Email service not configured. Using dev code.",
-        });
-      }
-
       return res.status(500).json({
         message: getEmailServiceUnavailableMessage(),
       });
@@ -846,28 +787,10 @@ router.post("/forgot-password", async (req, res) => {
       console.log(`✅ Password reset code sent to ${officialEmail}`);
       return res.status(200).json({
         sent: true,
-        ...(returnDevCode ? { devCode: resetCode } : {}),
       });
     } catch (error) {
       console.error("❌ Email error:", error);
       resetPasswordStore.delete(officialEmail);
-
-      if (allowDevEmailFallback) {
-        const fallbackCode = generateCode();
-        const expiresAt = Date.now() + RESET_CODE_TTL_MS;
-        resetPasswordStore.set(officialEmail, {
-          code: fallbackCode,
-          expiresAt,
-          attempts: 0,
-          userId: user._id.toString(),
-        });
-        return res.status(200).json({
-          sent: false,
-          devCode: fallbackCode,
-          message: "Email failed. Using dev code.",
-        });
-      }
-
       return res.status(500).json({
         message: "Failed to send reset email.",
       });
