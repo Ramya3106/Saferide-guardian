@@ -28,7 +28,12 @@ const API_BASE = getApiBase();
 
 const AnimatedIonicon = Animated.createAnimatedComponent(Ionicons);
 
-const DriverConductorDashboard = ({ onLogout }) => {
+const DriverConductorDashboard = ({
+  onLogout,
+  staffRole = "driver-conductor",
+  presetPosition = null,
+  skipSetup = false,
+}) => {
   const iconShakeValue = useRef(new Animated.Value(0)).current;
   const iconShakeLoopRef = useRef(null);
   const screenFadeAnim = useRef(new Animated.Value(0)).current;
@@ -100,10 +105,12 @@ const DriverConductorDashboard = ({ onLogout }) => {
   );
 
   // Main states
-  const [currentStep, setCurrentStep] = useState("positionSelection"); // positionSelection, dutySetup, dashboard
-  const [position, setPosition] = useState(null); // "driver" or "conductor"
+  const [currentStep, setCurrentStep] = useState(
+    skipSetup ? "dashboard" : "positionSelection"
+  ); // positionSelection, dutySetup, dashboard
+  const [position, setPosition] = useState(presetPosition); // "driver" or "conductor"
   const [dutyStarted, setDutyStarted] = useState(false);
-  const [isOnline, setIsOnline] = useState(false);
+  const [isOnline, setIsOnline] = useState(skipSetup);
 
   // Duty setup states
   const [busNumber, setBusNumber] = useState("");
@@ -159,7 +166,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
 
     try {
       const response = await axios.get(`${API_BASE}/passenger/live-alerts`, {
-        params: { staffRole: "driver-conductor" },
+        params: { staffRole },
       });
       const alerts = response?.data?.alerts || [];
       setComplaints(alerts.map(normalizeComplaint));
@@ -176,7 +183,25 @@ const DriverConductorDashboard = ({ onLogout }) => {
 
     const interval = setInterval(fetchLiveComplaints, 10000);
     return () => clearInterval(interval);
-  }, [isOnline, currentStep]);
+  }, [isOnline, currentStep, staffRole]);
+
+  useEffect(() => {
+    if (!skipSetup) {
+      return;
+    }
+
+    if (!position) {
+      setPosition(presetPosition || "conductor");
+    }
+
+    if (currentStep !== "dashboard") {
+      setCurrentStep("dashboard");
+    }
+
+    if (!isOnline) {
+      setIsOnline(true);
+    }
+  }, [currentStep, isOnline, position, presetPosition, skipSetup]);
 
   useEffect(() => {
     const onBackPress = () => {
@@ -192,6 +217,10 @@ const DriverConductorDashboard = ({ onLogout }) => {
         setPickupStop("");
         setPickupTime("");
         return true;
+      }
+
+      if (skipSetup && currentStep === "dashboard") {
+        return false;
       }
 
       if (currentStep === "dashboard") {
@@ -214,7 +243,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
     );
 
     return () => subscription.remove();
-  }, [currentStep, selectedComplaint, showQRModal, verificationStep]);
+  }, [currentStep, selectedComplaint, showQRModal, skipSetup, verificationStep]);
 
   useEffect(() => {
     stepFadeAnim.setValue(0);
