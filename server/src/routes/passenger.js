@@ -19,8 +19,25 @@ const resolveTransportFilters = (staffRole) => {
       return ["train"];
     case "driver-conductor":
       return ["bus", "train"];
+    case "ttr":
+    case "tte":
+    case "rpf":
+    case "police":
+      return ["train"];
     default:
       return ["car", "auto", "bus", "train"];
+  }
+};
+
+const resolveAuthorityFilter = (staffRole) => {
+  switch ((staffRole || "").toLowerCase()) {
+    case "ttr":
+    case "tte":
+      return { $regex: "TTR|TTE", $options: "i" };
+    case "rpf":
+      return { $regex: "RPF", $options: "i" };
+    default:
+      return null;
   }
 };
 
@@ -162,11 +179,18 @@ router.get("/live-alerts", async (req, res) => {
   try {
     const { staffRole } = req.query;
     const transportFilters = resolveTransportFilters(staffRole);
+    const authorityFilter = resolveAuthorityFilter(staffRole);
 
-    const complaintList = await Complaint.find({
+    const query = {
       transportType: { $in: transportFilters },
       status: { $in: ["Reported", "Staff Notified"] },
-    }).sort({ createdAt: -1 });
+    };
+
+    if (authorityFilter) {
+      query.submitAuthority = authorityFilter;
+    }
+
+    const complaintList = await Complaint.find(query).sort({ createdAt: -1 });
 
     res.json({
       alerts: complaintList,
