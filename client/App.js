@@ -2517,24 +2517,34 @@ const AppContent = () => {
 
     // Handle TTR/RPF/Police based on specific role selection
     if (role === "TTR/RPF/Police") {
-      if (specificRole === "TTR") {
-        return renderTtrDashboard();
-      }
-      if (specificRole === "RPF") {
-        return renderRpfDashboard();
-      }
-      if (specificRole === "Police") {
-        return renderPoliceDashboard();
-      }
-      // Default to TTR dashboard if no specific role selected yet
-      return renderTtrDashboard();
+      const normalizedRole = (specificRole || "TTR").toLowerCase();
+      const liveStaffRole =
+        normalizedRole === "police"
+          ? "police"
+          : normalizedRole === "rpf"
+            ? "rpf"
+            : normalizedRole === "tte"
+              ? "tte"
+              : "ttr";
+
+      return (
+        <DriverConductorDashboard
+          onLogout={handleLogout}
+          staffRole={liveStaffRole}
+          presetPosition="conductor"
+          skipSetup
+        />
+      );
     }
 
     return renderStaffDashboard();
   };
 
   const usesInternalScroll =
-    role === "Passenger" || role === "Cab/Auto" || role === "Driver/Conductor";
+    role === "Passenger" ||
+    role === "Cab/Auto" ||
+    role === "Driver/Conductor" ||
+    role === "TTR/RPF/Police";
   const showStandaloneLogout = !usesInternalScroll && role !== "Passenger";
 
   const renderAuthenticatedContent = () => {
