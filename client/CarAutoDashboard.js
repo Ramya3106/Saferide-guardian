@@ -37,6 +37,7 @@ const CarAutoDashboard = ({ onLogout }) => {
   const screenFadeAnim = useRef(new Animated.Value(0)).current;
   const screenSlideAnim = useRef(new Animated.Value(18)).current;
   const stepFadeAnim = useRef(new Animated.Value(1)).current;
+  const onlinePulseAnim = useRef(new Animated.Value(0)).current;
 
   const buildIconShakeAnimation = () =>
     Animated.loop(
@@ -225,6 +226,29 @@ const CarAutoDashboard = ({ onLogout }) => {
       useNativeDriver: true,
     }).start();
   }, [currentStep, stepFadeAnim]);
+
+  useEffect(() => {
+    const onlinePulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(onlinePulseAnim, {
+          toValue: 1,
+          duration: 1300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(onlinePulseAnim, {
+          toValue: 0,
+          duration: 1300,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    onlinePulseLoop.start();
+
+    return () => {
+      onlinePulseLoop.stop();
+    };
+  }, [onlinePulseAnim]);
 
   // Handle continue from vehicle selection
   const handleContinueVehicleSelection = () => {
@@ -525,10 +549,26 @@ const CarAutoDashboard = ({ onLogout }) => {
           {/* Online/Offline Toggle */}
           <View style={styles.statusCard}>
             <View style={styles.statusLeft}>
-              <View
+              <Animated.View
                 style={[
                   styles.statusIndicator,
                   isOnline && styles.statusOnline,
+                  {
+                    opacity: onlinePulseAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.75, 1],
+                    }),
+                    transform: [
+                      {
+                        scale: isOnline
+                          ? onlinePulseAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [1, 1.28],
+                            })
+                          : 1,
+                      },
+                    ],
+                  },
                 ]}
               />
               <Text style={styles.statusText}>
@@ -881,7 +921,22 @@ const CarAutoDashboard = ({ onLogout }) => {
       ]}
     >
       <SafeAreaView style={styles.container}>
-        <Animated.View style={[styles.flex1, { opacity: stepFadeAnim }]}>
+        <Animated.View
+          style={[
+            styles.flex1,
+            {
+              opacity: stepFadeAnim,
+              transform: [
+                {
+                  translateX: stepFadeAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [22, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
           {currentStep === "vehicleSelection" && renderVehicleSelection()}
           {currentStep === "dutySetup" && renderDutySetup()}
           {currentStep === "dashboard" && renderDashboard()}

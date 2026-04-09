@@ -29,6 +29,8 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
   const iconShakeLoopRef = useRef(null);
   const screenFadeAnim = useRef(new Animated.Value(0)).current;
   const screenSlideAnim = useRef(new Animated.Value(18)).current;
+  const notificationPulseAnim = useRef(new Animated.Value(0)).current;
+  const actionBeaconAnim = useRef(new Animated.Value(0)).current;
 
   const buildIconShakeAnimation = () =>
     Animated.loop(
@@ -83,6 +85,46 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
       }),
     ]).start();
   }, [screenFadeAnim, screenSlideAnim]);
+
+  useEffect(() => {
+    const notificationPulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(notificationPulseAnim, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(notificationPulseAnim, {
+          toValue: 0,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    const actionBeaconLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(actionBeaconAnim, {
+          toValue: 1,
+          duration: 1800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(actionBeaconAnim, {
+          toValue: 0,
+          duration: 1800,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    notificationPulseLoop.start();
+    actionBeaconLoop.start();
+
+    return () => {
+      notificationPulseLoop.stop();
+      actionBeaconLoop.stop();
+    };
+  }, [actionBeaconAnim, notificationPulseAnim]);
 
   const iconShakeStyle = {
     transform: [{ translateX: iconShakeValue }],
@@ -508,17 +550,30 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity
-        style={styles.notificationBell}
-        onPress={handleOpenNotifications}
+      <Animated.View
+        style={{
+          transform: [
+            {
+              scale: notificationPulseAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [1, 1.06],
+              }),
+            },
+          ],
+        }}
       >
-        <Ionicons name="notifications-outline" size={24} color="#1E293B" />
-        {notificationCount > 0 && (
-          <View style={styles.notificationBadge}>
-            <Text style={styles.badgeText}>{notificationCount}</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.notificationBell}
+          onPress={handleOpenNotifications}
+        >
+          <Ionicons name="notifications-outline" size={24} color="#1E293B" />
+          {notificationCount > 0 && (
+            <View style={styles.notificationBadge}>
+              <Text style={styles.badgeText}>{notificationCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 
@@ -563,13 +618,26 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
   // Section 3: Primary Action Button
   const renderPrimaryAction = () => (
     <View style={styles.section}>
-      <TouchableOpacity
-        style={styles.primaryActionButton}
-        onPress={() => setShowComplaintModal(true)}
+      <Animated.View
+        style={{
+          transform: [
+            {
+              scale: actionBeaconAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [1, 1.02],
+              }),
+            },
+          ],
+        }}
       >
-        <ShakyIcon name="alert-circle" size={32} color="#FFFFFF" />
-        <Text style={styles.primaryActionText}>I LEFT SOMETHING</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.primaryActionButton}
+          onPress={() => setShowComplaintModal(true)}
+        >
+          <ShakyIcon name="alert-circle" size={32} color="#FFFFFF" />
+          <Text style={styles.primaryActionText}>I LEFT SOMETHING</Text>
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 
