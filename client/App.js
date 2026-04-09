@@ -226,6 +226,8 @@ const AppContent = () => {
   const shieldShakeLoopRef = useRef(null);
   const titleFade = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
+  const bgDriftAnim = useRef(new Animated.Value(0)).current;
+  const cardFloatAnim = useRef(new Animated.Value(0)).current;
 
   const isRegister = mode === "register";
   const isOfficialRole = role === "TTR/RPF/Police";
@@ -549,11 +551,50 @@ const AppContent = () => {
     );
     shieldRotateLoop.start();
 
+    const bgDriftLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(bgDriftAnim, {
+          toValue: 1,
+          duration: 2800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(bgDriftAnim, {
+          toValue: 0,
+          duration: 2800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    const cardFloatLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(cardFloatAnim, {
+          toValue: 1,
+          duration: 2200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(cardFloatAnim, {
+          toValue: 0,
+          duration: 2200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    bgDriftLoop.start();
+    cardFloatLoop.start();
+
     return () => {
       stopShieldShake();
       shieldRotateLoop.stop();
+      bgDriftLoop.stop();
+      cardFloatLoop.stop();
     };
-  }, []);
+  }, [bgDriftAnim, cardFloatAnim, formAnim, shieldRotate, titleFade]);
 
   // Reset animations when switching between login/register
   useEffect(() => {
@@ -2580,7 +2621,31 @@ const AppContent = () => {
           </View>
         ) : (
           <>
-            <View style={styles.backgroundGlow} />
+            <Animated.View
+              style={[
+                styles.backgroundGlow,
+                {
+                  opacity: bgDriftAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.25, 0.42],
+                  }),
+                  transform: [
+                    {
+                      translateY: bgDriftAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, -14],
+                      }),
+                    },
+                    {
+                      scale: bgDriftAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 1.08],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
             <KeyboardAvoidingView
               style={styles.keyboardAvoidingView}
               behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -2597,7 +2662,27 @@ const AppContent = () => {
                   bounces={true}
                   nestedScrollEnabled={true}
                 >
-                  <View style={styles.card}>
+                  <Animated.View
+                    style={[
+                      styles.card,
+                      {
+                        transform: [
+                          {
+                            translateY: cardFloatAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [0, -8],
+                            }),
+                          },
+                          {
+                            scale: cardFloatAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [1, 1.006],
+                            }),
+                          },
+                        ],
+                      },
+                    ]}
+                  >
                     <View style={styles.brandRow}>
                       <Pressable
                         onHoverIn={startShieldShake}
@@ -4020,7 +4105,7 @@ const AppContent = () => {
                         )}
                       </Animated.View>
                     )}
-                  </View>
+                  </Animated.View>
                 </ScrollView>
               </TouchableWithoutFeedback>
             </KeyboardAvoidingView>
