@@ -1,5 +1,5 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Animated, StyleSheet, Text, View } from "react-native";
 
 const RULES = [
   { key: "length", label: "Exactly 6 chars" },
@@ -8,33 +8,86 @@ const RULES = [
   { key: "special", label: "Special char" },
 ];
 
-const PasswordVerification = ({ checks, metCount }) => (
-  <>
-    <View style={styles.barRow}>
-      {[0, 1, 2, 3].map((segment) => (
-        <View
-          key={segment}
-          style={[styles.bar, segment < metCount && styles.barActive]}
-        />
-      ))}
-    </View>
+const PasswordVerification = ({ checks, metCount }) => {
+  const pulseAnim = useRef(new Animated.Value(0)).current;
 
-    <View style={styles.ruleRow}>
-      {RULES.map((rule) => {
-        const isMet = Boolean(checks?.[rule.key]);
+  useEffect(() => {
+    const pulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
 
-        return (
-          <Text
-            key={rule.key}
-            style={[styles.ruleText, isMet && styles.ruleTextActive]}
-          >
-            {isMet ? "\u2713" : "\u25CB"} {rule.label}
-          </Text>
-        );
-      })}
-    </View>
-  </>
-);
+    pulseLoop.start();
+
+    return () => {
+      pulseLoop.stop();
+    };
+  }, [pulseAnim]);
+
+  return (
+    <>
+      <View style={styles.barRow}>
+        {[0, 1, 2, 3].map((segment) => {
+          const isActive = segment < metCount;
+
+          return (
+            <Animated.View
+              key={segment}
+              style={[
+                styles.bar,
+                isActive && styles.barActive,
+                isActive && {
+                  transform: [
+                    {
+                      scaleY: pulseAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 1.18],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
+          );
+        })}
+      </View>
+
+      <Animated.View
+        style={{
+          opacity: pulseAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0.92, 1],
+          }),
+        }}
+      >
+        <View style={styles.ruleRow}>
+          {RULES.map((rule) => {
+            const isMet = Boolean(checks?.[rule.key]);
+
+            return (
+              <Text
+                key={rule.key}
+                style={[styles.ruleText, isMet && styles.ruleTextActive]}
+              >
+                {isMet ? "\u2713" : "\u25CB"} {rule.label}
+              </Text>
+            );
+          })}
+        </View>
+      </Animated.View>
+    </>
+  );
+};
 
 const styles = StyleSheet.create({
   barRow: {
