@@ -39,6 +39,7 @@ const DriverConductorDashboard = ({
   const screenFadeAnim = useRef(new Animated.Value(0)).current;
   const screenSlideAnim = useRef(new Animated.Value(18)).current;
   const stepFadeAnim = useRef(new Animated.Value(1)).current;
+  const patrolSweepAnim = useRef(new Animated.Value(0)).current;
 
   const buildIconShakeAnimation = () =>
     Animated.loop(
@@ -253,6 +254,29 @@ const DriverConductorDashboard = ({
       useNativeDriver: true,
     }).start();
   }, [currentStep, position, stepFadeAnim]);
+
+  useEffect(() => {
+    const patrolSweepLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(patrolSweepAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(patrolSweepAnim, {
+          toValue: 0,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    patrolSweepLoop.start();
+
+    return () => {
+      patrolSweepLoop.stop();
+    };
+  }, [patrolSweepAnim]);
 
   // Handle position selection
   const handlePositionSelection = (pos) => {
@@ -555,14 +579,27 @@ const DriverConductorDashboard = ({
             <Text style={styles.busNumberText}>🚌 {busNumber}</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.notificationBell}>
-          <ShakyIcon name="notifications" size={24} color="#2563EB" />
-          {complaints.length > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{complaints.length}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        <Animated.View
+          style={{
+            transform: [
+              {
+                rotate: patrolSweepAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ["-6deg", "6deg"],
+                }),
+              },
+            ],
+          }}
+        >
+          <TouchableOpacity style={styles.notificationBell}>
+            <ShakyIcon name="notifications" size={24} color="#2563EB" />
+            {complaints.length > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{complaints.length}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </Animated.View>
       </View>
 
       {/* Duty Status Toggle */}
@@ -729,14 +766,27 @@ const DriverConductorDashboard = ({
                 <Text style={styles.busNumberText}>🚌 {busNumber}</Text>
               </View>
             </View>
-            <TouchableOpacity style={styles.notificationBell}>
-              <ShakyIcon name="notifications" size={24} color="#2563EB" />
-              {complaints.length > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{complaints.length}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+            <Animated.View
+              style={{
+                transform: [
+                  {
+                    rotate: patrolSweepAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ["-6deg", "6deg"],
+                    }),
+                  },
+                ],
+              }}
+            >
+              <TouchableOpacity style={styles.notificationBell}>
+                <ShakyIcon name="notifications" size={24} color="#2563EB" />
+                {complaints.length > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{complaints.length}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
           </View>
 
           {/* Duty Status Toggle */}
@@ -1130,7 +1180,22 @@ const DriverConductorDashboard = ({
       ]}
     >
       <SafeAreaView style={styles.container}>
-        <Animated.View style={[styles.flex1, { opacity: stepFadeAnim }]}>
+        <Animated.View
+          style={[
+            styles.flex1,
+            {
+              opacity: stepFadeAnim,
+              transform: [
+                {
+                  translateY: stepFadeAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [18, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
           {currentStep === "positionSelection" && renderPositionSelection()}
           {currentStep === "dutySetup" && renderDutySetup()}
           {currentStep === "dashboard" && position === "driver" && renderDriverDashboard()}
