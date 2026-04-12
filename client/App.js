@@ -1048,6 +1048,7 @@ const AppContent = () => {
 
   const handleRoleChange = (nextRole) => {
     setRole(nextRole);
+    setForgotPasswordMode(false);
     setEmailOtp("");
     setIsVerified(false);
     setIsOtpSent(false);
@@ -1057,6 +1058,11 @@ const AppContent = () => {
     setPendingLoginProfile(null);
     setPendingLoginSpecificRole("");
     setPendingApproval(false);
+    setIsResetCodeSent(false);
+    setIsResetCodeVerified(false);
+    setResetCode("");
+    setNewPassword("");
+    setConfirmNewPassword("");
     setError("");
   };
 
@@ -3072,29 +3078,48 @@ const AppContent = () => {
                             <Text style={styles.helperText}>
                               {loginWithOtp
                                 ? "Signing in with OTP"
-                                : "Forgot password?"}
+                                : "Use OTP instead of password"}
                             </Text>
-                            <TouchableOpacity
-                              onPress={() => {
-                                if (loginWithOtp) {
+                            <View style={styles.otpToggleActions}>
+                              <TouchableOpacity
+                                onPress={() => {
+                                  if (loginWithOtp) {
+                                    setLoginWithOtp(false);
+                                    setEmailOtp("");
+                                    setIsVerified(false);
+                                    setIsOtpSent(false);
+                                  } else {
+                                    setLoginWithOtp(true);
+                                    setForgotPasswordMode(false);
+                                    setResetCode("");
+                                    setIsResetCodeSent(false);
+                                    setError("");
+                                  }
+                                }}
+                              >
+                                <Text style={styles.switchLink}>
+                                  {loginWithOtp
+                                    ? "Use password"
+                                    : "Sign in with OTP"}
+                                </Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                onPress={() => {
+                                  setForgotPasswordMode(true);
                                   setLoginWithOtp(false);
+                                  setIsOtpSent(false);
                                   setEmailOtp("");
                                   setIsVerified(false);
-                                  setIsOtpSent(false);
-                                } else {
-                                  setForgotPasswordMode(true);
                                   setIsResetCodeSent(false);
                                   setResetCode("");
                                   setError("");
-                                }
-                              }}
-                            >
-                              <Text style={styles.switchLink}>
-                                {loginWithOtp
-                                  ? "Use password"
-                                  : "Reset password"}
-                              </Text>
-                            </TouchableOpacity>
+                                }}
+                              >
+                                <Text style={styles.switchLink}>
+                                  Reset password
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
                           </View>
                         )}
 
