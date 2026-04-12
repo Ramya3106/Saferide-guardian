@@ -34,6 +34,17 @@
 - server/src/models/Journey.js: journey details schema.
 - server/src/models/Complaint.js: complaint data schema.
 
+## Where Each Part Is Stored
+| Area | File(s) | What Is Stored |
+|---|---|---|
+| Frontend UI | client/App.js, client/PassengerDashboard.js, client/DriverConductorDashboard.js, client/CarAutoDashboard.js | Screen flow, forms, and dashboard UI |
+| Frontend helpers | client/PasswordVerification.js, client/apiConfig.js | Password checks and API URL config |
+| Backend API logic | server/src/routes/auth.js, server/src/routes/passenger.js, server/src/routes/health.js | Login/register/OTP/reset logic, passenger APIs, health endpoint |
+| Backend setup | server/src/index.js, server/src/app.js, server/src/config/db.js | Server start, middleware/route wiring, DB connection |
+| Database schemas | server/src/models/User.js, server/src/models/Journey.js, server/src/models/Complaint.js | MongoDB document structure |
+| Security and secrets | .env, SECURITY.md | Hidden credentials, security policies and notes |
+| Main algorithm details | server/src/routes/auth.js, client/App.js | OTP generation/validation, reset checks, form/flow validation |
+
 ## Short Summary
 - The client handles the UI.
 - The server handles logic and storage.
