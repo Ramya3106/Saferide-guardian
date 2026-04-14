@@ -1096,6 +1096,10 @@ const AppContent = () => {
       setIsOtpSent(sent);
       if (sent) {
         setOtpResendCountdown(60); // Start 60-second countdown
+        if (data?.fallback && data?.devCode) {
+          setEmailOtp(String(data.devCode));
+          setError("Email service unavailable, so OTP was auto-filled for development. Tap Verify.");
+        }
       } else if (data?.message) {
         setError(data.message);
       }

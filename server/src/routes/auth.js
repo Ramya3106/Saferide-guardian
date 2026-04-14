@@ -77,6 +77,15 @@ const createTransporter = () => {
 const getEmailServiceUnavailableMessage = () =>
   `Email service not configured. Set RESET_EMAIL_PASS or EMAIL_PASS for ${mailUser}.`;
 
+const canUseDevOtpFallback = () => {
+  const explicitFlag = String(process.env.RETURN_VERIFY_CODE || "").trim().toLowerCase();
+  if (explicitFlag === "true") {
+    return true;
+  }
+
+  return process.env.NODE_ENV !== "production";
+};
+
 const getEmailSendFailureMessage = (error) => {
   const responseCode = Number(error?.responseCode || 0);
   const responseText = String(error?.response || "");
@@ -277,6 +286,19 @@ router.post("/send-verify-code", async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Email error:", error);
+    if (canUseDevOtpFallback()) {
+      console.warn(
+        `⚠️ Using dev OTP fallback for ${email}. SMTP delivery failed; returning code in API response.`,
+      );
+      return res.status(200).json({
+        sent: true,
+        devCode: code,
+        fallback: true,
+        message:
+          "Email delivery unavailable. Using development OTP fallback.",
+      });
+    }
+
     verificationStore.delete(email); // Cleanup on fail
     return res.status(500).json({
       message: getEmailSendFailureMessage(error),
@@ -811,6 +833,19 @@ router.post("/forgot-password", async (req, res) => {
       });
     } catch (error) {
       console.error("❌ Email error:", error);
+      if (canUseDevOtpFallback()) {
+        console.warn(
+          `⚠️ Using dev reset-code fallback for ${officialEmail}. SMTP delivery failed; returning code in API response.`,
+        );
+        return res.status(200).json({
+          sent: true,
+          devCode: resetCode,
+          fallback: true,
+          message:
+            "Email delivery unavailable. Using development reset-code fallback.",
+        });
+      }
+
       resetPasswordStore.delete(officialEmail);
       return res.status(500).json({
         message: getEmailSendFailureMessage(error),
@@ -1092,8 +1127,21 @@ router.post("/forgot-password-user", async (req, res) => {
 
       return res.status(200).json({ sent: true });
     } catch (error) {
-      verificationStore.delete(email);
       console.error("Forgot password user email error:", error.message);
+      if (canUseDevOtpFallback()) {
+        console.warn(
+          `⚠️ Using dev reset-code fallback for ${email}. SMTP delivery failed; returning code in API response.`,
+        );
+        return res.status(200).json({
+          sent: true,
+          devCode: resetCode,
+          fallback: true,
+          message:
+            "Email delivery unavailable. Using development reset-code fallback.",
+        });
+      }
+
+      verificationStore.delete(email);
       return res
         .status(500)
         .json({ message: getEmailSendFailureMessage(error) });
