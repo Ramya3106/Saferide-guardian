@@ -974,10 +974,10 @@ const AppContent = () => {
           profile.professionalId || professionalId,
         );
 
-        const otpInitiated = await initiatePostLoginOtp(profile, inferredRole);
-        if (otpInitiated) {
-          setProfessionalId(profile.professionalId || professionalId);
-        }
+        setProfessionalId(profile.professionalId || professionalId);
+        setSpecificRole(inferredRole);
+        setError("");
+        setIsAuthenticated(true);
       } catch (err) {
         const message = err?.response?.data?.message || "Unable to log in.";
         setPendingApproval(message.toLowerCase().includes("pending"));
@@ -1001,15 +1001,15 @@ const AppContent = () => {
           return;
         }
 
-        await initiatePostLoginOtp(profile);
+        setEmail(profile.email || email);
+        setError("");
+        setIsAuthenticated(true);
       } catch (err) {
         const message = err?.response?.data?.message || "Unable to log in.";
         setError(message);
       }
       return;
     }
-
-    setIsAuthenticated(true);
   };
 
   const handleSpecificRoleSelection = () => {
