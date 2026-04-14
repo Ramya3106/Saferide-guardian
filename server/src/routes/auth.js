@@ -843,51 +843,35 @@ router.post("/forgot-password", async (req, res) => {
 
     console.log("Reset code stored in memory store");
 
-    try {
-      await transporter.sendMail({
-        from: fromAddress || mailUser,
-        to: officialEmail,
-        subject: "SafeRide Guardian - Password Reset Code",
-        text: `Your SafeRide password reset code is: ${resetCode}\n\nIt expires in 15 minutes.\n\nIf you didn't request this, please ignore this email.\n\nSafeRide Team`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
-            <h2>🛡️ SafeRide Guardian</h2>
-            <p>You requested a password reset. Your reset code is:</p>
-            <div style="background: #f0f0f0; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
-              ${resetCode}
-            </div>
-            <p>This code expires in <strong>15 minutes</strong>.</p>
-            <p>If you didn't request this password reset, please ignore this email.</p>
-            <hr>
-            <p>Thank you for using SafeRide Guardian!</p>
+    // Send email asynchronously without blocking response
+    transporter.sendMail({
+      from: fromAddress || mailUser,
+      to: officialEmail,
+      subject: "SafeRide Guardian - Password Reset Code",
+      text: `Your SafeRide password reset code is: ${resetCode}\n\nIt expires in 15 minutes.\n\nIf you didn't request this, please ignore this email.\n\nSafeRide Team`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+          <h2>🛡️ SafeRide Guardian</h2>
+          <p>You requested a password reset. Your reset code is:</p>
+          <div style="background: #f0f0f0; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
+            ${resetCode}
           </div>
-        `,
-      });
-
+          <p>This code expires in <strong>15 minutes</strong>.</p>
+          <p>If you didn't request this password reset, please ignore this email.</p>
+          <hr>
+          <p>Thank you for using SafeRide Guardian!</p>
+        </div>
+      `,
+    }).then(() => {
       console.log(`✅ Password reset code sent to ${officialEmail}`);
-      return res.status(200).json({
-        sent: true,
-      });
-    } catch (error) {
-      console.error("❌ Email error:", error);
-      if (canUseDevOtpFallback()) {
-        console.warn(
-          `⚠️ Using dev reset-code fallback for ${officialEmail}. SMTP delivery failed; returning code in API response.`,
-        );
-        return res.status(200).json({
-          sent: true,
-          devCode: resetCode,
-          fallback: true,
-          message:
-            "Email delivery unavailable. Using development reset-code fallback.",
-        });
-      }
+    }).catch((error) => {
+      console.error("❌ Email error:", error.message);
+    });
 
-      resetPasswordStore.delete(officialEmail);
-      return res.status(500).json({
-        message: getEmailSendFailureMessage(error),
-      });
-    }
+    console.log(`📤 Password reset code queued for ${officialEmail}`);
+    return res.status(200).json({
+      sent: true,
+    });
   } catch (error) {
     console.error("Forgot password error:", error.message);
     return res.status(500).json({ message: "Unable to process request." });
