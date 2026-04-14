@@ -230,12 +230,22 @@ const consumeVerificationCode = (email, code) => {
 
 router.post("/send-verify-code", async (req, res) => {
   const email = (req.body?.email || "").trim().toLowerCase();
+  const purpose = String(req.body?.purpose || "register").trim().toLowerCase();
 
   console.log(`\n📧 SEND VERIFY CODE for: "${email}"`);
   console.log("Email type:", typeof email, "Length:", email.length);
 
   if (!isValidEmail(email)) {
     return res.status(400).json({ message: "Enter a valid email address." });
+  }
+
+  if (purpose === "register") {
+    const existingAccount = await findUserByEmail(email);
+    if (existingAccount) {
+      return res.status(409).json({
+        message: "This email is already registered. Please log in.",
+      });
+    }
   }
 
   const transporter = createTransporter();

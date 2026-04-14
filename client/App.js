@@ -34,9 +34,10 @@ const OFFICIAL_DOMAINS = {
 };
 const API_BASE = getApiBase();
 
-const sendCode = (emailAddress) =>
+const sendCode = (emailAddress, purpose = "register") =>
   axios.post(`${API_BASE}/auth/send-verify-code`, {
     email: emailAddress,
+    purpose,
   });
 
 const verifyCode = (emailAddress, code) =>
@@ -832,7 +833,7 @@ const AppContent = () => {
     setIsSendingOtp(true);
 
     try {
-      const { data } = await sendCode(resolvedEmail);
+      const { data } = await sendCode(resolvedEmail, "login");
       const sent = Boolean(data?.sent);
       setIsOtpSent(sent);
 
@@ -1091,7 +1092,7 @@ const AppContent = () => {
     setIsSendingOtp(true);
 
     try {
-      const { data } = await sendCode(otpEmail);
+      const { data } = await sendCode(otpEmail, isRegister ? "register" : "login");
       const sent = Boolean(data?.sent);
       setIsOtpSent(sent);
       if (sent) {
