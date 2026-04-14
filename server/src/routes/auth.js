@@ -475,7 +475,16 @@ router.post("/login", async (req, res) => {
     const email = (req.body?.email || "").trim().toLowerCase();
     const professionalId = (req.body?.professionalId || "").trim();
 
+    console.log(`\n🔐 LOGIN ATTEMPT`, {
+      role,
+      email: email || "(empty)",
+      method,
+      professionalId: professionalId || "(empty)",
+      passwordLength: password.length,
+    });
+
     if (!role || !ROLES.includes(role)) {
+      console.log("❌ Invalid role:", role);
       return res.status(400).json({ message: "Role is required." });
     }
 
@@ -484,29 +493,45 @@ router.post("/login", async (req, res) => {
     if (isOtp) {
       if (isOfficialRole(role)) {
         if (!isValidOfficialEmail(role, email)) {
+          console.log("❌ Invalid official email domain");
           return res
             .status(400)
             .json({ message: "Official email domain required." });
         }
       } else if (!isValidEmail(email)) {
+        console.log("❌ Invalid email format");
         return res.status(400).json({ message: "Enter a valid email." });
       }
       user = await User.findOne({ email, role });
+      console.log(`🔍 OTP login lookup: email=${email}, role=${role}, found=${!!user}`);
     } else if (isOfficialRole(role)) {
       if (!isValidProfessionalId(role, professionalId)) {
+        console.log("❌ Invalid professional ID format");
         return res
           .status(400)
           .json({ message: "Invalid professional ID format." });
       }
       user = await findOfficialByProfessionalId(role, professionalId);
+      console.log(`🔍 Official login lookup: professionalId=${professionalId}, role=${role}, found=${!!user}`);
     } else {
       if (!isValidEmail(email)) {
+        console.log("❌ Invalid email format");
         return res.status(400).json({ message: "Enter a valid email." });
       }
       user = await User.findOne({ email, role }).select("+password");
+      console.log(`🔍 Password login lookup: email=${email}, role=${role}, found=${!!user}`);
+      if (user) {
+        console.log(`✅ User found, password hash exists=${!!user.password}`, {
+          userId: user._id.toString().slice(0, 8),
+          userName: user.name,
+          userRole: user.role,
+          approvalStatus: user.approvalStatus,
+        });
+      }
     }
 
     if (!user) {
+      console.log("❌ USER NOT FOUND after lookup");
       return res.status(401).json({ message: "Invalid credentials." });
     }
 
@@ -516,12 +541,17 @@ router.post("/login", async (req, res) => {
 
     if (isOfficialRole(role) && !isOtp) {
       if (!password) {
+        console.log("❌ Password not provided for official role");
         return res.status(400).json({ message: "Password required." });
       }
+      console.log(`🔐 Comparing password (length=${password.length}) with hash`);
       const matches = await bcrypt.compare(password, user.password);
+      console.log(`🔐 Password match result: ${matches}`);
       if (!matches) {
+        console.log(`❌ PASSWORD MISMATCH for official ${user.email}`);
         return res.status(401).json({ message: "Invalid credentials." });
       }
+      console.log(`✅ PASSWORD MATCH for official ${user.email}`);
     } else if (isOtp) {
       const code = String(req.body?.otpCode || "").trim();
       if (!code || code.length !== 6) {
@@ -533,22 +563,29 @@ router.post("/login", async (req, res) => {
       }
     } else {
       if (!password) {
+        console.log("❌ Password not provided for regular role");
         return res.status(400).json({ message: "Password required." });
       }
+      console.log(`🔐 Comparing password (length=${password.length}) with hash for ${user.email}`);
       const matches = await bcrypt.compare(password, user.password);
+      console.log(`🔐 Password match result: ${matches}`);
       if (!matches) {
+        console.log(`❌ PASSWORD MISMATCH for ${user.email}`);
         return res.status(401).json({ message: "Invalid credentials." });
       }
+      console.log(`✅ PASSWORD MATCH for ${user.email}`);
     }
 
     const safeUser =
       typeof user.toSafeObject === "function" ? user.toSafeObject() : user;
 
+    console.log(`✅ LOGIN SUCCESS for ${user.email} (${user.role})`);
     return res.status(200).json({
       user: safeUser,
     });
   } catch (error) {
-    console.error("Login error:", error.message);
+    console.error("❌ LOGIN ERROR:", error.message);
+    console.error(error.stack);
     return res.status(500).json({ message: "Unable to log in." });
   }
 });
