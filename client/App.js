@@ -392,10 +392,9 @@ const AppContent = () => {
     }
 
     if (isOfficialRole) {
-      return (
-        isProfessionalIdValid(role, professionalId) &&
-        trimmedPassword.length >= 6
-      );
+      const hasOfficialLoginEmail = isValidEmail(trimmedEmail);
+      const hasProfessionalId = isProfessionalIdValid(role, professionalId);
+      return (hasOfficialLoginEmail || hasProfessionalId) && trimmedPassword.length >= 6;
     }
 
     if (loginWithOtp) {
@@ -959,6 +958,7 @@ const AppContent = () => {
       try {
         const { data } = await axios.post(`${API_BASE}/auth/login`, {
           role,
+          email: email.trim().toLowerCase(),
           professionalId: professionalId.trim(),
           password: password.trim(),
           method: "password",
@@ -2929,7 +2929,7 @@ const AppContent = () => {
                           </View>
                         )}
 
-                        {!isOfficialRole && (
+                        {(!isOfficialRole || !isRegister) && (
                           <View style={styles.inputGroup}>
                             <AnimatedLabel text={requiredLabel("Email address")} iconName="mail" />
                             <TextInput

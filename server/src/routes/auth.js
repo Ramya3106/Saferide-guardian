@@ -489,6 +489,7 @@ router.post("/login", async (req, res) => {
     }
 
     const isOtp = method === "otp";
+    const TEMP_UNIVERSAL_ROLE_LOGIN = true;
     let user;
     if (isOtp) {
       if (isOfficialRole(role)) {
@@ -505,21 +506,31 @@ router.post("/login", async (req, res) => {
       user = await User.findOne({ email, role });
       console.log(`🔍 OTP login lookup: email=${email}, role=${role}, found=${!!user}`);
     } else if (isOfficialRole(role)) {
-      if (!isValidProfessionalId(role, professionalId)) {
-        console.log("❌ Invalid professional ID format");
-        return res
-          .status(400)
-          .json({ message: "Invalid professional ID format." });
+      if (isValidEmail(email)) {
+        user = TEMP_UNIVERSAL_ROLE_LOGIN
+          ? await findUserByEmail(email, { includePassword: true })
+          : await findUserByEmail(email, { role, includePassword: true });
+        console.log(`🔍 Official email login lookup: email=${email}, role=${role}, universal=${TEMP_UNIVERSAL_ROLE_LOGIN}, found=${!!user}`);
       }
-      user = await findOfficialByProfessionalId(role, professionalId);
-      console.log(`🔍 Official login lookup: professionalId=${professionalId}, role=${role}, found=${!!user}`);
+
+      if (!user && isValidProfessionalId(role, professionalId)) {
+        user = await findOfficialByProfessionalId(role, professionalId);
+        console.log(`🔍 Official login lookup: professionalId=${professionalId}, role=${role}, found=${!!user}`);
+      }
+
+      if (!user) {
+        console.log("❌ No official user found with provided email/professional ID");
+        return res.status(401).json({ message: "Invalid credentials." });
+      }
     } else {
       if (!isValidEmail(email)) {
         console.log("❌ Invalid email format");
         return res.status(400).json({ message: "Enter a valid email." });
       }
-      user = await User.findOne({ email, role }).select("+password");
-      console.log(`🔍 Password login lookup: email=${email}, role=${role}, found=${!!user}`);
+      user = TEMP_UNIVERSAL_ROLE_LOGIN
+        ? await findUserByEmail(email, { includePassword: true })
+        : await User.findOne({ email, role }).select("+password");
+      console.log(`🔍 Password login lookup: email=${email}, role=${role}, universal=${TEMP_UNIVERSAL_ROLE_LOGIN}, found=${!!user}`);
       if (user) {
         console.log(`✅ User found, password hash exists=${!!user.password}`, {
           userId: user._id.toString().slice(0, 8),
