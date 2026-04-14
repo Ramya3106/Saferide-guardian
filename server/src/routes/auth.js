@@ -137,7 +137,7 @@ const normalizeProfessionalId = (value) => (value || "").trim().toUpperCase();
 
 const isStrongPassword = (passwordValue) => {
   const password = String(passwordValue || "");
-  return password.length === PASSWORD_MIN_LENGTH;
+  return password.length >= PASSWORD_MIN_LENGTH;
 };
 
 const findOfficialByProfessionalId = async (role, professionalId) => {
@@ -339,7 +339,7 @@ router.post("/register", async (req, res) => {
 
     if (!isStrongPassword(password)) {
       return res.status(400).json({
-        message: "Password must be exactly 6 characters.",
+        message: "Password must be at least 6 characters.",
       });
     }
 
@@ -544,11 +544,11 @@ router.post("/login", async (req, res) => {
         console.log("❌ Password not provided for official role");
         return res.status(400).json({ message: "Password required." });
       }
-      console.log(`🔐 Comparing password (length=${password.length}) with hash`);
+      console.log(`🔐 Comparing password (${password.length} chars) with stored hash`);
       const matches = await bcrypt.compare(password, user.password);
-      console.log(`🔐 Password match result: ${matches}`);
+      console.log(`🔐 Bcrypt comparison result: ${matches}`);
       if (!matches) {
-        console.log(`❌ PASSWORD MISMATCH for official ${user.email}`);
+        console.log(`❌ PASSWORD MISMATCH - password does not match stored hash for ${user.email}`);
         return res.status(401).json({ message: "Invalid credentials." });
       }
       console.log(`✅ PASSWORD MATCH for official ${user.email}`);
@@ -566,11 +566,11 @@ router.post("/login", async (req, res) => {
         console.log("❌ Password not provided for regular role");
         return res.status(400).json({ message: "Password required." });
       }
-      console.log(`🔐 Comparing password (length=${password.length}) with hash for ${user.email}`);
+      console.log(`🔐 Comparing password (${password.length} chars) with stored hash for ${user.email}`);
       const matches = await bcrypt.compare(password, user.password);
-      console.log(`🔐 Password match result: ${matches}`);
+      console.log(`🔐 Bcrypt comparison result: ${matches}`);
       if (!matches) {
-        console.log(`❌ PASSWORD MISMATCH for ${user.email}`);
+        console.log(`❌ PASSWORD MISMATCH - password does not match stored hash for ${user.email}`);
         return res.status(401).json({ message: "Invalid credentials." });
       }
       console.log(`✅ PASSWORD MATCH for ${user.email}`);
@@ -911,7 +911,7 @@ router.post("/reset-password", async (req, res) => {
 
     if (!isStrongPassword(newPassword)) {
       return res.status(400).json({
-        message: "Password must be exactly 6 characters.",
+        message: "Password must be at least 6 characters.",
       });
     }
 
@@ -982,7 +982,7 @@ router.post("/reset-password-otp", async (req, res) => {
 
     if (!isStrongPassword(newPassword)) {
       return res.status(400).json({
-        message: "Password must be exactly 6 characters.",
+        message: "Password must be at least 6 characters.",
       });
     }
 
@@ -1036,7 +1036,7 @@ router.post("/reset-password-user", async (req, res) => {
 
     if (!isStrongPassword(newPassword)) {
       return res.status(400).json({
-        message: "Password must be exactly 6 characters.",
+        message: "Password must be at least 6 characters.",
       });
     }
 
