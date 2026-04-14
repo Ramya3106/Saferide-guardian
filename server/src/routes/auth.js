@@ -60,16 +60,37 @@ const createTransporter = () => {
   if (!mailUser || !pass) return null;
 
   return nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    requireTLS: true,
     auth: {
       user: mailUser,
       pass,
+    },
+    tls: {
+      rejectUnauthorized: true,
     },
   });
 };
 
 const getEmailServiceUnavailableMessage = () =>
   `Email service not configured. Set RESET_EMAIL_PASS or EMAIL_PASS for ${mailUser}.`;
+
+const getEmailSendFailureMessage = (error) => {
+  const responseCode = Number(error?.responseCode || 0);
+  const responseText = String(error?.response || "");
+
+  if (error?.code === "EAUTH" || responseCode === 535) {
+    return `Gmail sign-in failed for ${mailUser}. Update RESET_EMAIL_PASS or EMAIL_PASS with a valid Google App Password.`;
+  }
+
+  if (responseCode === 550 || /recipient/i.test(responseText)) {
+    return "Recipient email address was rejected by the mail server.";
+  }
+
+  return "Failed to send verification email. Please try again.";
+};
 
 // Generate 6-digit code
 const generateCode = () => String(Math.floor(100000 + Math.random() * 900000));
@@ -258,7 +279,7 @@ router.post("/send-verify-code", async (req, res) => {
     console.error("❌ Email error:", error);
     verificationStore.delete(email); // Cleanup on fail
     return res.status(500).json({
-      message: "Failed to send verification email.",
+      message: getEmailSendFailureMessage(error),
     });
   }
 });
@@ -792,7 +813,7 @@ router.post("/forgot-password", async (req, res) => {
       console.error("❌ Email error:", error);
       resetPasswordStore.delete(officialEmail);
       return res.status(500).json({
-        message: "Failed to send reset email.",
+        message: getEmailSendFailureMessage(error),
       });
     }
   } catch (error) {
@@ -1073,7 +1094,9 @@ router.post("/forgot-password-user", async (req, res) => {
     } catch (error) {
       verificationStore.delete(email);
       console.error("Forgot password user email error:", error.message);
-      return res.status(500).json({ message: "Failed to send reset email." });
+      return res
+        .status(500)
+        .json({ message: getEmailSendFailureMessage(error) });
     }
   } catch (error) {
     console.error("Forgot password user error:", error.message);
