@@ -1,13 +1,21 @@
+const path = require("path");
 const dotenv = require("dotenv");
 const http = require("http");
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const app = require("./app");
 const connectDb = require("./config/db");
 
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/saferide";
+const configuredEmailUser =
+  process.env.RESET_EMAIL_USER || process.env.EMAIL_USER || "divyadharshana3@gmail.com";
+const configuredEmailPass =
+  process.env.RESET_EMAIL_PASS ||
+  process.env.EMAIL_PASS ||
+  process.env.GMAIL_APP_PASSWORD ||
+  "";
 
 const isExistingSafeRideServer = () =>
   new Promise((resolve) => {
@@ -55,6 +63,12 @@ const startServer = async () => {
   } catch (error) {
     console.error("Failed to connect MongoDB:", error.message);
     process.exit(1);
+  }
+
+  if (!String(configuredEmailPass || "").trim()) {
+    console.warn(
+      `Email OTP disabled: set RESET_EMAIL_PASS, EMAIL_PASS, or GMAIL_APP_PASSWORD for ${configuredEmailUser}.`,
+    );
   }
 
   console.log(`Server running on port ${PORT}`);

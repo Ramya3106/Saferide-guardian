@@ -2,10 +2,7 @@ const express = require("express");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
 const router = express.Router();
-const dotenv = require("dotenv");
 const User = require("../models/User");
-
-dotenv.config();
 
 const VERIFY_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const RESET_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -42,7 +39,10 @@ const mailUser = (
   DEFAULT_RESET_SENDER
 ).trim();
 const pass = String(
-  process.env.RESET_EMAIL_PASS || process.env.EMAIL_PASS || "",
+  process.env.RESET_EMAIL_PASS ||
+    process.env.EMAIL_PASS ||
+    process.env.GMAIL_APP_PASSWORD ||
+    "",
 ).replace(/\s+/g, "");
 const fromAddress = (
   process.env.RESET_EMAIL_FROM ||
