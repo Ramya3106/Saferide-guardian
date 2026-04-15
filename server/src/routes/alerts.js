@@ -3,6 +3,10 @@ const mongoose = require("mongoose");
 
 const AlertNotification = require("../models/AlertNotification");
 const Complaint = require("../models/Complaint");
+const User = require("../models/User");
+const DutyAttendance = require("../models/DutyAttendance");
+const { success, failure } = require("../utils/apiResponse");
+const { logAction } = require("../utils/actionLogger");
 
 const router = express.Router();
 
@@ -15,24 +19,53 @@ const toObjectId = (value, label) => {
   return new mongoose.Types.ObjectId(String(value));
 };
 
+const isOfficerOnActiveDuty = async (userId) => {
+  const user = await User.findById(userId).select("onDutyStatus isActiveDuty role");
+  if (!user) {
+    return { exists: false, onDuty: false };
+  }
+
+  const activeSession = await DutyAttendance.findOne({
+    userId,
+    $or: [{ dutyStatus: "ACTIVE" }, { status: "ACTIVE" }],
+  }).sort({ checkInTime: -1 });
+
+  return {
+    exists: true,
+    onDuty: Boolean(user.isActiveDuty || user.onDutyStatus || activeSession),
+    role: user.role,
+  };
+};
+
 router.post("/route", async (req, res) => {
   try {
     const { complaintId, receiverId, receiverRole, priorityLevel, matchType, receivers } = req.body || {};
 
     if (!complaintId || !isObjectId(complaintId)) {
-      return res.status(400).json({ message: "Valid complaintId is required" });
+      return failure(res, 400, "Valid complaintId is required", "VALIDATION_ERROR");
     }
 
     const complaint = await Complaint.findById(complaintId);
     if (!complaint) {
-      return res.status(404).json({ message: "Complaint not found" });
+      return failure(res, 404, "Complaint not found", "NOT_FOUND");
     }
 
     const normalizedReceivers = Array.isArray(receivers) && receivers.length > 0
       ? receivers
       : [{ receiverId, receiverRole, priorityLevel, matchType }];
 
-    const docs = normalizedReceivers
+    const activeReceiverEntries = [];
+    for (const entry of normalizedReceivers) {
+      if (!entry?.receiverId || !entry?.receiverRole || !isObjectId(entry.receiverId)) {
+        continue;
+      }
+      const dutyState = await isOfficerOnActiveDuty(entry.receiverId);
+      if (dutyState.exists && dutyState.onDuty) {
+        activeReceiverEntries.push(entry);
+      }
+    }
+
+    const docs = activeReceiverEntries
       .filter((entry) => entry?.receiverId && entry?.receiverRole)
       .map((entry) => ({
         complaintId: toObjectId(complaintId, "complaintId"),
@@ -45,13 +78,28 @@ router.post("/route", async (req, res) => {
       }));
 
     if (docs.length === 0) {
-      return res.status(400).json({ message: "At least one valid receiver is required" });
+      return failure(res, 400, "No active-duty receivers available for alert routing", "NO_ACTIVE_RECEIVER");
     }
 
     const alerts = await AlertNotification.insertMany(docs);
-    return res.status(201).json({ message: "Alerts routed", alerts, total: alerts.length });
+    await logAction({
+      action: "ALERTS_ROUTED",
+      actorType: "SYSTEM",
+      entityType: "Complaint",
+      entityId: String(complaint._id),
+      complaintId: complaint.complaintId || String(complaint._id),
+      metadata: {
+        totalAlerts: alerts.length,
+        matchType: matchType || "MANUAL",
+      },
+    });
+
+    return success(res, 201, "Alerts routed", {
+      alerts,
+      total: alerts.length,
+    });
   } catch (error) {
-    return res.status(500).json({ message: "Failed to route alerts", error: error.message });
+    return failure(res, 500, "Failed to route alerts", "INTERNAL_ERROR", error.message);
   }
 });
 
@@ -60,13 +108,30 @@ router.get("/officer/:userId", async (req, res) => {
     const { userId } = req.params;
 
     if (!isObjectId(userId)) {
-      return res.status(400).json({ message: "Valid userId is required" });
+      return failure(res, 400, "Valid userId is required", "VALIDATION_ERROR");
+    }
+
+    const dutyState = await isOfficerOnActiveDuty(userId);
+    if (!dutyState.exists) {
+      return failure(res, 404, "Officer not found", "NOT_FOUND");
+    }
+
+    if (!dutyState.onDuty) {
+      return success(res, 200, "Officer is checked out; no active alerts", {
+        userId,
+        alerts: [],
+        total: 0,
+      });
     }
 
     const alerts = await AlertNotification.find({ receiverId: userId }).sort({ sentAt: -1 });
-    return res.json({ userId, alerts, total: alerts.length });
+    return success(res, 200, "Officer alerts fetched", {
+      userId,
+      alerts,
+      total: alerts.length,
+    });
   } catch (error) {
-    return res.status(500).json({ message: "Failed to fetch officer alerts", error: error.message });
+    return failure(res, 500, "Failed to fetch officer alerts", "INTERNAL_ERROR", error.message);
   }
 });
 
@@ -75,21 +140,32 @@ router.patch("/:alertId/acknowledge", async (req, res) => {
     const { alertId } = req.params;
 
     if (!isObjectId(alertId)) {
-      return res.status(400).json({ message: "Valid alertId is required" });
+      return failure(res, 400, "Valid alertId is required", "VALIDATION_ERROR");
     }
 
     const alert = await AlertNotification.findById(alertId);
     if (!alert) {
-      return res.status(404).json({ message: "Alert not found" });
+      return failure(res, 404, "Alert not found", "NOT_FOUND");
     }
 
     alert.alertStatus = "ACKNOWLEDGED";
     alert.acknowledgedAt = new Date();
     await alert.save();
 
-    return res.json({ message: "Alert acknowledged", alert });
+    await logAction({
+      action: "ALERT_ACKNOWLEDGED",
+      actorType: "OFFICER",
+      actorId: String(alert.receiverId),
+      actorRole: alert.receiverRole,
+      entityType: "AlertNotification",
+      entityId: String(alert._id),
+      complaintId: String(alert.complaintId),
+      metadata: { alertStatus: alert.alertStatus },
+    });
+
+    return success(res, 200, "Alert acknowledged", { alert });
   } catch (error) {
-    return res.status(500).json({ message: "Failed to acknowledge alert", error: error.message });
+    return failure(res, 500, "Failed to acknowledge alert", "INTERNAL_ERROR", error.message);
   }
 });
 
