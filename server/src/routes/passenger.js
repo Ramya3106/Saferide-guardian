@@ -3,6 +3,13 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const Complaint = require("../models/Complaint");
 const Journey = require("../models/Journey");
+const User = require("../models/User");
+const {
+  DEMO_DUTY_ROSTER,
+  inferDutyUnit,
+  normalizeDutyUnit,
+  toDutyOfficer,
+} = require("../utils/dutyRoster");
 
 // Middleware to extract user email from headers
 const getUserEmail = (req) => req.headers["x-user-email"] || "";
@@ -40,6 +47,155 @@ const resolveAuthorityFilter = (staffRole) => {
       return null;
   }
 };
+
+const TRAIN_AUTHORITY = "TTR / TTE / RPF / Police";
+
+const normalizeSubmitAuthority = (value) => {
+  const normalized = String(value || "").trim();
+
+  if (/ttr|tte|rpf|police/i.test(normalized)) {
+    return TRAIN_AUTHORITY;
+  }
+
+  return normalized || "Staff";
+};
+
+const detectPriority = ({ transportType, itemType, description }) => {
+  const text = `${transportType || ""} ${itemType || ""} ${description || ""}`.toLowerCase();
+
+  if (/wallet|phone|luggage|bag|backpack|laptop|passport/.test(text)) {
+    return "High";
+  }
+
+  if (/medicine|id card|documents|cash|jewellery/.test(text)) {
+    return "Critical";
+  }
+
+  return "Normal";
+};
+
+const getRequestOfficerIdentity = (req) => {
+  const email = String(req.headers["x-user-email"] || req.body?.staffEmail || "").trim().toLowerCase();
+  const professionalId = String(req.headers["x-professional-id"] || req.body?.professionalId || "").trim().toUpperCase();
+  const staffName = String(req.headers["x-user-name"] || req.body?.staffName || "").trim();
+  const dutyUnit = normalizeDutyUnit(req.headers["x-duty-unit"] || req.body?.dutyUnit || inferDutyUnit({ email, professionalId }));
+
+  return {
+    email,
+    professionalId,
+    staffName,
+    dutyUnit: dutyUnit || "TTR",
+  };
+};
+
+const resolveCurrentOfficer = async (req) => {
+  const officerIdentity = getRequestOfficerIdentity(req);
+
+  if (officerIdentity.email) {
+    const user = await User.findOne({
+      email: officerIdentity.email,
+      role: "TTR/RPF/Police",
+    }).select("email name professionalId role onDutyStatus dutyCheckInAt dutyDesk dutyUnit dutyStation dutyNote jurisdiction");
+
+    if (user) {
+      return toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
+    }
+  }
+
+  if (officerIdentity.professionalId) {
+    const user = await User.findOne({
+      professionalId: officerIdentity.professionalId,
+      role: "TTR/RPF/Police",
+    }).select("email name professionalId role onDutyStatus dutyCheckInAt dutyDesk dutyUnit dutyStation dutyNote jurisdiction");
+
+    if (user) {
+      return toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
+    }
+  }
+
+  const demoOfficer = DEMO_DUTY_ROSTER.find(
+    (officer) => officer.staffEmail === officerIdentity.email || officer.professionalId === officerIdentity.professionalId || officer.dutyUnit === officerIdentity.dutyUnit,
+  );
+
+  return demoOfficer ? toDutyOfficer(demoOfficer, { isDemo: true }) : null;
+};
+
+const buildOfficerRecipient = (officer) => {
+  if (!officer) {
+    return null;
+  }
+
+  return {
+    staffId: officer.staffId,
+    staffName: officer.staffName,
+    staffEmail: officer.staffEmail,
+    staffRole: officer.staffRole || "TTR/RPF/Police",
+    dutyUnit: officer.dutyUnit,
+    dutyDesk: officer.dutyDesk || null,
+    onDutyAt: officer.onDutyAt || new Date(),
+    acknowledgedAt: null,
+  };
+};
+
+const resolveAssignedOfficers = async (complaint) => {
+  const officialOfficers = await User.find({
+    role: "TTR/RPF/Police",
+    approvalStatus: "approved",
+    isActive: true,
+    onDutyStatus: true,
+  }).select("email name professionalId role onDutyStatus dutyCheckInAt dutyDesk dutyUnit dutyStation dutyNote jurisdiction");
+
+  const mappedOfficers = officialOfficers
+    .map((officer) => {
+      const normalized = toDutyOfficer(officer.toSafeObject ? officer.toSafeObject() : officer);
+      return normalized.onDutyStatus ? buildOfficerRecipient({
+        ...normalized,
+        onDutyAt: normalized.dutyCheckInAt || new Date(),
+      }) : null;
+    })
+    .filter(Boolean);
+
+  if (mappedOfficers.length > 0) {
+    return mappedOfficers;
+  }
+
+  return DEMO_DUTY_ROSTER.filter((officer) => officer.onDutyStatus)
+    .map((officer) => buildOfficerRecipient({
+      ...toDutyOfficer(officer, { isDemo: true }),
+      onDutyAt: new Date(),
+    }))
+    .filter(Boolean);
+};
+
+const complaintMatchesOfficer = (complaint, officer) => {
+  if (!complaint || !officer) {
+    return false;
+  }
+
+  const assignedStaff = Array.isArray(complaint.assignedStaff) ? complaint.assignedStaff : [];
+  const officerEmail = String(officer.staffEmail || "").trim().toLowerCase();
+  const officerId = String(officer.staffId || "").trim().toLowerCase();
+  const officerUnit = normalizeDutyUnit(officer.dutyUnit || inferDutyUnit(officer));
+
+  return assignedStaff.some((entry) => {
+    const entryEmail = String(entry.staffEmail || "").trim().toLowerCase();
+    const entryId = String(entry.staffId || "").trim().toLowerCase();
+    const entryUnit = normalizeDutyUnit(entry.staffRole || entry.dutyUnit || inferDutyUnit(entry));
+
+    return (
+      (officerEmail && entryEmail === officerEmail) ||
+      (officerId && entryId === officerId) ||
+      (officerUnit && entryUnit === officerUnit)
+    );
+  });
+};
+
+const staffTimelineEntry = (staffName, text, status) => ({
+  staffId: status?.staffId || null,
+  staffName: staffName || status?.staffName || "Duty officer",
+  text,
+  timestamp: new Date(),
+});
 
 // GET /api/passenger/dashboard - Get active journey
 router.get("/dashboard", async (req, res) => {
@@ -104,8 +260,20 @@ router.post("/complaints", async (req, res) => {
 
     // Generate unique QR code ID
     const qrCode = `QR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const complaintId = `CRN-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 
     console.log("📝 Creating complaint for email:", userEmail);
+
+    const submitAuthorityValue = normalizeSubmitAuthority(submitAuthority);
+    const priority = detectPriority({ transportType, itemType, description });
+    const assignedStaff = await resolveAssignedOfficers({
+      transportType,
+      submitAuthority: submitAuthorityValue,
+      itemType,
+      description,
+      fromLocation,
+      toLocation,
+    });
 
     const complaint = new Complaint({
       passengerId: userEmail,
@@ -124,20 +292,32 @@ router.post("/complaints", async (req, res) => {
       timestamp: timestamp || new Date(),
       journeyId: journeyId || null,
       route: route || `${fromLocation} → ${toLocation}`,
-      submitAuthority: submitAuthority || "Staff",
+      submitAuthority: submitAuthorityValue,
+      complaintId,
       qrCode,
-      status: "Reported",
+      status: "Submitted",
+      priority,
+      assignedStaff,
+      alertPriorityReason:
+        priority === "Critical"
+          ? "Critical lost-item escalation"
+          : priority === "High"
+            ? "High priority lost-item report"
+            : "Standard lost-item report",
+      dispatchMode: assignedStaff.length > 0 ? "On-duty dispatch" : "Unassigned fallback",
     });
 
     console.log("💾 Saving complaint to MongoDB...");
     const savedComplaint = await complaint.save();
     console.log("✅ First save successful, ID:", savedComplaint._id);
 
-    savedComplaint.staffNotified = true;
-    savedComplaint.staffId = "STAFF-001";
-    savedComplaint.staffName = submitAuthority || "Staff Member";
-    savedComplaint.staffEta = "8 mins";
-    savedComplaint.status = "Staff Notified";
+    savedComplaint.complaintId = savedComplaint.complaintId || complaintId;
+    savedComplaint.staffNotified = assignedStaff.length > 0;
+    savedComplaint.staffId = assignedStaff[0]?.staffId || "DEMO-DUTY-001";
+    savedComplaint.staffName = assignedStaff[0]?.staffName || submitAuthorityValue || "Duty Officer";
+    savedComplaint.staffEta = assignedStaff.length > 0 ? "6 mins" : "Pending assignment";
+    savedComplaint.status = "Submitted";
+    savedComplaint.staffResponseStatus = assignedStaff.length > 0 ? "Pending response" : "Awaiting duty roster";
     
     console.log("💾 Updating complaint status...");
     await savedComplaint.save();
@@ -180,10 +360,48 @@ router.get("/live-alerts", async (req, res) => {
     const { staffRole } = req.query;
     const transportFilters = resolveTransportFilters(staffRole);
     const authorityFilter = resolveAuthorityFilter(staffRole);
+    const officerIdentity = getRequestOfficerIdentity(req);
+    const currentOfficer = await (async () => {
+      if (officerIdentity.email) {
+        const user = await User.findOne({
+          email: officerIdentity.email,
+          role: "TTR/RPF/Police",
+        }).select("email name professionalId role onDutyStatus dutyCheckInAt dutyDesk dutyUnit dutyStation dutyNote jurisdiction");
+
+        if (user) {
+          return toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
+        }
+      }
+
+      if (officerIdentity.professionalId) {
+        const user = await User.findOne({
+          professionalId: officerIdentity.professionalId,
+          role: "TTR/RPF/Police",
+        }).select("email name professionalId role onDutyStatus dutyCheckInAt dutyDesk dutyUnit dutyStation dutyNote jurisdiction");
+
+        if (user) {
+          return toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
+        }
+      }
+
+      const demoOfficer = DEMO_DUTY_ROSTER.find(
+        (officer) => officer.staffEmail === officerIdentity.email || officer.professionalId === officerIdentity.professionalId || officer.dutyUnit === officerIdentity.dutyUnit,
+      );
+
+      return demoOfficer ? toDutyOfficer(demoOfficer, { isDemo: true }) : null;
+    })();
+
+    if (!currentOfficer || !currentOfficer.onDutyStatus) {
+      return res.json({
+        alerts: [],
+        officer: currentOfficer,
+        message: "No active duty officer found.",
+      });
+    }
 
     const query = {
       transportType: { $in: transportFilters },
-      status: { $in: ["Reported", "Staff Notified"] },
+      status: { $in: ["Submitted", "Reported", "Staff Notified", "Accepted", "Found", "In verification", "Secured", "Meeting Scheduled"] },
     };
 
     if (authorityFilter) {
@@ -191,14 +409,158 @@ router.get("/live-alerts", async (req, res) => {
     }
 
     const complaintList = await Complaint.find(query).sort({ createdAt: -1 });
+    const alerts = complaintList
+      .filter((complaint) => complaintMatchesOfficer(complaint, currentOfficer))
+      .sort((left, right) => {
+        const priorityOrder = { Critical: 0, High: 1, Normal: 2, Low: 3 };
+        const leftPriority = priorityOrder[left.priority] ?? 4;
+        const rightPriority = priorityOrder[right.priority] ?? 4;
+
+        if (leftPriority !== rightPriority) {
+          return leftPriority - rightPriority;
+        }
+
+        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+      })
+      .map((complaint) => ({
+        ...complaint.toObject(),
+        assignedToMe: true,
+        currentOfficer,
+      }));
 
     res.json({
-      alerts: complaintList,
+      alerts,
+      officer: currentOfficer,
       message: "Live alerts retrieved successfully",
     });
   } catch (error) {
     console.error("Error fetching live alerts:", error);
     res.status(500).json({ message: "Error fetching live alerts" });
+  }
+});
+
+router.post("/complaints/:id/staff/respond", async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+
+    const currentOfficer = await resolveCurrentOfficer(req);
+    if (!currentOfficer || !currentOfficer.onDutyStatus || !complaintMatchesOfficer(complaint, currentOfficer)) {
+      return res.status(403).json({ message: "On-duty officer access required." });
+    }
+
+    const text = String(req.body?.text || "").trim();
+    if (!text) {
+      return res.status(400).json({ message: "Reply text required" });
+    }
+
+    const replyMessage = {
+      staffId: currentOfficer.staffId,
+      staffName: currentOfficer.staffName,
+      text,
+      timestamp: new Date(),
+    };
+
+    complaint.messages.push(replyMessage);
+    complaint.staffResponseStatus = "Replied";
+    if (complaint.status === "Reported") {
+      complaint.status = "Staff Notified";
+    }
+    complaint.staffNotified = true;
+    complaint.staffId = currentOfficer.staffId;
+    complaint.staffName = currentOfficer.staffName;
+    complaint.staffEta = req.body?.staffEta || complaint.staffEta || "8 mins";
+    await complaint.save();
+
+    return res.json({
+      message: "Reply saved successfully",
+      complaint,
+    });
+  } catch (error) {
+    console.error("Staff respond error:", error.message);
+    return res.status(500).json({ message: "Unable to save reply." });
+  }
+});
+
+router.patch("/complaints/:id/staff/status", async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+
+    const currentOfficer = await resolveCurrentOfficer(req);
+    if (!currentOfficer || !currentOfficer.onDutyStatus || !complaintMatchesOfficer(complaint, currentOfficer)) {
+      return res.status(403).json({ message: "On-duty officer access required." });
+    }
+
+    const status = String(req.body?.status || "").trim();
+    if (!status) {
+      return res.status(400).json({ message: "Status required" });
+    }
+
+    complaint.status = status;
+    complaint.itemFound = Boolean(req.body?.itemFound ?? complaint.itemFound);
+    complaint.meetingScheduled = Boolean(req.body?.meetingScheduled ?? complaint.meetingScheduled);
+    complaint.meetingPoint = req.body?.meetingPoint || complaint.meetingPoint || null;
+    complaint.meetingTime = req.body?.meetingTime || complaint.meetingTime || null;
+    complaint.staffEta = req.body?.staffEta || complaint.staffEta || null;
+    complaint.recoveryStation = req.body?.recoveryStation || complaint.recoveryStation || null;
+    complaint.recoveryNotes = req.body?.recoveryNotes || complaint.recoveryNotes || null;
+    complaint.staffResponseStatus = req.body?.staffResponseStatus || `Status updated to ${status}`;
+    complaint.messages = complaint.messages || [];
+    complaint.messages.push(
+      staffTimelineEntry(currentOfficer.staffName, `Status changed to ${status.toLowerCase()}`, currentOfficer),
+    );
+    await complaint.save();
+
+    return res.json({
+      message: "Status updated successfully",
+      complaint,
+    });
+  } catch (error) {
+    console.error("Staff status error:", error.message);
+    return res.status(500).json({ message: "Unable to update complaint status." });
+  }
+});
+
+router.patch("/complaints/:id/staff/handover", async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+
+    const currentOfficer = await resolveCurrentOfficer(req);
+    if (!currentOfficer || !currentOfficer.onDutyStatus || !complaintMatchesOfficer(complaint, currentOfficer)) {
+      return res.status(403).json({ message: "On-duty officer access required." });
+    }
+
+    const handoverStation = String(req.body?.handoverStation || req.body?.meetingPoint || complaint.recoveryStation || "").trim();
+    const handoverTime = String(req.body?.handoverTime || complaint.meetingTime || "").trim();
+
+    complaint.status = "Meeting Scheduled";
+    complaint.meetingScheduled = true;
+    complaint.meetingPoint = handoverStation || complaint.meetingPoint || null;
+    complaint.meetingTime = handoverTime || complaint.meetingTime || null;
+    complaint.recoveryStation = handoverStation || complaint.recoveryStation || null;
+    complaint.recoveryNotes = req.body?.recoveryNotes || complaint.recoveryNotes || null;
+    complaint.staffResponseStatus = `Handover arranged at ${handoverStation || "next station"}`;
+    complaint.messages = complaint.messages || [];
+    complaint.messages.push(
+      staffTimelineEntry(currentOfficer.staffName, `Handover arranged at ${handoverStation || "the next station"}`, currentOfficer),
+    );
+    await complaint.save();
+
+    return res.json({
+      message: "Handover coordinated successfully",
+      complaint,
+    });
+  } catch (error) {
+    console.error("Staff handover error:", error.message);
+    return res.status(500).json({ message: "Unable to coordinate handover." });
   }
 });
 
