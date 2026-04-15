@@ -139,6 +139,65 @@ const MeridiemSelector = ({ value, onChange }) => (
 
 const EmptyOpsDashboard = ({ roleLabel, onLogout }) => {
   const pulse = useRef(new Animated.Value(0)).current;
+  const initialCases = useMemo(
+    () => [
+      {
+        id: "OPS-2041",
+        status: "In verification",
+        passengerName: "Meera S.",
+        item: "Black backpack, phone, wallet",
+        coach: "S4, berth 27",
+        train: "2241 City Express",
+        route: "Chennai Central -> Tambaram",
+        nextStation: "Tambaram",
+        dutyDesk: "TTR Bay 2 / RPF Escort 14",
+        summary:
+          "Passenger got down briefly at Egmore. Bag remains on the seat and was reported through the coach attendant.",
+        replyDraft:
+          "Acknowledged. Duty staff are checking coach S4 and coordinating secure custody at Tambaram.",
+        handoverState: "Coordination in progress",
+        lastAction: "Coach contact verified",
+      },
+      {
+        id: "OPS-2042",
+        status: "Secured",
+        passengerName: "Arun K.",
+        item: "Silver phone and charger pouch",
+        coach: "B2, lower berth 11",
+        train: "1187 Mail Fast",
+        route: "Villupuram -> Chennai Egmore",
+        nextStation: "Perambur",
+        dutyDesk: "RPF Platform 3 / Station control",
+        summary:
+          "The passenger missed the boarding call after stepping out for water. Item is with the on-duty TTR after coach verification.",
+        replyDraft:
+          "Your item is secured with on-duty staff. Please confirm identity at Perambur for handover.",
+        handoverState: "Awaiting passenger verification",
+        lastAction: "Item secured in duty pouch",
+      },
+      {
+        id: "OPS-2043",
+        status: "Found",
+        passengerName: "Lakshmi P.",
+        item: "Travel wallet and ID card",
+        coach: "A1, seat 18",
+        train: "5608 Passenger Special",
+        route: "Tirupati -> Chennai Beach",
+        nextStation: "Melmaruvathur",
+        dutyDesk: "Police desk / onboard conductor",
+        summary:
+          "Wallet sighted under the berth after a temporary station halt. The passenger has been alerted through the duty contact.",
+        replyDraft:
+          "We have located the wallet. Please meet the duty officer at Melmaruvathur for identity check and return.",
+        handoverState: "Next stop prepared for handover",
+        lastAction: "Passenger alert sent",
+      },
+    ],
+    [],
+  );
+  const [cases, setCases] = useState(initialCases);
+  const [selectedCaseId, setSelectedCaseId] = useState(initialCases[0].id);
+  const [replyDraft, setReplyDraft] = useState(initialCases[0].replyDraft);
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -162,6 +221,71 @@ const EmptyOpsDashboard = ({ roleLabel, onLogout }) => {
     return () => loop.stop();
   }, [pulse]);
 
+  const selectedCase = cases.find((item) => item.id === selectedCaseId) || cases[0];
+
+  useEffect(() => {
+    setReplyDraft(selectedCase?.replyDraft || "");
+  }, [selectedCase]);
+
+  const statusSummary = useMemo(() => {
+    const openCount = cases.filter((item) => item.status !== "Handed over").length;
+    const securedCount = cases.filter(
+      (item) => item.status === "Secured" || item.status === "Handed over",
+    ).length;
+
+    return {
+      openCount,
+      securedCount,
+      handoverCount: cases.filter((item) => item.handoverState !== "Awaiting passenger verification").length,
+    };
+  }, [cases]);
+
+  const updateSelectedCase = (updates) => {
+    if (!selectedCase) {
+      return;
+    }
+
+    setCases((currentCases) =>
+      currentCases.map((item) =>
+        item.id === selectedCase.id
+          ? {
+              ...item,
+              ...updates,
+            }
+          : item,
+      ),
+    );
+  };
+
+  const applyStatus = (nextStatus) => {
+    updateSelectedCase({
+      status: nextStatus,
+      lastAction: `Status updated to ${nextStatus.toLowerCase()}`,
+    });
+  };
+
+  const sendReply = () => {
+    const trimmedReply = replyDraft.trim();
+    if (!trimmedReply) {
+      return;
+    }
+
+    updateSelectedCase({
+      replyDraft: trimmedReply,
+      lastAction: "Reply sent to passenger contact",
+    });
+  };
+
+  const coordinateHandover = () => {
+    updateSelectedCase({
+      status: "Handed over",
+      handoverState: `Handover confirmed at ${selectedCase.nextStation}`,
+      lastAction: "Station desk confirmed the handover slot",
+      replyDraft:
+        `${selectedCase.passengerName}, your item is being handed over at ${selectedCase.nextStation} after identity check.`,
+    });
+  };
+
   return (
     <SafeAreaView style={styles.opsShell}>
       <ScrollView contentContainerStyle={styles.opsContent}>
@@ -181,29 +305,155 @@ const EmptyOpsDashboard = ({ roleLabel, onLogout }) => {
               },
             ]}
           />
-          <Text style={styles.opsKicker}>Operational shell</Text>
+          <Text style={styles.opsKicker}>Dummy duty board</Text>
           <Text style={styles.opsTitle}>{roleLabel}</Text>
           <Text style={styles.opsSubtitle}>
-            Empty dashboard for duty cards, live alerts, and response actions.
+            Mock railway complaint handling for lost-item cases, duty replies,
+            and next-station handovers.
           </Text>
-        </View>
-
-        <View style={styles.opsBlankCard}>
-          <Text style={styles.opsBlankLabel}>Status</Text>
-          <Text style={styles.opsBlankValue}>Ready</Text>
-          <Text style={styles.opsBlankHint}>No widgets loaded yet.</Text>
-        </View>
-
-        <View style={styles.opsRow}>
-          <View style={styles.opsTinyCard}>
-            <Text style={styles.opsTinyLabel}>Alerts</Text>
-            <Text style={styles.opsTinyValue}>0</Text>
-          </View>
-          <View style={styles.opsTinyCard}>
-            <Text style={styles.opsTinyLabel}>Duty</Text>
-            <Text style={styles.opsTinyValue}>Live</Text>
+          <View style={styles.opsHeroTag}>
+            <Text style={styles.opsHeroTagText}>Mock staff duty data only</Text>
           </View>
         </View>
+
+        <View style={styles.opsMetricRow}>
+          <View style={styles.opsMetricCard}>
+            <Text style={styles.opsMetricLabel}>Open cases</Text>
+            <Text style={styles.opsMetricValue}>{statusSummary.openCount}</Text>
+          </View>
+          <View style={styles.opsMetricCard}>
+            <Text style={styles.opsMetricLabel}>Secured items</Text>
+            <Text style={styles.opsMetricValue}>{statusSummary.securedCount}</Text>
+          </View>
+          <View style={styles.opsMetricCard}>
+            <Text style={styles.opsMetricLabel}>Handover points</Text>
+            <Text style={styles.opsMetricValue}>{statusSummary.handoverCount}</Text>
+          </View>
+        </View>
+
+        <View style={styles.opsSection}>
+          <View style={styles.opsSectionHeader}>
+            <Text style={styles.opsSectionTitle}>Live complaint queue</Text>
+            <Text style={styles.opsSectionSubtitle}>Tap a card to review the case.</Text>
+          </View>
+
+          {cases.map((item) => {
+            const isSelected = item.id === selectedCaseId;
+
+            return (
+              <Pressable
+                key={item.id}
+                style={[styles.opsCaseCard, isSelected && styles.opsCaseCardActive]}
+                onPress={() => {
+                  setSelectedCaseId(item.id);
+                }}
+              >
+                <View style={styles.opsCaseTopRow}>
+                  <View style={styles.opsCaseMetaGroup}>
+                    <Text style={styles.opsCaseId}>{item.id}</Text>
+                    <Text style={styles.opsCaseTitle}>{item.item}</Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.opsStatusChip,
+                      item.status === "Found" && styles.opsStatusFound,
+                      item.status === "In verification" && styles.opsStatusReview,
+                      item.status === "Secured" && styles.opsStatusSecured,
+                      item.status === "Handed over" && styles.opsStatusHandover,
+                    ]}
+                  >
+                    <Text style={styles.opsStatusText}>{item.status}</Text>
+                  </View>
+                </View>
+
+                <Text style={styles.opsCaseSummary}>{item.summary}</Text>
+
+                <View style={styles.opsCaseMetaRow}>
+                  <Text style={styles.opsCaseMetaText}>{item.train}</Text>
+                  <Text style={styles.opsCaseMetaText}>{item.coach}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {selectedCase && (
+          <View style={styles.opsDetailCard}>
+            <View style={styles.opsSectionHeader}>
+              <Text style={styles.opsSectionTitle}>Case detail</Text>
+              <Text style={styles.opsSectionSubtitle}>Assigned to the current duty desk.</Text>
+            </View>
+
+            <View style={styles.opsDetailGrid}>
+              <View style={styles.opsDetailBlock}>
+                <Text style={styles.opsDetailLabel}>Passenger</Text>
+                <Text style={styles.opsDetailValue}>{selectedCase.passengerName}</Text>
+              </View>
+              <View style={styles.opsDetailBlock}>
+                <Text style={styles.opsDetailLabel}>Route</Text>
+                <Text style={styles.opsDetailValue}>{selectedCase.route}</Text>
+              </View>
+              <View style={styles.opsDetailBlock}>
+                <Text style={styles.opsDetailLabel}>Next station</Text>
+                <Text style={styles.opsDetailValue}>{selectedCase.nextStation}</Text>
+              </View>
+              <View style={styles.opsDetailBlock}>
+                <Text style={styles.opsDetailLabel}>Duty desk</Text>
+                <Text style={styles.opsDetailValue}>{selectedCase.dutyDesk}</Text>
+              </View>
+            </View>
+
+            <View style={styles.opsInfoPanel}>
+              <Text style={styles.opsDetailLabel}>Item status</Text>
+              <Text style={styles.opsInfoValue}>{selectedCase.status}</Text>
+              <Text style={styles.opsInfoHint}>{selectedCase.handoverState}</Text>
+              <Text style={styles.opsInfoHint}>Last action: {selectedCase.lastAction}</Text>
+            </View>
+
+            <View style={styles.opsReplyBlock}>
+              <Text style={styles.opsDetailLabel}>Reply to passenger</Text>
+              <TextInput
+                style={styles.opsReplyInput}
+                value={replyDraft}
+                onChangeText={setReplyDraft}
+                placeholder="Write a duty reply to the passenger"
+                placeholderTextColor="#6B7280"
+                multiline
+              />
+              <View style={styles.opsActionRow}>
+                <Pressable style={styles.opsActionButton} onPress={sendReply}>
+                  <Text style={styles.opsActionButtonText}>Send reply</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.opsActionButtonSecondary}
+                  onPress={() => {
+                    setReplyDraft(selectedCase.replyDraft);
+                  }}
+                >
+                  <Text style={styles.opsActionButtonSecondaryText}>Reset text</Text>
+                </Pressable>
+              </View>
+            </View>
+
+            <View style={styles.opsActionPills}>
+              <Pressable style={styles.opsStatusAction} onPress={() => applyStatus("Found")}>
+                <Text style={styles.opsStatusActionText}>Mark found</Text>
+              </Pressable>
+              <Pressable
+                style={styles.opsStatusAction}
+                onPress={() => applyStatus("In verification")}
+              >
+                <Text style={styles.opsStatusActionText}>In verification</Text>
+              </Pressable>
+              <Pressable style={styles.opsStatusAction} onPress={() => applyStatus("Secured")}>
+                <Text style={styles.opsStatusActionText}>Secure item</Text>
+              </Pressable>
+              <Pressable style={styles.opsStatusAction} onPress={coordinateHandover}>
+                <Text style={styles.opsStatusActionText}>Coordinate handover</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
 
         <Pressable style={styles.opsLogoutButton} onPress={onLogout}>
           <Text style={styles.opsLogoutText}>Logout</Text>
@@ -4227,22 +4477,24 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   logoutButtonFull: {
+    marginTop: 12,
+  },
   opsShell: {
     flex: 1,
-    backgroundColor: "#08111F",
+    backgroundColor: "#07101C",
   },
   opsContent: {
     padding: 20,
     gap: 16,
   },
   opsHero: {
-    minHeight: 220,
+    minHeight: 240,
     justifyContent: "center",
     alignItems: "center",
     gap: 10,
     padding: 18,
     borderRadius: 28,
-    backgroundColor: "#0B1628",
+    backgroundColor: "#0D1726",
     borderWidth: 1,
     borderColor: "#1E293B",
   },
@@ -4250,14 +4502,14 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: "#38BDF8",
-    shadowColor: "#38BDF8",
-    shadowOpacity: 0.3,
+    backgroundColor: "#F59E0B",
+    shadowColor: "#F59E0B",
+    shadowOpacity: 0.28,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
   },
   opsKicker: {
-    color: "#38BDF8",
+    color: "#FBBF24",
     fontSize: 12,
     fontWeight: "800",
     textTransform: "uppercase",
@@ -4269,61 +4521,253 @@ const styles = StyleSheet.create({
     lineHeight: 34,
     fontWeight: "900",
     letterSpacing: 0.4,
+    textAlign: "center",
   },
   opsSubtitle: {
-    color: "#94A3B8",
+    color: "#B4C1D6",
     fontSize: 13,
     textAlign: "center",
     lineHeight: 19,
-    maxWidth: 280,
+    maxWidth: 300,
   },
-  opsBlankCard: {
-    backgroundColor: "#111827",
-    borderRadius: 22,
-    padding: 18,
+  opsHeroTag: {
+    marginTop: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: "rgba(15, 23, 42, 0.82)",
     borderWidth: 1,
-    borderColor: "#1F2937",
-    gap: 4,
+    borderColor: "#334155",
   },
-  opsBlankLabel: {
-    color: "#94A3B8",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
+  opsHeroTagText: {
+    color: "#E2E8F0",
     fontSize: 11,
-    fontWeight: "800",
+    fontWeight: "700",
+    letterSpacing: 0.4,
   },
-  opsBlankValue: {
-    color: "#FFFFFF",
-    fontSize: 22,
-    fontWeight: "900",
-  },
-  opsBlankHint: {
-    color: "#CBD5E1",
-    fontSize: 13,
-  },
-  opsRow: {
+  opsMetricRow: {
     flexDirection: "row",
     gap: 12,
   },
-  opsTinyCard: {
+  opsMetricCard: {
     flex: 1,
     backgroundColor: "#0F172A",
     borderRadius: 18,
-    padding: 16,
+    padding: 14,
     borderWidth: 1,
     borderColor: "#1F2937",
   },
-  opsTinyLabel: {
+  opsMetricLabel: {
     color: "#94A3B8",
     fontSize: 11,
     fontWeight: "800",
     textTransform: "uppercase",
   },
-  opsTinyValue: {
+  opsMetricValue: {
     color: "#FFFFFF",
     fontSize: 20,
     fontWeight: "900",
     marginTop: 6,
+  },
+  opsSection: {
+    gap: 12,
+  },
+  opsSectionHeader: {
+    gap: 4,
+  },
+  opsSectionTitle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "900",
+  },
+  opsSectionSubtitle: {
+    color: "#94A3B8",
+    fontSize: 12,
+  },
+  opsCaseCard: {
+    backgroundColor: "#0F172A",
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#1F2937",
+    gap: 10,
+  },
+  opsCaseCardActive: {
+    borderColor: "#F59E0B",
+    backgroundColor: "#111B2D",
+  },
+  opsCaseTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  opsCaseMetaGroup: {
+    flex: 1,
+    gap: 4,
+  },
+  opsCaseId: {
+    color: "#FBBF24",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1.1,
+  },
+  opsCaseTitle: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  opsCaseSummary: {
+    color: "#C7D2FE",
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  opsCaseMetaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  opsCaseMetaText: {
+    color: "#94A3B8",
+    fontSize: 12,
+  },
+  opsStatusChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    alignSelf: "flex-start",
+  },
+  opsStatusFound: {
+    backgroundColor: "#1D4ED8",
+  },
+  opsStatusReview: {
+    backgroundColor: "#F59E0B",
+  },
+  opsStatusSecured: {
+    backgroundColor: "#059669",
+  },
+  opsStatusHandover: {
+    backgroundColor: "#7C3AED",
+  },
+  opsStatusText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  opsDetailCard: {
+    backgroundColor: "#0B1628",
+    borderRadius: 24,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#203047",
+    gap: 14,
+  },
+  opsDetailGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  opsDetailBlock: {
+    flexBasis: "48%",
+    backgroundColor: "#0F172A",
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#1E293B",
+    gap: 4,
+  },
+  opsDetailLabel: {
+    color: "#94A3B8",
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+  },
+  opsDetailValue: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "700",
+  },
+  opsInfoPanel: {
+    backgroundColor: "#101C2E",
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#243449",
+    gap: 4,
+  },
+  opsInfoValue: {
+    color: "#F8FAFC",
+    fontSize: 18,
+    fontWeight: "900",
+  },
+  opsInfoHint: {
+    color: "#CBD5E1",
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  opsReplyBlock: {
+    gap: 10,
+  },
+  opsReplyInput: {
+    minHeight: 92,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#334155",
+    backgroundColor: "#0F172A",
+    color: "#FFFFFF",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    textAlignVertical: "top",
+  },
+  opsActionRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  opsActionButton: {
+    flex: 1,
+    backgroundColor: "#F59E0B",
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  opsActionButtonSecondary: {
+    flex: 1,
+    backgroundColor: "#0F172A",
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  opsActionButtonText: {
+    color: "#111827",
+    fontWeight: "900",
+  },
+  opsActionButtonSecondaryText: {
+    color: "#E2E8F0",
+    fontWeight: "800",
+  },
+  opsActionPills: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  opsStatusAction: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: "#12233A",
+    borderWidth: 1,
+    borderColor: "#27415E",
+  },
+  opsStatusActionText: {
+    color: "#E2E8F0",
+    fontSize: 12,
+    fontWeight: "800",
   },
   opsLogoutButton: {
     marginTop: 6,
@@ -4335,8 +4779,6 @@ const styles = StyleSheet.create({
   opsLogoutText: {
     color: "#FFFFFF",
     fontWeight: "900",
-  },
-    marginTop: 12,
   },
   keyboardAvoidingView: {
     flex: 1,
