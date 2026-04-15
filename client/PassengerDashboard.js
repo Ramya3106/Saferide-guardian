@@ -471,6 +471,9 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
       const createdComplaint = response.data.complaint;
       setCurrentComplaint(createdComplaint);
       setComplaints((prev) => [createdComplaint, ...prev]);
+      setSelectedTrackingComplaint(createdComplaint);
+      setTrackingData(null);
+      setShowTrackingModal(true);
       resetComplaintModal();
       alert(`Request submitted successfully to ${submitAuthority}!`);
     } catch (error) {
@@ -895,7 +898,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
     if (!currentComplaint) return null;
 
     const statuses = [
-      { key: "raised", label: "🟡 Complaint Raised", completed: true },
+      { key: "submitted", label: "🟡 Complaint Submitted", completed: true },
       {
         key: "notified",
         label: "🔵 Staff Notified",
@@ -1226,7 +1229,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Live Tracking</Text>
+            <Text style={styles.modalTitle}>Complaint Tracking</Text>
             <TouchableOpacity
               onPress={() => {
                 setShowTrackingModal(false);
@@ -1245,6 +1248,31 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                 color="#2563EB"
                 style={{ marginTop: 20 }}
               />
+            ) : selectedTrackingComplaint ? (
+              <View style={styles.trackingCard}>
+                <Text style={styles.trackingTitle}>Complaint submitted successfully</Text>
+                <Text style={styles.trackingMeta}>
+                  Complaint ID: {selectedTrackingComplaint.complaintId || selectedTrackingComplaint._id?.substring(0, 10)}
+                </Text>
+                <Text style={styles.trackingMeta}>
+                  Status: {selectedTrackingComplaint.status || "Submitted"}
+                </Text>
+                <Text style={styles.trackingMeta}>
+                  Item: {selectedTrackingComplaint.itemType} • {selectedTrackingComplaint.vehicleNumber}
+                </Text>
+                <Text style={styles.trackingMeta}>
+                  Route: {selectedTrackingComplaint.route}
+                </Text>
+                <Text style={styles.trackingMeta}>
+                  Routed to: {selectedTrackingComplaint.submitAuthority || "On-duty officers"}
+                </Text>
+                <Text style={styles.trackingMeta}>
+                  Priority: {selectedTrackingComplaint.priority || "Normal"}
+                </Text>
+                <Text style={styles.trackingMeta}>
+                  Next step: Officers on duty will review, reply, and coordinate recovery.
+                </Text>
+              </View>
             ) : trackingData?.liveLocationAvailable ? (
               <View style={styles.trackingCard}>
                 <Text style={styles.trackingTitle}>Driver Live Location</Text>
@@ -1265,9 +1293,12 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                 </Text>
               </View>
             ) : (
-              <Text style={styles.emptyText}>
-                Waiting for driver live location updates...
-              </Text>
+              <View style={styles.trackingCard}>
+                <Text style={styles.trackingTitle}>Tracking in progress</Text>
+                <Text style={styles.trackingMeta}>
+                  Waiting for duty officer acknowledgement and live updates.
+                </Text>
+              </View>
             )}
           </View>
         </View>
