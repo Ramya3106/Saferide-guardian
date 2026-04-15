@@ -9,8 +9,7 @@ const complaintReplySchema = new mongoose.Schema(
       index: true,
     },
     officerId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      type: String,
       required: true,
       index: true,
     },
