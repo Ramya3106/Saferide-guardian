@@ -3,6 +3,7 @@ const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
 const router = express.Router();
 const User = require("../models/User");
+const DutyAttendance = require("../models/DutyAttendance");
 const {
   DEMO_DUTY_ROSTER,
   buildDutyRoster,
@@ -63,6 +64,7 @@ const OFFICIAL_DOMAINS = {
 };
 const OFFICIAL_ROLES = new Set(["TTR/RPF/Police"]);
 const OPERATIONAL_ROLES = new Set(["Driver/Conductor", "Cab/Auto"]);
+const demoDutySessions = new Map();
 
 const createTransporter = () => {
   if (!mailUser || !pass) return null;
@@ -205,6 +207,75 @@ const toDutyResponse = (officer) => ({
   officer,
   onDuty: Boolean(officer?.onDutyStatus),
 });
+
+const buildOfficerKey = (officer = {}) => {
+  return (
+    normalizeEmail(officer.staffEmail || officer.email) ||
+    normalizeProfessionalId(officer.professionalId) ||
+    String(officer.staffId || officer._id || "").trim().toLowerCase() ||
+    ""
+  );
+};
+
+const normalizeAttendance = (session) => {
+  if (!session) {
+    return null;
+  }
+
+  return {
+    id: session._id?.toString?.() || session.id || null,
+    officerKey: session.officerKey,
+    officerId: session.officerId || null,
+    officerEmail: session.officerEmail || null,
+    professionalId: session.professionalId || null,
+    officerName: session.officerName,
+    role: session.role || "TTR/RPF/Police",
+    dutyUnit: session.dutyUnit || null,
+    assignedTrain: session.assignedTrain || null,
+    assignedRoute: session.assignedRoute || null,
+    assignedStation: session.assignedStation || null,
+    assignedShift: session.assignedShift || null,
+    checkInTime: session.checkInTime || null,
+    checkOutTime: session.checkOutTime || null,
+    status: session.status || "INACTIVE",
+    notes: session.notes || null,
+    source: session.source || "db",
+    createdAt: session.createdAt || null,
+    updatedAt: session.updatedAt || null,
+  };
+};
+
+const getAttendancePayload = (req, officer) => ({
+  officerKey: buildOfficerKey(officer),
+  officerId: officer.staffId || null,
+  officerEmail: normalizeEmail(officer.staffEmail || officer.email),
+  professionalId: normalizeProfessionalId(officer.professionalId),
+  officerName: officer.staffName || officer.name || "Duty Officer",
+  role: officer.staffRole || officer.role || "TTR/RPF/Police",
+  dutyUnit: getDutyUnitFromRequest(req) || officer.dutyUnit || "TTR",
+  assignedTrain: String(req.body?.assignedTrain || req.body?.dutyTrain || "").trim() || null,
+  assignedRoute: String(req.body?.assignedRoute || req.body?.dutyRoute || "").trim() || null,
+  assignedStation:
+    String(req.body?.assignedStation || req.body?.dutyStation || "").trim() ||
+    officer.dutyStation ||
+    null,
+  assignedShift: String(req.body?.assignedShift || req.body?.shift || "").trim() || null,
+  notes: String(req.body?.dutyNote || "").trim() || null,
+});
+
+const getActiveAttendance = async (officerKey) => {
+  if (!officerKey) {
+    return null;
+  }
+  return DutyAttendance.findOne({ officerKey, status: "ACTIVE" }).sort({ createdAt: -1 });
+};
+
+const getLatestAttendance = async (officerKey) => {
+  if (!officerKey) {
+    return null;
+  }
+  return DutyAttendance.findOne({ officerKey }).sort({ createdAt: -1 });
+};
 
 const hasMatchingEmail = (user, emailValue) => {
   const normalized = normalizeEmail(emailValue);
@@ -683,8 +754,11 @@ router.get("/duty/status", async (req, res) => {
     }
 
     if (user) {
+      const officer = toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
+      const attendance = await getLatestAttendance(buildOfficerKey(officer));
       return res.json({
-        ...toDutyResponse(toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user)),
+        ...toDutyResponse(officer),
+        attendance: normalizeAttendance(attendance),
         message: "Duty status retrieved successfully",
       });
     }
@@ -694,8 +768,11 @@ router.get("/duty/status", async (req, res) => {
     );
 
     if (demoOfficer) {
+      const officer = toDutyOfficer(demoOfficer, { isDemo: true });
+      const attendance = demoDutySessions.get(buildOfficerKey(officer)) || null;
       return res.json({
-        ...toDutyResponse(toDutyOfficer(demoOfficer, { isDemo: true })),
+        ...toDutyResponse(officer),
+        attendance: normalizeAttendance(attendance),
         message: "Duty status retrieved successfully",
       });
     }
@@ -767,20 +844,60 @@ router.post("/duty/check-in", async (req, res) => {
         { isDemo: true },
       );
 
-      return res.json({ officer: rosterOfficer, message: "Checked in successfully." });
+      const officerKey = buildOfficerKey(rosterOfficer);
+      const existingDemoSession = demoDutySessions.get(officerKey);
+      if (existingDemoSession && existingDemoSession.status === "ACTIVE") {
+        return res.status(409).json({ message: "Officer already checked in and active." });
+      }
+
+      const attendancePayload = getAttendancePayload(req, rosterOfficer);
+      const demoSession = {
+        id: `DEMO-ATD-${Date.now()}`,
+        ...attendancePayload,
+        checkInTime: new Date(),
+        checkOutTime: null,
+        status: "ACTIVE",
+        source: "demo",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      demoDutySessions.set(officerKey, demoSession);
+
+      return res.json({
+        officer: rosterOfficer,
+        attendance: normalizeAttendance(demoSession),
+        message: "Checked in successfully.",
+      });
     }
 
+    const officer = toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
+    const officerKey = buildOfficerKey(officer);
+    const activeAttendance = await getActiveAttendance(officerKey);
+    if (activeAttendance) {
+      return res.status(409).json({ message: "Officer already checked in and active." });
+    }
+
+    const attendancePayload = getAttendancePayload(req, officer);
+    const attendance = await DutyAttendance.create({
+      ...attendancePayload,
+      checkInTime: new Date(),
+      checkOutTime: null,
+      status: "ACTIVE",
+      source: "db",
+    });
+
     user.onDutyStatus = true;
-    user.dutyCheckInAt = new Date();
+    user.dutyCheckInAt = attendance.checkInTime;
     user.dutyCheckOutAt = null;
-    user.dutyStation = req.body?.dutyStation || user.dutyStation || null;
+    user.dutyStation = attendance.assignedStation || req.body?.dutyStation || user.dutyStation || null;
     user.dutyDesk = req.body?.dutyDesk || user.dutyDesk || null;
-    user.dutyUnit = dutyUnit || user.dutyUnit || null;
-    user.dutyNote = req.body?.dutyNote || user.dutyNote || null;
+    user.dutyUnit = attendance.dutyUnit || dutyUnit || user.dutyUnit || null;
+    user.dutyNote = attendance.notes || req.body?.dutyNote || user.dutyNote || null;
     await user.save();
 
     return res.json({
       officer: toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user),
+      attendance: normalizeAttendance(attendance),
       message: "Checked in successfully.",
     });
   } catch (error) {
@@ -812,8 +929,7 @@ router.post("/duty/check-out", async (req, res) => {
         return res.status(404).json({ message: "Duty officer not found." });
       }
 
-      return res.json({
-        officer: toDutyOfficer(
+      const resolvedDemoOfficer = toDutyOfficer(
           {
             ...demoOfficer,
             onDutyStatus: false,
@@ -821,18 +937,49 @@ router.post("/duty/check-out", async (req, res) => {
             dutyCheckOutAt: new Date(),
           },
           { isDemo: true },
-        ),
+        );
+      const officerKey = buildOfficerKey(resolvedDemoOfficer);
+      const activeDemoSession = demoDutySessions.get(officerKey);
+
+      if (!activeDemoSession || activeDemoSession.status !== "ACTIVE") {
+        return res.status(400).json({ message: "Cannot check out without an active check-in." });
+      }
+
+      const closedDemoSession = {
+        ...activeDemoSession,
+        status: "INACTIVE",
+        checkOutTime: new Date(),
+        updatedAt: new Date(),
+      };
+      demoDutySessions.set(officerKey, closedDemoSession);
+
+      return res.json({
+        officer: resolvedDemoOfficer,
+        attendance: normalizeAttendance(closedDemoSession),
         message: "Checked out successfully.",
       });
     }
 
+    const officer = toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
+    const officerKey = buildOfficerKey(officer);
+    const activeAttendance = await getActiveAttendance(officerKey);
+    if (!activeAttendance) {
+      return res.status(400).json({ message: "Cannot check out without an active check-in." });
+    }
+
+    activeAttendance.status = "INACTIVE";
+    activeAttendance.checkOutTime = new Date();
+    activeAttendance.notes = String(req.body?.dutyNote || activeAttendance.notes || "").trim() || null;
+    await activeAttendance.save();
+
     user.onDutyStatus = false;
-    user.dutyCheckOutAt = new Date();
-    user.dutyNote = req.body?.dutyNote || user.dutyNote || null;
+    user.dutyCheckOutAt = activeAttendance.checkOutTime;
+    user.dutyNote = activeAttendance.notes || req.body?.dutyNote || user.dutyNote || null;
     await user.save();
 
     return res.json({
       officer: toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user),
+      attendance: normalizeAttendance(activeAttendance),
       message: "Checked out successfully.",
     });
   } catch (error) {
