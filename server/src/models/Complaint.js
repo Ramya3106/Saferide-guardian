@@ -82,7 +82,25 @@ const complaintSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Submitted", "Reported", "Staff Notified", "Accepted", "Found", "In verification", "Secured", "Meeting Scheduled", "Handed over", "Recovered", "Closed"],
+      enum: [
+        "Submitted",
+        "Reported",
+        "Staff Notified",
+        "Accepted",
+        "Seen",
+        "Acknowledged",
+        "Item Being Checked",
+        "Item Found",
+        "Passenger Contacted",
+        "Ready for Handover",
+        "Found",
+        "In verification",
+        "Secured",
+        "Meeting Scheduled",
+        "Handed over",
+        "Recovered",
+        "Closed",
+      ],
       default: "Submitted",
     },
     priority: {
@@ -107,6 +125,26 @@ const complaintSchema = new mongoose.Schema(
       },
     ],
     staffResponseStatus: {
+      type: String,
+      default: null,
+    },
+    seenAt: {
+      type: Date,
+      default: null,
+    },
+    acknowledgedAt: {
+      type: Date,
+      default: null,
+    },
+    officerNotes: {
+      type: String,
+      default: null,
+    },
+    coachRemark: {
+      type: String,
+      default: null,
+    },
+    stationRemark: {
       type: String,
       default: null,
     },
