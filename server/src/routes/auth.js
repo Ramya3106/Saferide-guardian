@@ -3,6 +3,14 @@ const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
 const router = express.Router();
 const User = require("../models/User");
+const {
+  DEMO_DUTY_ROSTER,
+  buildDutyRoster,
+  inferDutyUnit,
+  inferDutyUnitFromProfessionalId,
+  normalizeDutyUnit,
+  toDutyOfficer,
+} = require("../utils/dutyRoster");
 
 const VERIFY_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const RESET_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -127,7 +135,7 @@ const isValidProfessionalId = (role, idValue) => {
   if (role === "TTR/RPF/Police") {
     return (
       /^TNPOLICE-\d{4,6}$/.test(normalized) ||
-      /^(TTR|RPF)-[A-Z]{2,3}-\d{4,6}$/.test(normalized)
+      /^(TTR|TTE|RPF)-[A-Z]{2,3}-\d{4,6}$/.test(normalized)
     );
   }
   return normalized.length >= 6;
@@ -150,6 +158,53 @@ const findOfficialByProfessionalId = async (role, professionalId) => {
     ) || null
   );
 };
+
+const getDutyUnitFromRequest = (req) => {
+  return (
+    normalizeDutyUnit(req.body?.dutyUnit) ||
+    normalizeDutyUnit(req.body?.specificRole) ||
+    inferDutyUnitFromProfessionalId(req.body?.professionalId) ||
+    inferDutyUnit(req.body || {})
+  );
+};
+
+const getDutyOfficerRecord = async (req) => {
+  const email = normalizeEmail(req.body?.email || req.headers["x-user-email"]);
+  const professionalId = normalizeProfessionalId(
+    req.body?.professionalId || req.headers["x-professional-id"],
+  );
+
+  let user = null;
+  if (email) {
+    user = await findUserByEmail(email, { role: "TTR/RPF/Police" });
+  }
+
+  if (!user && professionalId) {
+    user = await findOfficialByProfessionalId("TTR/RPF/Police", professionalId);
+  }
+
+  if (user) {
+    return toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
+  }
+
+  const matchingDemo = DEMO_DUTY_ROSTER.find((officer) => {
+    if (email && officer.staffEmail === email) {
+      return true;
+    }
+    if (professionalId && officer.professionalId === professionalId) {
+      return true;
+    }
+    const requestedUnit = getDutyUnitFromRequest(req);
+    return requestedUnit && officer.dutyUnit === requestedUnit;
+  });
+
+  return matchingDemo ? toDutyOfficer(matchingDemo, { isDemo: true }) : null;
+};
+
+const toDutyResponse = (officer) => ({
+  officer,
+  onDuty: Boolean(officer?.onDutyStatus),
+});
 
 const hasMatchingEmail = (user, emailValue) => {
   const normalized = normalizeEmail(emailValue);
@@ -608,6 +663,181 @@ router.post("/login", async (req, res) => {
     console.error("❌ LOGIN ERROR:", error.message);
     console.error(error.stack);
     return res.status(500).json({ message: "Unable to log in." });
+  }
+});
+
+router.get("/duty/status", async (req, res) => {
+  try {
+    const email = normalizeEmail(req.query?.email || req.headers["x-user-email"]);
+    const professionalId = normalizeProfessionalId(
+      req.query?.professionalId || req.headers["x-professional-id"],
+    );
+
+    let user = null;
+    if (email) {
+      user = await findUserByEmail(email, { role: "TTR/RPF/Police" });
+    }
+
+    if (!user && professionalId) {
+      user = await findOfficialByProfessionalId("TTR/RPF/Police", professionalId);
+    }
+
+    if (user) {
+      return res.json({
+        ...toDutyResponse(toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user)),
+        message: "Duty status retrieved successfully",
+      });
+    }
+
+    const demoOfficer = DEMO_DUTY_ROSTER.find(
+      (officer) => officer.staffEmail === email || officer.professionalId === professionalId,
+    );
+
+    if (demoOfficer) {
+      return res.json({
+        ...toDutyResponse(toDutyOfficer(demoOfficer, { isDemo: true })),
+        message: "Duty status retrieved successfully",
+      });
+    }
+
+    return res.status(404).json({ message: "Duty officer not found." });
+  } catch (error) {
+    console.error("Duty status error:", error.message);
+    return res.status(500).json({ message: "Unable to retrieve duty status." });
+  }
+});
+
+router.get("/duty/roster", async (req, res) => {
+  try {
+    const officers = await User.find({
+      role: "TTR/RPF/Police",
+      approvalStatus: "approved",
+      isActive: true,
+    }).select("email name professionalId role onDutyStatus dutyCheckInAt dutyCheckOutAt dutyStation dutyDesk dutyUnit dutyNote jurisdiction");
+
+    const roster = buildDutyRoster(officers);
+    const data = roster.length > 0
+      ? roster
+      : DEMO_DUTY_ROSTER.map((officer) => toDutyOfficer(officer, { isDemo: true }));
+
+    return res.json({
+      officers: data,
+      message: "Duty roster retrieved successfully",
+    });
+  } catch (error) {
+    console.error("Duty roster error:", error.message);
+    return res.status(500).json({ message: "Unable to retrieve duty roster." });
+  }
+});
+
+router.post("/duty/check-in", async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body?.email || req.headers["x-user-email"]);
+    const professionalId = normalizeProfessionalId(req.body?.professionalId || req.headers["x-professional-id"]);
+    const dutyUnit = getDutyUnitFromRequest(req) || "TTR";
+
+    let user = null;
+    if (email) {
+      user = await findUserByEmail(email, { role: "TTR/RPF/Police" });
+    }
+    if (!user && professionalId) {
+      user = await findOfficialByProfessionalId("TTR/RPF/Police", professionalId);
+    }
+
+    if (!user) {
+      const demoOfficer = DEMO_DUTY_ROSTER.find(
+        (officer) => officer.staffEmail === email || officer.professionalId === professionalId || officer.dutyUnit === dutyUnit,
+      );
+
+      if (!demoOfficer) {
+        return res.status(404).json({ message: "Duty officer not found." });
+      }
+
+      const rosterOfficer = toDutyOfficer(
+        {
+          ...demoOfficer,
+          onDutyStatus: true,
+          dutyCheckInAt: new Date(),
+          dutyCheckOutAt: null,
+          dutyStation: req.body?.dutyStation || demoOfficer.dutyStation,
+          dutyDesk: req.body?.dutyDesk || demoOfficer.dutyDesk,
+          dutyUnit,
+          dutyNote: req.body?.dutyNote || demoOfficer.dutyNote || null,
+        },
+        { isDemo: true },
+      );
+
+      return res.json({ officer: rosterOfficer, message: "Checked in successfully." });
+    }
+
+    user.onDutyStatus = true;
+    user.dutyCheckInAt = new Date();
+    user.dutyCheckOutAt = null;
+    user.dutyStation = req.body?.dutyStation || user.dutyStation || null;
+    user.dutyDesk = req.body?.dutyDesk || user.dutyDesk || null;
+    user.dutyUnit = dutyUnit || user.dutyUnit || null;
+    user.dutyNote = req.body?.dutyNote || user.dutyNote || null;
+    await user.save();
+
+    return res.json({
+      officer: toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user),
+      message: "Checked in successfully.",
+    });
+  } catch (error) {
+    console.error("Check-in error:", error.message);
+    return res.status(500).json({ message: "Unable to check in." });
+  }
+});
+
+router.post("/duty/check-out", async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body?.email || req.headers["x-user-email"]);
+    const professionalId = normalizeProfessionalId(req.body?.professionalId || req.headers["x-professional-id"]);
+    const dutyUnit = getDutyUnitFromRequest(req) || "TTR";
+
+    let user = null;
+    if (email) {
+      user = await findUserByEmail(email, { role: "TTR/RPF/Police" });
+    }
+    if (!user && professionalId) {
+      user = await findOfficialByProfessionalId("TTR/RPF/Police", professionalId);
+    }
+
+    if (!user) {
+      const demoOfficer = DEMO_DUTY_ROSTER.find(
+        (officer) => officer.staffEmail === email || officer.professionalId === professionalId || officer.dutyUnit === dutyUnit,
+      );
+
+      if (!demoOfficer) {
+        return res.status(404).json({ message: "Duty officer not found." });
+      }
+
+      return res.json({
+        officer: toDutyOfficer(
+          {
+            ...demoOfficer,
+            onDutyStatus: false,
+            dutyCheckInAt: demoOfficer.dutyCheckInAt || null,
+            dutyCheckOutAt: new Date(),
+          },
+          { isDemo: true },
+        ),
+        message: "Checked out successfully.",
+      });
+    }
+
+    user.onDutyStatus = false;
+    user.dutyCheckOutAt = new Date();
+    user.dutyNote = req.body?.dutyNote || user.dutyNote || null;
+    await user.save();
+
+    return res.json({
+      officer: toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user),
+      message: "Checked out successfully.",
+    });
+  } catch (error) {
+    console.error("Check-out error:", error.message);
+    return res.status(500).json({ message: "Unable to check out." });
   }
 });
 
