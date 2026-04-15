@@ -38,6 +38,22 @@ const OFFICER_ROLE_THEMES = {
   RPF: { accent: "#3B82F6", glow: "#3B82F6" },
   Police: { accent: "#E11D48", glow: "#E11D48" },
 };
+const inferSpecificRoleFromProfessionalId = (idValue) => {
+  const normalized = (idValue || "").trim().toUpperCase();
+  if (normalized.startsWith("TNPOLICE-")) {
+    return "Police";
+  }
+  if (normalized.startsWith("TTR-")) {
+    return "TTR";
+  }
+  if (normalized.startsWith("TTE-")) {
+    return "TTE";
+  }
+  if (normalized.startsWith("RPF-")) {
+    return "RPF";
+  }
+  return "";
+};
 const API_BASE = getApiBase();
 
 const sendCode = (emailAddress, purpose = "register") =>
@@ -145,6 +161,7 @@ const MeridiemSelector = ({ value, onChange }) => (
 
 const EmptyOpsDashboard = ({
   roleLabel,
+  roleKey,
   officerEmail,
   professionalId,
   staffName,
@@ -161,8 +178,20 @@ const EmptyOpsDashboard = ({
   const [isLoadingAlerts, setIsLoadingAlerts] = useState(false);
   const [dutySyncing, setDutySyncing] = useState(false);
   const [roster, setRoster] = useState([]);
+  const [dutyAttendance, setDutyAttendance] = useState(null);
+  const [dutyTrain, setDutyTrain] = useState("");
+  const [dutyRoute, setDutyRoute] = useState("");
+  const [dutyStation, setDutyStation] = useState("");
+  const [dutyShift, setDutyShift] = useState("");
+  const [prototypeType, setPrototypeType] = useState("alerts");
+  const [prototypePayload, setPrototypePayload] = useState("");
+  const [prototypeInfo, setPrototypeInfo] = useState("");
+  const [prototypeSummary, setPrototypeSummary] = useState(null);
 
-  const dutyUnit = useMemo(() => specificRole || inferSpecificRoleFromId(professionalId) || "TTR", [specificRole, professionalId]);
+  const dutyUnit = useMemo(
+    () => roleKey || specificRole || inferSpecificRoleFromProfessionalId(professionalId) || "TTR",
+    [professionalId, roleKey, specificRole],
+  );
   const roleTheme = OFFICER_ROLE_THEMES[dutyUnit] || OFFICER_ROLE_THEMES.TTR;
   const officerLabel = staffName || officerEmail || professionalId || `${dutyUnit} officer`;
 
@@ -313,6 +342,54 @@ const EmptyOpsDashboard = ({
     loadRoster();
   }, []);
 
+  const loadPrototypeSummary = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/passenger/prototype-data/summary`);
+      setPrototypeSummary(response.data?.summary || null);
+    } catch (error) {
+      console.log("Prototype summary load failed:", error.message);
+    }
+  };
+
+  useEffect(() => {
+    loadPrototypeSummary();
+  }, []);
+
+  const loadDutyStatus = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/auth/duty/status`, {
+        params: {
+          email: officerEmail || undefined,
+          professionalId: professionalId || undefined,
+        },
+        headers: {
+          "X-User-Email": officerEmail || "",
+          "X-Professional-Id": professionalId || "",
+        },
+      });
+
+      if (setOnDuty) {
+        setOnDuty(Boolean(response.data?.onDuty));
+      }
+
+      const attendance = response.data?.attendance || null;
+      setDutyAttendance(attendance);
+
+      if (attendance) {
+        setDutyTrain(attendance.assignedTrain || "");
+        setDutyRoute(attendance.assignedRoute || "");
+        setDutyStation(attendance.assignedStation || "");
+        setDutyShift(attendance.assignedShift || "");
+      }
+    } catch (error) {
+      console.log("Duty status load failed:", error.message);
+    }
+  };
+
+  useEffect(() => {
+    loadDutyStatus();
+  }, [officerEmail, professionalId, dutyUnit]);
+
   const fetchAlerts = async () => {
     if (!onDuty) {
       setAlerts([]);
@@ -382,17 +459,38 @@ const EmptyOpsDashboard = ({
     );
   }, [dutyUnit, roster]);
 
+  const recentResponses = useMemo(() => {
+    return displayAlerts
+      .flatMap((alert) => (Array.isArray(alert.messages) ? alert.messages : []).map((message) => ({
+        alertId: alert.id,
+        passengerName: alert.passengerName,
+        text: message.text,
+        staffName: message.staffName,
+        timestamp: message.timestamp,
+      })))
+      .sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime())
+      .slice(0, 4);
+  }, [displayAlerts]);
+
   const syncDutyStatus = async (nextOnDuty) => {
     setDutySyncing(true);
     try {
       const endpoint = nextOnDuty ? "/auth/duty/check-in" : "/auth/duty/check-out";
-      await axios.post(
+      const response = await axios.post(
         `${API_BASE}${endpoint}`,
         {
           email: officerEmail || undefined,
           professionalId: professionalId || undefined,
           dutyUnit,
-          dutyStation: selectedRosterOfficer?.dutyStation || `${dutyUnit} duty desk`,
+          assignedTrain: dutyTrain || selectedAlert?.vehicleNumber || null,
+          assignedRoute: dutyRoute || selectedAlert?.route || null,
+          assignedStation:
+            dutyStation ||
+            selectedRosterOfficer?.dutyStation ||
+            selectedAlert?.nextStation ||
+            `${dutyUnit} duty desk`,
+          assignedShift: dutyShift || null,
+          dutyStation: dutyStation || selectedRosterOfficer?.dutyStation || `${dutyUnit} duty desk`,
           dutyDesk: selectedRosterOfficer?.dutyDesk || "Duty desk",
           dutyNote: nextOnDuty ? "Checked in from SafeRide Guardian" : "Checked out from SafeRide Guardian",
         },
@@ -410,16 +508,49 @@ const EmptyOpsDashboard = ({
         setOnDuty(nextOnDuty);
       }
 
+      setDutyAttendance(response.data?.attendance || null);
+
       if (!nextOnDuty) {
         setAlerts([]);
         setSelectedAlertId("");
       } else {
         fetchAlerts();
       }
+
+      loadDutyStatus();
     } catch (error) {
       setAlertError(error?.response?.data?.message || error.message || "Unable to update duty status");
     } finally {
       setDutySyncing(false);
+    }
+  };
+
+  const submitPrototypeRecord = async () => {
+    if (!prototypePayload.trim()) {
+      setPrototypeInfo("Enter JSON payload to add prototype data.");
+      return;
+    }
+
+    let parsedPayload;
+    try {
+      parsedPayload = JSON.parse(prototypePayload);
+    } catch (error) {
+      setPrototypeInfo("Invalid JSON. Please provide a valid payload.");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `${API_BASE}/passenger/prototype-data/${prototypeType}`,
+        parsedPayload,
+      );
+      setPrototypeInfo(response.data?.message || "Prototype record saved.");
+      setPrototypePayload("");
+      setPrototypeSummary(response.data?.summary || null);
+      fetchAlerts();
+      loadPrototypeSummary();
+    } catch (error) {
+      setPrototypeInfo(error?.response?.data?.message || error.message || "Unable to save prototype record.");
     }
   };
 
@@ -531,6 +662,97 @@ const EmptyOpsDashboard = ({
               Duty {onDuty ? "ON" : "OFF"}{dutySyncing ? " ..." : ""}
             </Text>
           </Pressable>
+          <View style={styles.opsDutyActionRow}>
+            <Pressable
+              style={[styles.opsDutyActionButton, { borderColor: roleTheme.accent }]}
+              onPress={() => syncDutyStatus(true)}
+              disabled={dutySyncing || onDuty}
+            >
+              <Text style={styles.opsDutyActionText}>Check-In</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.opsDutyActionButton, styles.opsDutyActionDanger]}
+              onPress={() => syncDutyStatus(false)}
+              disabled={dutySyncing || !onDuty}
+            >
+              <Text style={styles.opsDutyActionText}>Check-Out</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={styles.opsDetailCard}>
+          <View style={styles.opsSectionHeader}>
+            <Text style={styles.opsSectionTitle}>Duty attendance</Text>
+            <Text style={styles.opsSectionSubtitle}>One active duty session per officer.</Text>
+          </View>
+          <View style={styles.opsDetailGrid}>
+            <View style={styles.opsDetailBlock}>
+              <Text style={styles.opsDetailLabel}>Assigned train</Text>
+              <TextInput
+                style={styles.opsFieldInput}
+                value={dutyTrain}
+                onChangeText={setDutyTrain}
+                placeholder="2241 City Express"
+                placeholderTextColor="#64748B"
+              />
+            </View>
+            <View style={styles.opsDetailBlock}>
+              <Text style={styles.opsDetailLabel}>Assigned route</Text>
+              <TextInput
+                style={styles.opsFieldInput}
+                value={dutyRoute}
+                onChangeText={setDutyRoute}
+                placeholder="Chennai Central -> Tambaram"
+                placeholderTextColor="#64748B"
+              />
+            </View>
+            <View style={styles.opsDetailBlock}>
+              <Text style={styles.opsDetailLabel}>Assigned station</Text>
+              <TextInput
+                style={styles.opsFieldInput}
+                value={dutyStation}
+                onChangeText={setDutyStation}
+                placeholder="Tambaram"
+                placeholderTextColor="#64748B"
+              />
+            </View>
+            <View style={styles.opsDetailBlock}>
+              <Text style={styles.opsDetailLabel}>Assigned shift</Text>
+              <TextInput
+                style={styles.opsFieldInput}
+                value={dutyShift}
+                onChangeText={setDutyShift}
+                placeholder="06:00 - 14:00"
+                placeholderTextColor="#64748B"
+              />
+            </View>
+          </View>
+          <View style={styles.opsInfoPanel}>
+            <Text style={styles.opsInfoHint}>
+              Session status: {dutyAttendance?.status || (onDuty ? "ACTIVE" : "INACTIVE")}
+            </Text>
+            <Text style={styles.opsInfoHint}>
+              Check-In: {dutyAttendance?.checkInTime ? new Date(dutyAttendance.checkInTime).toLocaleString() : "Not checked in"}
+            </Text>
+            <Text style={styles.opsInfoHint}>
+              Check-Out: {dutyAttendance?.checkOutTime ? new Date(dutyAttendance.checkOutTime).toLocaleString() : "Not checked out"}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.opsDetailGrid}>
+          <View style={styles.opsDetailBlock}>
+            <Text style={styles.opsDetailLabel}>Officer profile</Text>
+            <Text style={styles.opsDetailValue}>{officerLabel}</Text>
+            <Text style={styles.opsInfoHint}>Unit: {dutyUnit}</Text>
+            <Text style={styles.opsInfoHint}>Email: {officerEmail || "demo.officer@railnet.gov.in"}</Text>
+          </View>
+          <View style={styles.opsDetailBlock}>
+            <Text style={styles.opsDetailLabel}>Current assignment</Text>
+            <Text style={styles.opsDetailValue}>{selectedRosterOfficer?.dutyStation || "Chennai Central"}</Text>
+            <Text style={styles.opsInfoHint}>Desk: {selectedRosterOfficer?.dutyDesk || "Passenger recovery desk"}</Text>
+            <Text style={styles.opsInfoHint}>Badge: {onDuty ? "ON DUTY" : "OFF DUTY"}</Text>
+          </View>
         </View>
 
         {alertError ? (
@@ -695,6 +917,77 @@ const EmptyOpsDashboard = ({
           </View>
         ) : null}
 
+        <View style={styles.opsSection}>
+          <View style={styles.opsSectionHeader}>
+            <Text style={styles.opsSectionTitle}>Recent responses</Text>
+            <Text style={styles.opsSectionSubtitle}>Latest officer-to-passenger replies.</Text>
+          </View>
+          {recentResponses.length > 0 ? (
+            recentResponses.map((entry, index) => (
+              <View key={`${entry.alertId}-${index}`} style={styles.opsCaseCard}>
+                <Text style={styles.opsCaseId}>{entry.alertId}</Text>
+                <Text style={styles.opsCaseSummary}>{entry.text}</Text>
+                <View style={styles.opsCaseMetaRow}>
+                  <Text style={styles.opsCaseMetaText}>{entry.staffName || dutyUnit}</Text>
+                  <Text style={styles.opsCaseMetaText}>{entry.passengerName}</Text>
+                </View>
+              </View>
+            ))
+          ) : (
+            <View style={styles.opsEmptyState}>
+              <Text style={styles.opsEmptyText}>No response messages yet for this duty shift.</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.opsDetailCard}>
+          <View style={styles.opsSectionHeader}>
+            <Text style={styles.opsSectionTitle}>Prototype Data Lab</Text>
+            <Text style={styles.opsSectionSubtitle}>
+              Add your own dummy officers, staff, vehicles, complaints, alerts, or handover records.
+            </Text>
+          </View>
+          <View style={styles.opsActionPills}>
+            {["officers", "staff", "vehicles", "complaints", "alerts", "handover-records"].map((item) => (
+              <Pressable
+                key={item}
+                style={[
+                  styles.opsStatusAction,
+                  prototypeType === item && { borderColor: roleTheme.accent },
+                ]}
+                onPress={() => setPrototypeType(item)}
+              >
+                <Text style={styles.opsStatusActionText}>{item}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <TextInput
+            style={styles.opsReplyInput}
+            value={prototypePayload}
+            onChangeText={setPrototypePayload}
+            placeholder='{"name":"Demo Officer","dutyUnit":"TTE"}'
+            placeholderTextColor="#6B7280"
+            multiline
+          />
+          <View style={styles.opsActionRow}>
+            <Pressable
+              style={[styles.opsActionButton, { backgroundColor: roleTheme.accent }]}
+              onPress={submitPrototypeRecord}
+            >
+              <Text style={styles.opsActionButtonText}>Save dummy data</Text>
+            </Pressable>
+            <Pressable style={styles.opsActionButtonSecondary} onPress={loadPrototypeSummary}>
+              <Text style={styles.opsActionButtonSecondaryText}>Refresh summary</Text>
+            </Pressable>
+          </View>
+          {prototypeInfo.length > 0 ? <Text style={styles.opsInfoHint}>{prototypeInfo}</Text> : null}
+          {prototypeSummary ? (
+            <Text style={styles.opsInfoHint}>
+              Officers: {prototypeSummary.officers} | Staff: {prototypeSummary.staff} | Vehicles: {prototypeSummary.vehicles} | Complaints: {prototypeSummary.complaints} | Alerts: {prototypeSummary.alerts} | Handover: {prototypeSummary.handoverRecords}
+            </Text>
+          ) : null}
+        </View>
+
         <Pressable style={styles.opsLogoutButton} onPress={onLogout}>
           <Text style={styles.opsLogoutText}>Logout</Text>
         </Pressable>
@@ -702,6 +995,22 @@ const EmptyOpsDashboard = ({
     </SafeAreaView>
   );
 };
+
+const TtrDashboard = (props) => (
+  <EmptyOpsDashboard {...props} roleKey="TTR" roleLabel="TTR Dashboard" />
+);
+
+const TteDashboard = (props) => (
+  <EmptyOpsDashboard {...props} roleKey="TTE" roleLabel="TTE Dashboard" />
+);
+
+const RpfDashboard = (props) => (
+  <EmptyOpsDashboard {...props} roleKey="RPF" roleLabel="RPF Dashboard" />
+);
+
+const PoliceDashboard = (props) => (
+  <EmptyOpsDashboard {...props} roleKey="Police" roleLabel="Police Dashboard" />
+);
 
 const AppContent = () => {
   const [mode, setMode] = useState("login");
@@ -826,20 +1135,7 @@ const AppContent = () => {
   };
 
   const inferSpecificRoleFromId = (idValue) => {
-    const normalized = (idValue || "").trim().toUpperCase();
-    if (normalized.startsWith("TNPOLICE-")) {
-      return "Police";
-    }
-    if (normalized.startsWith("TTR-")) {
-      return "TTR";
-    }
-    if (normalized.startsWith("TTE-")) {
-      return "TTE";
-    }
-    if (normalized.startsWith("RPF-")) {
-      return "RPF";
-    }
-    return "";
+    return inferSpecificRoleFromProfessionalId(idValue);
   };
 
   const isOfficialEmailValid = (selectedRole, emailValue) => {
@@ -3138,16 +3434,32 @@ const AppContent = () => {
 
     // Handle TTR/RPF/Police based on specific role selection
     if (role === "TTR/RPF/Police") {
+      const sharedProps = {
+        officerEmail: (officialEmail || email).trim(),
+        professionalId: professionalId.trim(),
+        staffName: name.trim(),
+        specificRole: specificRole,
+        onDuty,
+        setOnDuty,
+        onLogout: handleLogout,
+      };
+
+      if (specificRole === "TTE") {
+        return <TteDashboard {...sharedProps} />;
+      }
+
+      if (specificRole === "RPF") {
+        return <RpfDashboard {...sharedProps} />;
+      }
+
+      if (specificRole === "Police") {
+        return <PoliceDashboard {...sharedProps} />;
+      }
+
       return (
-        <EmptyOpsDashboard
-          roleLabel={specificRole ? `${specificRole} dashboard` : "TTR/RPF/Police dashboard"}
-          officerEmail={(officialEmail || email).trim()}
-          professionalId={professionalId.trim()}
-          staffName={name.trim()}
-          specificRole={specificRole}
-          onDuty={onDuty}
-          setOnDuty={setOnDuty}
-          onLogout={handleLogout}
+        <TtrDashboard
+          {...sharedProps}
+          roleLabel={specificRole ? `${specificRole} dashboard` : "TTR Dashboard"}
         />
       );
     }
@@ -4822,6 +5134,27 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: 0.4,
   },
+  opsDutyActionRow: {
+    flexDirection: "row",
+    gap: 10,
+    width: "100%",
+  },
+  opsDutyActionButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    backgroundColor: "#0F172A",
+    alignItems: "center",
+  },
+  opsDutyActionDanger: {
+    borderColor: "#F87171",
+  },
+  opsDutyActionText: {
+    color: "#E2E8F0",
+    fontWeight: "800",
+    fontSize: 12,
+  },
   opsErrorBanner: {
     backgroundColor: "#3F1D1D",
     borderWidth: 1,
@@ -4997,6 +5330,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontWeight: "700",
+  },
+  opsFieldInput: {
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: "#334155",
+    borderRadius: 10,
+    backgroundColor: "#0B1322",
+    color: "#FFFFFF",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 12,
   },
   opsInfoPanel: {
     backgroundColor: "#101C2E",
