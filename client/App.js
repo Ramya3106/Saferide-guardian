@@ -187,6 +187,9 @@ const EmptyOpsDashboard = ({
   const [prototypePayload, setPrototypePayload] = useState("");
   const [prototypeInfo, setPrototypeInfo] = useState("");
   const [prototypeSummary, setPrototypeSummary] = useState(null);
+  const [officerNotes, setOfficerNotes] = useState("");
+  const [coachRemark, setCoachRemark] = useState("");
+  const [stationRemark, setStationRemark] = useState("");
 
   const dutyUnit = useMemo(
     () => roleKey || specificRole || inferSpecificRoleFromProfessionalId(professionalId) || "TTR",
@@ -305,6 +308,9 @@ const EmptyOpsDashboard = ({
           ? `Handover planned at ${alert.meetingPoint || alert.recoveryStation || alert.toLocation || "the next station"}`
           : alert.staffResponseStatus || "Awaiting recovery coordination",
         lastAction: latestMessage ? latestMessage.text : "No staff reply yet",
+        officerNotes: alert.officerNotes || "",
+        coachRemark: alert.coachRemark || "",
+        stationRemark: alert.stationRemark || "",
       };
     },
     [],
@@ -326,6 +332,9 @@ const EmptyOpsDashboard = ({
   useEffect(() => {
     if (selectedAlert) {
       setReplyDraft(selectedAlert.replyDraft || "");
+      setOfficerNotes(selectedAlert.officerNotes || "");
+      setCoachRemark(selectedAlert.coachRemark || "");
+      setStationRemark(selectedAlert.stationRemark || "");
     }
   }, [selectedAlert]);
 
@@ -440,11 +449,14 @@ const EmptyOpsDashboard = ({
 
   const statusSummary = useMemo(() => {
     const source = onDuty ? displayAlerts : [];
+    const closedStatuses = ["Closed"];
+    const securedStatuses = ["Item Found", "Ready for Handover", "Closed"];
+    const handoverStatuses = ["Ready for Handover"];
 
     return {
-      openCount: source.filter((item) => item.status !== "Handed over" && item.status !== "Closed").length,
-      securedCount: source.filter((item) => item.status === "Secured" || item.status === "Found").length,
-      handoverCount: source.filter((item) => item.status === "Meeting Scheduled" || item.status === "Handed over").length,
+      openCount: source.filter((item) => !closedStatuses.includes(item.status)).length,
+      securedCount: source.filter((item) => securedStatuses.includes(item.status)).length,
+      handoverCount: source.filter((item) => handoverStatuses.includes(item.status)).length,
       priorityCount: source.filter((item) => item.priority === "High" || item.priority === "Critical").length,
     };
   }, [displayAlerts, onDuty]);
@@ -588,6 +600,23 @@ const EmptyOpsDashboard = ({
     await updateSelectedAlert("/respond", {
       text: trimmedReply,
       staffEta: selectedAlert.staffEta || "8 mins",
+      notes: officerNotes.trim(),
+      coachRemark: coachRemark.trim(),
+      stationRemark: stationRemark.trim(),
+      markPassengerContacted: selectedAlert.status !== "Passenger Contacted",
+    });
+  };
+
+  const markAcknowledgement = async (action) => {
+    if (!selectedAlert || String(selectedAlert.id).startsWith("DEMO-")) {
+      return;
+    }
+
+    await updateSelectedAlert("/acknowledge", {
+      action,
+      notes: officerNotes.trim(),
+      coachRemark: coachRemark.trim(),
+      stationRemark: stationRemark.trim(),
     });
   };
 
@@ -598,14 +627,17 @@ const EmptyOpsDashboard = ({
 
     await updateSelectedAlert("/status", {
       status: nextStatus,
-      itemFound: nextStatus === "Found" || nextStatus === "Secured" || selectedAlert.status === "Found",
-      meetingScheduled: nextStatus === "Meeting Scheduled" || nextStatus === "Handed over",
+      itemFound: nextStatus === "Item Found" || selectedAlert.status === "Item Found",
+      meetingScheduled: nextStatus === "Ready for Handover" || selectedAlert.status === "Ready for Handover",
       meetingPoint: selectedAlert.nextStation || selectedAlert.toLocation || "Next station",
       meetingTime: selectedAlert.staffEta || "Next available halt",
       recoveryStation: selectedAlert.nextStation || selectedAlert.toLocation || "Next station",
       recoveryNotes: `Updated by ${officerLabel}`,
       staffResponseStatus: `Status updated to ${nextStatus}`,
       staffEta: selectedAlert.staffEta || "8 mins",
+      notes: officerNotes.trim(),
+      coachRemark: coachRemark.trim(),
+      stationRemark: stationRemark.trim(),
     });
   };
 
@@ -618,6 +650,9 @@ const EmptyOpsDashboard = ({
       handoverStation: selectedAlert.nextStation || selectedAlert.toLocation || "Next station",
       handoverTime: selectedAlert.staffEta || "Next halt",
       recoveryNotes: `Handover coordinated by ${officerLabel}`,
+      notes: officerNotes.trim(),
+      coachRemark: coachRemark.trim(),
+      stationRemark: stationRemark.trim(),
     });
   };
 
@@ -810,10 +845,10 @@ const EmptyOpsDashboard = ({
                   <View
                     style={[
                       styles.opsStatusChip,
-                      item.status === "Found" && styles.opsStatusFound,
-                      item.status === "In verification" && styles.opsStatusReview,
-                      item.status === "Secured" && styles.opsStatusSecured,
-                      item.status === "Handed over" && styles.opsStatusHandover,
+                      item.status === "Item Found" && styles.opsStatusFound,
+                      item.status === "Item Being Checked" && styles.opsStatusReview,
+                      (item.status === "Passenger Contacted" || item.status === "Acknowledged") && styles.opsStatusSecured,
+                      item.status === "Ready for Handover" && styles.opsStatusHandover,
                     ]}
                   >
                     <Text style={styles.opsStatusText}>{item.status}</Text>
@@ -872,6 +907,31 @@ const EmptyOpsDashboard = ({
             </View>
 
             <View style={styles.opsReplyBlock}>
+              <Text style={styles.opsDetailLabel}>Officer updates</Text>
+              <TextInput
+                style={styles.opsFieldInput}
+                value={officerNotes}
+                onChangeText={setOfficerNotes}
+                placeholder="Internal note for passenger timeline"
+                placeholderTextColor="#6B7280"
+              />
+              <TextInput
+                style={styles.opsFieldInput}
+                value={coachRemark}
+                onChangeText={setCoachRemark}
+                placeholder="Coach or berth remark"
+                placeholderTextColor="#6B7280"
+              />
+              <TextInput
+                style={styles.opsFieldInput}
+                value={stationRemark}
+                onChangeText={setStationRemark}
+                placeholder="Station remark"
+                placeholderTextColor="#6B7280"
+              />
+            </View>
+
+            <View style={styles.opsReplyBlock}>
               <Text style={styles.opsDetailLabel}>Reply to passenger</Text>
               <TextInput
                 style={styles.opsReplyInput}
@@ -890,7 +950,12 @@ const EmptyOpsDashboard = ({
                 </Pressable>
                 <Pressable
                   style={styles.opsActionButtonSecondary}
-                  onPress={() => setReplyDraft(selectedAlert.replyDraft || "")}
+                  onPress={() => {
+                    setReplyDraft(selectedAlert.replyDraft || "");
+                    setOfficerNotes(selectedAlert.officerNotes || "");
+                    setCoachRemark(selectedAlert.coachRemark || "");
+                    setStationRemark(selectedAlert.stationRemark || "");
+                  }}
                 >
                   <Text style={styles.opsActionButtonSecondaryText}>Reset text</Text>
                 </Pressable>
@@ -898,20 +963,29 @@ const EmptyOpsDashboard = ({
             </View>
 
             <View style={styles.opsActionPills}>
-              <Pressable style={styles.opsStatusAction} onPress={() => applyStatus("Found")}>
-                <Text style={styles.opsStatusActionText}>Mark found</Text>
+              <Pressable style={styles.opsStatusAction} onPress={() => markAcknowledgement("Seen")}>
+                <Text style={styles.opsStatusActionText}>Seen</Text>
               </Pressable>
               <Pressable
                 style={styles.opsStatusAction}
-                onPress={() => applyStatus("In verification")}
+                onPress={() => markAcknowledgement("Acknowledged")}
               >
-                <Text style={styles.opsStatusActionText}>In verification</Text>
+                <Text style={styles.opsStatusActionText}>Acknowledged</Text>
               </Pressable>
-              <Pressable style={styles.opsStatusAction} onPress={() => applyStatus("Secured")}>
-                <Text style={styles.opsStatusActionText}>Secure item</Text>
+              <Pressable style={styles.opsStatusAction} onPress={() => applyStatus("Item Being Checked")}>
+                <Text style={styles.opsStatusActionText}>Item Being Checked</Text>
+              </Pressable>
+              <Pressable style={styles.opsStatusAction} onPress={() => applyStatus("Item Found")}>
+                <Text style={styles.opsStatusActionText}>Item Found</Text>
+              </Pressable>
+              <Pressable style={styles.opsStatusAction} onPress={() => applyStatus("Passenger Contacted")}>
+                <Text style={styles.opsStatusActionText}>Passenger Contacted</Text>
               </Pressable>
               <Pressable style={styles.opsStatusAction} onPress={coordinateHandover}>
-                <Text style={styles.opsStatusActionText}>Coordinate handover</Text>
+                <Text style={styles.opsStatusActionText}>Ready for Handover</Text>
+              </Pressable>
+              <Pressable style={styles.opsStatusAction} onPress={() => applyStatus("Closed")}>
+                <Text style={styles.opsStatusActionText}>Closed</Text>
               </Pressable>
             </View>
           </View>
