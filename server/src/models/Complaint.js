@@ -70,18 +70,45 @@ const complaintSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    complaintId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      default: null,
+    },
     submitAuthority: {
       type: String,
       default: "Staff",
     },
     status: {
       type: String,
-      enum: ["Reported", "Staff Notified", "Accepted", "Found", "Meeting Scheduled", "Recovered", "Closed"],
-      default: "Reported",
+      enum: ["Submitted", "Reported", "Staff Notified", "Accepted", "Found", "In verification", "Secured", "Meeting Scheduled", "Handed over", "Recovered", "Closed"],
+      default: "Submitted",
+    },
+    priority: {
+      type: String,
+      enum: ["Low", "Normal", "High", "Critical"],
+      default: "Normal",
     },
     staffNotified: {
       type: Boolean,
       default: false,
+    },
+    assignedStaff: [
+      {
+        staffId: String,
+        staffName: String,
+        staffEmail: String,
+        staffRole: String,
+        dutyUnit: String,
+        dutyDesk: String,
+        onDutyAt: Date,
+        acknowledgedAt: Date,
+      },
+    ],
+    staffResponseStatus: {
+      type: String,
+      default: null,
     },
     itemFound: {
       type: Boolean,
@@ -112,6 +139,22 @@ const complaintSchema = new mongoose.Schema(
       default: null,
     },
     meetingTime: {
+      type: String,
+      default: null,
+    },
+    recoveryStation: {
+      type: String,
+      default: null,
+    },
+    recoveryNotes: {
+      type: String,
+      default: null,
+    },
+    alertPriorityReason: {
+      type: String,
+      default: null,
+    },
+    dispatchMode: {
       type: String,
       default: null,
     },
