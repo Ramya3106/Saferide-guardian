@@ -1169,6 +1169,9 @@ const AppContent = () => {
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [specificRole, setSpecificRole] = useState("");
   const [onDuty, setOnDuty] = useState(true);
+  const [authToken, setAuthToken] = useState("");
+  const [authUserId, setAuthUserId] = useState("");
+  const [authUserRole, setAuthUserRole] = useState("");
 
   // Animation refs
   const formAnim = useRef(new Animated.Value(0)).current;
@@ -1607,6 +1610,9 @@ const AppContent = () => {
     setShowRoleSelection(false);
     setSpecificRole("");
     setOnDuty(true);
+    setAuthToken("");
+    setAuthUserId("");
+    setAuthUserRole("");
     setError("");
   };
 
@@ -1917,6 +1923,9 @@ const AppContent = () => {
 
         setProfessionalId(profile.professionalId || professionalId);
         setSpecificRole(inferredRole);
+        setAuthToken(data?.token || "");
+        setAuthUserId(String(profile?.id || profile?._id || ""));
+        setAuthUserRole(String(data?.role || profile?.role || role));
         setError("");
         setIsAuthenticated(true);
       } catch (err) {
@@ -1943,6 +1952,9 @@ const AppContent = () => {
         }
 
         setEmail(profile.email || email);
+        setAuthToken(data?.token || "");
+        setAuthUserId(String(profile?.id || profile?._id || ""));
+        setAuthUserRole(String(data?.role || profile?.role || role));
         setError("");
         setIsAuthenticated(true);
       } catch (err) {
@@ -2016,6 +2028,9 @@ const AppContent = () => {
     setStaffComplaintSubmitted(false);
     setShowRoleSelection(false);
     setSpecificRole("");
+    setAuthToken("");
+    setAuthUserId("");
+    setAuthUserRole("");
     resetForm();
   };
 
@@ -3492,6 +3507,9 @@ const AppContent = () => {
           userEmail={trimmedEmail}
           userName={displayName}
           userPhone={displayPhone}
+          authToken={authToken}
+          authUserId={authUserId}
+          authUserRole={authUserRole}
           onLogout={handleLogout}
         />
       );
@@ -3514,6 +3532,9 @@ const AppContent = () => {
         professionalId: professionalId.trim(),
         staffName: name.trim(),
         specificRole: specificRole,
+        authToken,
+        authUserId,
+        authUserRole,
         onDuty,
         setOnDuty,
         onLogout: handleLogout,
