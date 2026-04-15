@@ -202,7 +202,7 @@ const EmptyOpsDashboard = ({
     () => [
       {
         id: "DEMO-OPS-2041",
-        status: "In verification",
+        status: "Item Being Checked",
         passengerName: "Meera S.",
         itemType: "Black backpack",
         description: "Phone, wallet, and travel documents still inside the train",
@@ -220,7 +220,7 @@ const EmptyOpsDashboard = ({
       },
       {
         id: "DEMO-OPS-2042",
-        status: "Secured",
+        status: "Passenger Contacted",
         passengerName: "Arun K.",
         itemType: "Silver phone",
         description: "Charger pouch and seat tag recovered by duty staff",
@@ -231,14 +231,14 @@ const EmptyOpsDashboard = ({
         nextStation: "Perambur",
         priority: "High",
         staffEta: "8 mins",
-        staffResponseStatus: "Awaiting verification",
+        staffResponseStatus: "Passenger contacted for identity confirmation",
         messages: [],
         assignedStaff: [],
         summary: "Passenger stepped out for water and missed the boarding call.",
       },
       {
         id: "DEMO-OPS-2043",
-        status: "Found",
+        status: "Item Found",
         passengerName: "Lakshmi P.",
         itemType: "Travel wallet",
         description: "ID card and cash located under the berth",
