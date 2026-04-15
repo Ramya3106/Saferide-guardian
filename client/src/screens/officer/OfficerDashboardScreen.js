@@ -38,6 +38,8 @@ const OfficerDashboardScreen = ({
   professionalId,
   specificRole,
   staffName,
+  authToken,
+  authUserId,
   onLogout,
   onDuty,
   setOnDuty,
@@ -58,6 +60,11 @@ const OfficerDashboardScreen = ({
   const [sendingReply, setSendingReply] = useState(false);
   const [error, setError] = useState("");
 
+  const buildHeaders = (extra = {}) => ({
+    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+    ...extra,
+  });
+
   const loadDutyStatus = async () => {
     try {
       const response = await axios.get(`${API_BASE}/auth/duty/status`, {
@@ -65,16 +72,17 @@ const OfficerDashboardScreen = ({
           email: officerEmail || undefined,
           professionalId: professionalId || undefined,
         },
-        headers: {
+        headers: buildHeaders({
           "X-User-Email": officerEmail || "",
           "X-Professional-Id": professionalId || "",
-        },
+        }),
       });
 
-      const attendance = response.data?.attendance || null;
+      const payload = response.data?.data || response.data || {};
+      const attendance = payload?.attendance || null;
       setDutyAttendance(attendance);
       if (setOnDuty) {
-        setOnDuty(Boolean(response.data?.onDuty));
+        setOnDuty(Boolean(payload?.onDuty));
       }
 
       if (attendance) {
@@ -98,16 +106,17 @@ const OfficerDashboardScreen = ({
     try {
       const response = await axios.get(`${API_BASE}/passenger/live-alerts`, {
         params: { staffRole: dutyUnit },
-        headers: {
+        headers: buildHeaders({
           "X-User-Email": officerEmail || "",
           "X-Professional-Id": professionalId || "",
           "X-User-Name": officerName,
           "X-Duty-Unit": dutyUnit,
           "X-On-Duty": String(onDuty),
-        },
+        }),
       });
 
-      const list = Array.isArray(response.data?.alerts)
+      const payload = response.data?.data || response.data || {};
+      const list = Array.isArray(payload?.alerts)
         ? response.data.alerts.map((alert) => ({
             id: alert._id || alert.complaintId || alert.id,
             status: alert.status || "Submitted",
@@ -129,20 +138,24 @@ const OfficerDashboardScreen = ({
   };
 
   const loadDutyHistory = async () => {
-    // Keep simple and resilient: no hard dependency on userId route here.
-    if (!dutyAttendance) {
+    if (!authUserId) {
       setDutyHistory([]);
       return;
     }
 
-    setDutyHistory((prev) => {
-      const latest = [dutyAttendance, ...prev];
-      const deduped = latest.filter((entry, index, arr) => {
-        const key = entry?._id || `${entry.checkInTime}-${entry.checkOutTime}`;
-        return arr.findIndex((item) => (item?._id || `${item.checkInTime}-${item.checkOutTime}`) === key) === index;
+    try {
+      const response = await axios.get(`${API_BASE}/duty/history/${authUserId}`, {
+        headers: buildHeaders({
+          "X-User-Email": officerEmail || "",
+          "X-Professional-Id": professionalId || "",
+        }),
       });
-      return deduped.slice(0, 20);
-    });
+
+      const payload = response.data?.data || response.data || {};
+      setDutyHistory(Array.isArray(payload?.history) ? payload.history : []);
+    } catch {
+      setDutyHistory([]);
+    }
   };
 
   useEffect(() => {
@@ -155,7 +168,7 @@ const OfficerDashboardScreen = ({
 
   useEffect(() => {
     loadDutyHistory();
-  }, [dutyAttendance]);
+  }, [authUserId, dutyAttendance?._id]);
 
   const syncDuty = async (nextOnDuty) => {
     setDutySyncing(true);
@@ -175,12 +188,12 @@ const OfficerDashboardScreen = ({
           assignedShift: dutyShift || null,
         },
         {
-          headers: {
+          headers: buildHeaders({
             "X-User-Email": officerEmail || "",
             "X-Professional-Id": professionalId || "",
             "X-User-Name": officerName,
             "X-Duty-Unit": dutyUnit,
-          },
+          }),
         },
       );
 
@@ -213,16 +226,15 @@ const OfficerDashboardScreen = ({
           markPassengerContacted: status === "Passenger Contacted",
         },
         {
-          headers: {
+          headers: buildHeaders({
             "X-User-Email": officerEmail || "",
             "X-Professional-Id": professionalId || "",
             "X-User-Name": officerName,
             "X-Duty-Unit": dutyUnit,
             "X-On-Duty": String(onDuty),
-          },
+          }),
         },
       );
-
       await loadAlerts();
     } catch (requestError) {
       setError(requestError?.response?.data?.message || requestError.message || "Unable to send reply");
@@ -249,16 +261,15 @@ const OfficerDashboardScreen = ({
           staffResponseStatus: `Status updated to ${status}`,
         },
         {
-          headers: {
+          headers: buildHeaders({
             "X-User-Email": officerEmail || "",
             "X-Professional-Id": professionalId || "",
             "X-User-Name": officerName,
             "X-Duty-Unit": dutyUnit,
             "X-On-Duty": String(onDuty),
-          },
+          }),
         },
       );
-
       await loadAlerts();
     } catch (requestError) {
       setError(requestError?.response?.data?.message || requestError.message || "Unable to update status");
