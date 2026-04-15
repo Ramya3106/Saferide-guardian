@@ -27,6 +27,7 @@ import PassengerDashboard from "./PassengerDashboard";
 import CarAutoDashboard from "./CarAutoDashboard";
 import DriverConductorDashboard from "./DriverConductorDashboard";
 import PasswordVerification from "./PasswordVerification";
+import OfficerDashboardScreen from "./src/screens/officer/OfficerDashboardScreen";
 
 const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
 const OFFICIAL_DOMAINS = {
@@ -1071,19 +1072,19 @@ const EmptyOpsDashboard = ({
 };
 
 const TtrDashboard = (props) => (
-  <EmptyOpsDashboard {...props} roleKey="TTR" roleLabel="TTR Dashboard" />
+  <OfficerDashboardScreen {...props} roleKey="TTR" roleLabel="TTR Dashboard" />
 );
 
 const TteDashboard = (props) => (
-  <EmptyOpsDashboard {...props} roleKey="TTE" roleLabel="TTE Dashboard" />
+  <OfficerDashboardScreen {...props} roleKey="TTE" roleLabel="TTE Dashboard" />
 );
 
 const RpfDashboard = (props) => (
-  <EmptyOpsDashboard {...props} roleKey="RPF" roleLabel="RPF Dashboard" />
+  <OfficerDashboardScreen {...props} roleKey="RPF" roleLabel="RPF Dashboard" />
 );
 
 const PoliceDashboard = (props) => (
-  <EmptyOpsDashboard {...props} roleKey="Police" roleLabel="Police Dashboard" />
+  <OfficerDashboardScreen {...props} roleKey="Police" roleLabel="Police Dashboard" />
 );
 
 const AppContent = () => {
