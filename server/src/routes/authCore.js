@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 
 const User = require("../models/User");
+const { signToken } = require("../utils/authToken");
 
 const router = express.Router();
 
@@ -142,8 +143,16 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    const token = signToken({
+      userId: String(user._id),
+      role: user.role,
+      email: user.email,
+    });
+
     return res.json({
       message: "Login successful",
+      token,
+      role: user.role,
       user: {
         id: user._id,
         name: user.name,
