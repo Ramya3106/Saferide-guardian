@@ -3,6 +3,9 @@ const mongoose = require("mongoose");
 
 const Complaint = require("../models/Complaint");
 const ComplaintReply = require("../models/ComplaintReply");
+const User = require("../models/User");
+const { success, failure } = require("../utils/apiResponse");
+const { logAction } = require("../utils/actionLogger");
 
 const router = express.Router();
 
@@ -13,25 +16,38 @@ router.post("/", async (req, res) => {
     const { complaintId, officerId, officerRole, message, statusUpdate } = req.body || {};
 
     if (!complaintId || !officerId || !officerRole || !message || !statusUpdate) {
-      return res.status(400).json({
-        message: "complaintId, officerId, officerRole, message, and statusUpdate are required",
-      });
+      return failure(
+        res,
+        400,
+        "complaintId, officerId, officerRole, message, and statusUpdate are required",
+        "VALIDATION_ERROR",
+      );
     }
 
-    if (!isObjectId(complaintId) || !isObjectId(officerId)) {
-      return res.status(400).json({ message: "complaintId and officerId must be valid ObjectIds" });
+    if (!isObjectId(complaintId)) {
+      return failure(res, 400, "complaintId must be a valid ObjectId", "VALIDATION_ERROR");
     }
 
     const complaint = await Complaint.findById(complaintId);
     if (!complaint) {
-      return res.status(404).json({ message: "Complaint not found" });
+      return failure(res, 404, "Complaint not found", "NOT_FOUND");
+    }
+
+    const officer = isObjectId(officerId) ? await User.findById(officerId).select("onDutyStatus isActiveDuty") : null;
+    if (officer && !(officer.onDutyStatus || officer.isActiveDuty)) {
+      return failure(res, 403, "Checked-out officers cannot submit replies", "OFFICER_OFF_DUTY");
+    }
+
+    const trimmedMessage = String(message).trim();
+    if (trimmedMessage.length < 2) {
+      return failure(res, 400, "message must be at least 2 characters", "VALIDATION_ERROR");
     }
 
     const reply = await ComplaintReply.create({
       complaintId,
-      officerId,
+      officerId: String(officerId),
       officerRole,
-      message,
+      message: trimmedMessage,
       statusUpdate,
       repliedAt: new Date(),
     });
@@ -40,15 +56,26 @@ router.post("/", async (req, res) => {
     complaint.messages.push({
       staffId: String(officerId),
       staffName: officerRole,
-      text: message,
+      text: trimmedMessage,
       timestamp: new Date(),
     });
     complaint.status = statusUpdate;
     await complaint.save();
 
-    return res.status(201).json({ message: "Reply saved", reply });
+    await logAction({
+      action: "COMPLAINT_REPLY_CREATED",
+      actorType: "OFFICER",
+      actorId: String(officerId),
+      actorRole: officerRole,
+      entityType: "ComplaintReply",
+      entityId: String(reply._id),
+      complaintId: complaint.complaintId || String(complaint._id),
+      metadata: { statusUpdate },
+    });
+
+    return success(res, 201, "Reply saved", { reply });
   } catch (error) {
-    return res.status(500).json({ message: "Failed to save reply", error: error.message });
+    return failure(res, 500, "Failed to save reply", "INTERNAL_ERROR", error.message);
   }
 });
 
@@ -57,13 +84,17 @@ router.get("/:complaintId", async (req, res) => {
     const { complaintId } = req.params;
 
     if (!isObjectId(complaintId)) {
-      return res.status(400).json({ message: "Valid complaintId is required" });
+      return failure(res, 400, "Valid complaintId is required", "VALIDATION_ERROR");
     }
 
     const replies = await ComplaintReply.find({ complaintId }).sort({ repliedAt: -1 });
-    return res.json({ complaintId, replies, total: replies.length });
+    return success(res, 200, "Replies fetched", {
+      complaintId,
+      replies,
+      total: replies.length,
+    });
   } catch (error) {
-    return res.status(500).json({ message: "Failed to fetch replies", error: error.message });
+    return failure(res, 500, "Failed to fetch replies", "INTERNAL_ERROR", error.message);
   }
 });
 
