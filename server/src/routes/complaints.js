@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 
 const Complaint = require("../models/Complaint");
+const { requireAuth, requireRoles } = require("../middleware/authGuard");
 
 const router = express.Router();
 
@@ -105,7 +106,7 @@ router.get("/officer/:officerId", async (req, res) => {
   }
 });
 
-router.get("/:complaintId", async (req, res) => {
+router.get("/:complaintId", requireAuth, async (req, res) => {
   try {
     const { complaintId } = req.params;
 
@@ -126,7 +127,11 @@ router.get("/:complaintId", async (req, res) => {
   }
 });
 
-router.patch("/:complaintId/status", async (req, res) => {
+router.patch(
+  "/:complaintId/status",
+  requireAuth,
+  requireRoles(["TTR", "TTE", "RPF", "Police", "TTR/RPF/Police"]),
+  async (req, res) => {
   try {
     const { complaintId } = req.params;
     const { status, assignedTo } = req.body || {};
@@ -157,6 +162,7 @@ router.patch("/:complaintId/status", async (req, res) => {
   } catch (error) {
     return res.status(500).json({ message: "Failed to update complaint status", error: error.message });
   }
-});
+  },
+);
 
 module.exports = router;
