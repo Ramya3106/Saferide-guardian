@@ -1,5 +1,10 @@
 # SafeRide Guardian Project Plan
 
+## Prototype Mode Notice
+- This build is a prototype using dummy/sample data for demonstration purposes only.
+- Mock records are intentionally separated from future real official integration.
+- See PROTOTYPE_NOTICE.md for prototype-data scope and migration plan.
+
 ## Project Flow
 - Client app starts in the login/register screen.
 - User signs up or logs in with email and password.
