@@ -2,6 +2,19 @@ const mongoose = require("mongoose");
 
 const complaintSchema = new mongoose.Schema(
   {
+    complaintId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      default: null,
+      index: true,
+    },
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
+    },
     passengerId: {
       type: String,
       required: true,
@@ -21,9 +34,33 @@ const complaintSchema = new mongoose.Schema(
       enum: ["train", "car", "bus", "auto"],
       default: "bus",
     },
+    trainNumber: {
+      type: String,
+      default: null,
+    },
     vehicleNumber: {
       type: String,
       required: true,
+    },
+    boardingStation: {
+      type: String,
+      default: null,
+    },
+    destinationStation: {
+      type: String,
+      default: null,
+    },
+    coachNumber: {
+      type: String,
+      default: null,
+    },
+    berthNumber: {
+      type: String,
+      default: null,
+    },
+    lostItemType: {
+      type: String,
+      default: null,
     },
     itemType: {
       type: String,
@@ -34,6 +71,10 @@ const complaintSchema = new mongoose.Schema(
       required: true,
     },
     photoUri: {
+      type: String,
+      default: null,
+    },
+    imageUrl: {
       type: String,
       default: null,
     },
@@ -70,10 +111,8 @@ const complaintSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    complaintId: {
-      type: String,
-      unique: true,
-      sparse: true,
+    lossTime: {
+      type: Date,
       default: null,
     },
     submitAuthority: {
@@ -104,6 +143,11 @@ const complaintSchema = new mongoose.Schema(
       default: "Submitted",
     },
     priority: {
+      type: String,
+      enum: ["Low", "Normal", "High", "Critical"],
+      default: "Normal",
+    },
+    urgencyLevel: {
       type: String,
       enum: ["Low", "Normal", "High", "Critical"],
       default: "Normal",
@@ -229,5 +273,41 @@ const complaintSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+complaintSchema.pre("validate", function syncComplaintCanonicalFields(next) {
+  if (!this.trainNumber && this.vehicleNumber && this.transportType === "train") {
+    this.trainNumber = this.vehicleNumber;
+  }
+
+  if (!this.boardingStation && this.fromLocation) {
+    this.boardingStation = this.fromLocation;
+  }
+
+  if (!this.destinationStation && this.toLocation) {
+    this.destinationStation = this.toLocation;
+  }
+
+  if (!this.lostItemType && this.itemType) {
+    this.lostItemType = this.itemType;
+  }
+
+  if (!this.imageUrl && this.photoUri) {
+    this.imageUrl = this.photoUri;
+  }
+
+  if (!this.lossTime && this.timestamp) {
+    this.lossTime = this.timestamp;
+  }
+
+  if (!this.urgencyLevel && this.priority) {
+    this.urgencyLevel = this.priority;
+  }
+
+  if (!this.priority && this.urgencyLevel) {
+    this.priority = this.urgencyLevel;
+  }
+
+  next();
+});
 
 module.exports = mongoose.model("Complaint", complaintSchema);
