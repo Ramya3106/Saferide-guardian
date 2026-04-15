@@ -122,6 +122,35 @@ const userSchema = new mongoose.Schema(
     },
     approvalRequestedAt: Date,
 
+    onDutyStatus: {
+      type: Boolean,
+      default: false,
+    },
+    dutyCheckInAt: {
+      type: Date,
+      default: null,
+    },
+    dutyCheckOutAt: {
+      type: Date,
+      default: null,
+    },
+    dutyStation: {
+      type: String,
+      default: null,
+    },
+    dutyDesk: {
+      type: String,
+      default: null,
+    },
+    dutyUnit: {
+      type: String,
+      default: null,
+    },
+    dutyNote: {
+      type: String,
+      default: null,
+    },
+
     isVerified: {
       type: Boolean,
       default: false,
