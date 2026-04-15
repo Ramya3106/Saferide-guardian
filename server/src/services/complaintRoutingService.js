@@ -68,8 +68,15 @@ const mergeOfficerDirectory = async (activeSessions) => {
     userDirectory.map((entry) => [normalizeText(entry.email), entry]),
   );
 
-  return activeSessions.map((session) => {
+  return activeSessions
+    .map((session) => {
     const user = userByEmail.get(normalizeText(session.officerEmail));
+
+    // If a DB user record exists, treat explicit checked-out flags as authoritative.
+    if (user && user.onDutyStatus === false && user.isActiveDuty === false) {
+      return null;
+    }
+
     return {
       officerKey: session.officerKey,
       officerId: session.officerId || null,
@@ -84,11 +91,14 @@ const mergeOfficerDirectory = async (activeSessions) => {
       source: "db",
       onDutyAt: session.checkInTime || session.createdAt || new Date(),
     };
-  });
+  })
+    .filter(Boolean);
 };
 
 const buildCandidatePool = async () => {
-  const activeSessions = await DutyAttendance.find({ status: "ACTIVE" }).sort({ checkInTime: 1 });
+  const activeSessions = await DutyAttendance.find({
+    $or: [{ status: "ACTIVE" }, { dutyStatus: "ACTIVE" }],
+  }).sort({ checkInTime: 1 });
 
   const sessionCandidates = await mergeOfficerDirectory(activeSessions);
   const sessionKeySet = new Set(sessionCandidates.map((item) => item.officerKey));
@@ -154,6 +164,9 @@ const routeComplaintToActiveOfficers = async (complaintData) => {
   const tier1 = candidates.filter(
     (officer) => (officer.dutyUnit === "TTR" || officer.dutyUnit === "TTE") && isTrainMatch(trainComplaint, officer.assignedTrain),
   );
+
+  // Exact train matches are highest priority; stable-sort by earliest duty start.
+  tier1.sort((a, b) => new Date(a.onDutyAt).getTime() - new Date(b.onDutyAt).getTime());
 
   let selected = tier1;
   let priorityRank = 1;
