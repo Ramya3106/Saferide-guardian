@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 
 const dutyAttendanceSchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
+    },
     officerKey: {
       type: String,
       required: true,
@@ -47,6 +53,12 @@ const dutyAttendanceSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    dutyStatus: {
+      type: String,
+      enum: ["ACTIVE", "INACTIVE"],
+      default: "ACTIVE",
+      index: true,
+    },
     checkInTime: {
       type: Date,
       required: true,
@@ -59,6 +71,11 @@ const dutyAttendanceSchema = new mongoose.Schema(
       type: String,
       enum: ["ACTIVE", "INACTIVE"],
       default: "ACTIVE",
+      index: true,
+    },
+    shiftDate: {
+      type: Date,
+      default: () => new Date(),
       index: true,
     },
     notes: {
@@ -76,6 +93,27 @@ const dutyAttendanceSchema = new mongoose.Schema(
   },
 );
 
+dutyAttendanceSchema.pre("validate", function syncAttendanceFields(next) {
+  if (!this.officerKey && this.userId) {
+    this.officerKey = String(this.userId);
+  }
+
+  if (this.status && !this.dutyStatus) {
+    this.dutyStatus = this.status;
+  }
+
+  if (this.dutyStatus && !this.status) {
+    this.status = this.dutyStatus;
+  }
+
+  if (!this.shiftDate && this.checkInTime) {
+    this.shiftDate = this.checkInTime;
+  }
+
+  next();
+});
+
 dutyAttendanceSchema.index({ officerKey: 1, status: 1, createdAt: -1 });
+dutyAttendanceSchema.index({ userId: 1, dutyStatus: 1, shiftDate: -1 });
 
 module.exports = mongoose.model("DutyAttendance", dutyAttendanceSchema);
