@@ -51,6 +51,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    mobile: {
+      type: String,
+      default: null,
+      set: encrypt,
+      get: decrypt,
+    },
     phone: {
       type: String,
       required: true,
@@ -59,6 +65,13 @@ const userSchema = new mongoose.Schema(
     },
     professionalId: {
       type: String,
+      index: true,
+      set: encrypt,
+      get: decrypt,
+    },
+    officerId: {
+      type: String,
+      default: null,
       index: true,
       set: encrypt,
       get: decrypt,
@@ -72,7 +85,16 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"],
+      enum: [
+        "Passenger",
+        "TTR",
+        "TTE",
+        "RPF",
+        "Police",
+        "Driver/Conductor",
+        "Cab/Auto",
+        "TTR/RPF/Police",
+      ],
     },
     password: {
       type: String,
@@ -120,6 +142,11 @@ const userSchema = new mongoose.Schema(
       enum: ["pending", "approved", "rejected"],
       default: "approved",
     },
+    profileStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected", "active", "inactive", "suspended"],
+      default: "approved",
+    },
     approvalRequestedAt: Date,
 
     onDutyStatus: {
@@ -146,6 +173,26 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    assignedTrain: {
+      type: String,
+      default: null,
+    },
+    assignedRoute: {
+      type: String,
+      default: null,
+    },
+    assignedStation: {
+      type: String,
+      default: null,
+    },
+    dutyShift: {
+      type: String,
+      default: null,
+    },
+    isActiveDuty: {
+      type: Boolean,
+      default: false,
+    },
     dutyNote: {
       type: String,
       default: null,
@@ -170,6 +217,24 @@ const userSchema = new mongoose.Schema(
     toObject: { getters: true },
   },
 );
+
+userSchema.pre("save", function syncDutyAndProfileFields(next) {
+  if (typeof this.onDutyStatus === "boolean") {
+    this.isActiveDuty = this.onDutyStatus;
+  } else if (typeof this.isActiveDuty === "boolean") {
+    this.onDutyStatus = this.isActiveDuty;
+  }
+
+  if (!this.profileStatus && this.approvalStatus) {
+    this.profileStatus = this.approvalStatus;
+  }
+
+  if (!this.approvalStatus && this.profileStatus) {
+    this.approvalStatus = this.profileStatus;
+  }
+
+  next();
+});
 
 // Index for faster queries
 userSchema.index({ role: 1, approvalStatus: 1 });
