@@ -137,6 +137,82 @@ const MeridiemSelector = ({ value, onChange }) => (
   </View>
 );
 
+const EmptyOpsDashboard = ({ roleLabel, onLogout }) => {
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 1400,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 0,
+          duration: 1400,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
+  return (
+    <SafeAreaView style={styles.opsShell}>
+      <ScrollView contentContainerStyle={styles.opsContent}>
+        <View style={styles.opsHero}>
+          <Animated.View
+            style={[
+              styles.opsPulse,
+              {
+                transform: [
+                  {
+                    scale: pulse.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 1.14],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          />
+          <Text style={styles.opsKicker}>Operational shell</Text>
+          <Text style={styles.opsTitle}>{roleLabel}</Text>
+          <Text style={styles.opsSubtitle}>
+            Empty dashboard for duty cards, live alerts, and response actions.
+          </Text>
+        </View>
+
+        <View style={styles.opsBlankCard}>
+          <Text style={styles.opsBlankLabel}>Status</Text>
+          <Text style={styles.opsBlankValue}>Ready</Text>
+          <Text style={styles.opsBlankHint}>No widgets loaded yet.</Text>
+        </View>
+
+        <View style={styles.opsRow}>
+          <View style={styles.opsTinyCard}>
+            <Text style={styles.opsTinyLabel}>Alerts</Text>
+            <Text style={styles.opsTinyValue}>0</Text>
+          </View>
+          <View style={styles.opsTinyCard}>
+            <Text style={styles.opsTinyLabel}>Duty</Text>
+            <Text style={styles.opsTinyValue}>Live</Text>
+          </View>
+        </View>
+
+        <Pressable style={styles.opsLogoutButton} onPress={onLogout}>
+          <Text style={styles.opsLogoutText}>Logout</Text>
+        </Pressable>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
 const AppContent = () => {
   const [mode, setMode] = useState("login");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -2569,22 +2645,10 @@ const AppContent = () => {
 
     // Handle TTR/RPF/Police based on specific role selection
     if (role === "TTR/RPF/Police") {
-      const normalizedRole = (specificRole || "TTR").toLowerCase();
-      const liveStaffRole =
-        normalizedRole === "police"
-          ? "police"
-          : normalizedRole === "rpf"
-            ? "rpf"
-            : normalizedRole === "tte"
-              ? "tte"
-              : "ttr";
-
       return (
-        <DriverConductorDashboard
+        <EmptyOpsDashboard
+          roleLabel={specificRole ? `${specificRole} dashboard` : "TTR/RPF/Police dashboard"}
           onLogout={handleLogout}
-          staffRole={liveStaffRole}
-          presetPosition="conductor"
-          skipSetup
         />
       );
     }
@@ -4163,6 +4227,115 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   logoutButtonFull: {
+  opsShell: {
+    flex: 1,
+    backgroundColor: "#08111F",
+  },
+  opsContent: {
+    padding: 20,
+    gap: 16,
+  },
+  opsHero: {
+    minHeight: 220,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 10,
+    padding: 18,
+    borderRadius: 28,
+    backgroundColor: "#0B1628",
+    borderWidth: 1,
+    borderColor: "#1E293B",
+  },
+  opsPulse: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: "#38BDF8",
+    shadowColor: "#38BDF8",
+    shadowOpacity: 0.3,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+  },
+  opsKicker: {
+    color: "#38BDF8",
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 1.4,
+  },
+  opsTitle: {
+    color: "#FFFFFF",
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: "900",
+    letterSpacing: 0.4,
+  },
+  opsSubtitle: {
+    color: "#94A3B8",
+    fontSize: 13,
+    textAlign: "center",
+    lineHeight: 19,
+    maxWidth: 280,
+  },
+  opsBlankCard: {
+    backgroundColor: "#111827",
+    borderRadius: 22,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "#1F2937",
+    gap: 4,
+  },
+  opsBlankLabel: {
+    color: "#94A3B8",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  opsBlankValue: {
+    color: "#FFFFFF",
+    fontSize: 22,
+    fontWeight: "900",
+  },
+  opsBlankHint: {
+    color: "#CBD5E1",
+    fontSize: 13,
+  },
+  opsRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  opsTinyCard: {
+    flex: 1,
+    backgroundColor: "#0F172A",
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#1F2937",
+  },
+  opsTinyLabel: {
+    color: "#94A3B8",
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
+  opsTinyValue: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "900",
+    marginTop: 6,
+  },
+  opsLogoutButton: {
+    marginTop: 6,
+    backgroundColor: "#F97316",
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  opsLogoutText: {
+    color: "#FFFFFF",
+    fontWeight: "900",
+  },
     marginTop: 12,
   },
   keyboardAvoidingView: {
