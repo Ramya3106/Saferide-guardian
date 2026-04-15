@@ -4,6 +4,15 @@ const mongoose = require("mongoose");
 const Complaint = require("../models/Complaint");
 const Journey = require("../models/Journey");
 const User = require("../models/User");
+const { USE_PROTOTYPE_DATA } = require("../config/prototypeMode");
+const {
+  addPrototypeRecord,
+  appendComplaintFromMongo,
+  appendHandoverRecord,
+  getPrototypeSummary,
+  listPrototypeData,
+  normalizeEntity,
+} = require("../mock/prototypeDataStore");
 const {
   DEMO_DUTY_ROSTER,
   inferDutyUnit,
@@ -197,6 +206,38 @@ const staffTimelineEntry = (staffName, text, status) => ({
   timestamp: new Date(),
 });
 
+router.get("/prototype-data", (req, res) => {
+  return res.json({
+    mode: USE_PROTOTYPE_DATA ? "prototype" : "integration-ready",
+    note:
+      "Prototype dataset uses dummy values only and is isolated from future official integration.",
+    data: listPrototypeData(),
+  });
+});
+
+router.get("/prototype-data/summary", (req, res) => {
+  return res.json({
+    mode: USE_PROTOTYPE_DATA ? "prototype" : "integration-ready",
+    summary: getPrototypeSummary(),
+  });
+});
+
+router.post("/prototype-data/:entity", (req, res) => {
+  const entity = normalizeEntity(req.params.entity);
+  if (!entity) {
+    return res.status(400).json({ message: "Unsupported prototype entity." });
+  }
+
+  const payload = req.body || {};
+  const record = addPrototypeRecord(entity, payload);
+  return res.status(201).json({
+    mode: USE_PROTOTYPE_DATA ? "prototype" : "integration-ready",
+    message: `${entity} record saved for prototype testing`,
+    record,
+    summary: getPrototypeSummary(),
+  });
+});
+
 // GET /api/passenger/dashboard - Get active journey
 router.get("/dashboard", async (req, res) => {
   try {
@@ -322,6 +363,10 @@ router.post("/complaints", async (req, res) => {
     console.log("💾 Updating complaint status...");
     await savedComplaint.save();
     console.log("✅ Second save successful");
+
+    if (USE_PROTOTYPE_DATA) {
+      appendComplaintFromMongo(savedComplaint.toObject ? savedComplaint.toObject() : savedComplaint);
+    }
 
     res.status(201).json({
       complaint: savedComplaint,
@@ -474,6 +519,10 @@ router.post("/complaints/:id/staff/respond", async (req, res) => {
     complaint.staffEta = req.body?.staffEta || complaint.staffEta || "8 mins";
     await complaint.save();
 
+    if (USE_PROTOTYPE_DATA) {
+      appendComplaintFromMongo(complaint.toObject ? complaint.toObject() : complaint);
+    }
+
     return res.json({
       message: "Reply saved successfully",
       complaint,
@@ -516,6 +565,10 @@ router.patch("/complaints/:id/staff/status", async (req, res) => {
     );
     await complaint.save();
 
+    if (USE_PROTOTYPE_DATA) {
+      appendComplaintFromMongo(complaint.toObject ? complaint.toObject() : complaint);
+    }
+
     return res.json({
       message: "Status updated successfully",
       complaint,
@@ -553,6 +606,21 @@ router.patch("/complaints/:id/staff/handover", async (req, res) => {
       staffTimelineEntry(currentOfficer.staffName, `Handover arranged at ${handoverStation || "the next station"}`, currentOfficer),
     );
     await complaint.save();
+
+    if (USE_PROTOTYPE_DATA) {
+      const plainComplaint = complaint.toObject ? complaint.toObject() : complaint;
+      appendComplaintFromMongo(plainComplaint);
+      appendHandoverRecord({
+        complaintId: plainComplaint.complaintId || plainComplaint._id?.toString() || req.params.id,
+        complaintRef: plainComplaint._id?.toString() || req.params.id,
+        officerId: currentOfficer.staffId,
+        officerName: currentOfficer.staffName,
+        station: handoverStation || "Next station",
+        handoverTime: handoverTime || "Pending",
+        status: "planned",
+        notes: complaint.recoveryNotes || null,
+      });
+    }
 
     return res.json({
       message: "Handover coordinated successfully",
