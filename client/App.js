@@ -32,6 +32,12 @@ const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
 const OFFICIAL_DOMAINS = {
   "TTR/RPF/Police": ["railnet.gov.in", "tnpolice.gov.in"],
 };
+const OFFICER_ROLE_THEMES = {
+  TTR: { accent: "#F59E0B", glow: "#F59E0B" },
+  TTE: { accent: "#22C55E", glow: "#22C55E" },
+  RPF: { accent: "#3B82F6", glow: "#3B82F6" },
+  Police: { accent: "#E11D48", glow: "#E11D48" },
+};
 const API_BASE = getApiBase();
 
 const sendCode = (emailAddress, purpose = "register") =>
@@ -137,67 +143,88 @@ const MeridiemSelector = ({ value, onChange }) => (
   </View>
 );
 
-const EmptyOpsDashboard = ({ roleLabel, onLogout }) => {
+const EmptyOpsDashboard = ({
+  roleLabel,
+  officerEmail,
+  professionalId,
+  staffName,
+  specificRole,
+  onDuty,
+  setOnDuty,
+  onLogout,
+}) => {
   const pulse = useRef(new Animated.Value(0)).current;
-  const initialCases = useMemo(
+  const [alerts, setAlerts] = useState([]);
+  const [selectedAlertId, setSelectedAlertId] = useState("");
+  const [replyDraft, setReplyDraft] = useState("");
+  const [alertError, setAlertError] = useState("");
+  const [isLoadingAlerts, setIsLoadingAlerts] = useState(false);
+  const [dutySyncing, setDutySyncing] = useState(false);
+  const [roster, setRoster] = useState([]);
+
+  const dutyUnit = useMemo(() => specificRole || inferSpecificRoleFromId(professionalId) || "TTR", [specificRole, professionalId]);
+  const roleTheme = OFFICER_ROLE_THEMES[dutyUnit] || OFFICER_ROLE_THEMES.TTR;
+  const officerLabel = staffName || officerEmail || professionalId || `${dutyUnit} officer`;
+
+  const demoAlerts = useMemo(
     () => [
       {
-        id: "OPS-2041",
+        id: "DEMO-OPS-2041",
         status: "In verification",
         passengerName: "Meera S.",
-        item: "Black backpack, phone, wallet",
-        coach: "S4, berth 27",
-        train: "2241 City Express",
+        itemType: "Black backpack",
+        description: "Phone, wallet, and travel documents still inside the train",
+        vehicleNumber: "2241 City Express",
         route: "Chennai Central -> Tambaram",
+        fromLocation: "Egmore",
+        toLocation: "Tambaram",
         nextStation: "Tambaram",
-        dutyDesk: "TTR Bay 2 / RPF Escort 14",
-        summary:
-          "Passenger got down briefly at Egmore. Bag remains on the seat and was reported through the coach attendant.",
-        replyDraft:
-          "Acknowledged. Duty staff are checking coach S4 and coordinating secure custody at Tambaram.",
-        handoverState: "Coordination in progress",
-        lastAction: "Coach contact verified",
+        priority: "High",
+        staffEta: "6 mins",
+        staffResponseStatus: "Awaiting duty reply",
+        messages: [],
+        assignedStaff: [],
+        summary: "Passenger got down briefly at Egmore. Belongings remain on the seat.",
       },
       {
-        id: "OPS-2042",
+        id: "DEMO-OPS-2042",
         status: "Secured",
         passengerName: "Arun K.",
-        item: "Silver phone and charger pouch",
-        coach: "B2, lower berth 11",
-        train: "1187 Mail Fast",
+        itemType: "Silver phone",
+        description: "Charger pouch and seat tag recovered by duty staff",
+        vehicleNumber: "1187 Mail Fast",
         route: "Villupuram -> Chennai Egmore",
+        fromLocation: "Tambaram",
+        toLocation: "Perambur",
         nextStation: "Perambur",
-        dutyDesk: "RPF Platform 3 / Station control",
-        summary:
-          "The passenger missed the boarding call after stepping out for water. Item is with the on-duty TTR after coach verification.",
-        replyDraft:
-          "Your item is secured with on-duty staff. Please confirm identity at Perambur for handover.",
-        handoverState: "Awaiting passenger verification",
-        lastAction: "Item secured in duty pouch",
+        priority: "High",
+        staffEta: "8 mins",
+        staffResponseStatus: "Awaiting verification",
+        messages: [],
+        assignedStaff: [],
+        summary: "Passenger stepped out for water and missed the boarding call.",
       },
       {
-        id: "OPS-2043",
+        id: "DEMO-OPS-2043",
         status: "Found",
         passengerName: "Lakshmi P.",
-        item: "Travel wallet and ID card",
-        coach: "A1, seat 18",
-        train: "5608 Passenger Special",
+        itemType: "Travel wallet",
+        description: "ID card and cash located under the berth",
+        vehicleNumber: "5608 Passenger Special",
         route: "Tirupati -> Chennai Beach",
+        fromLocation: "A1",
+        toLocation: "Melmaruvathur",
         nextStation: "Melmaruvathur",
-        dutyDesk: "Police desk / onboard conductor",
-        summary:
-          "Wallet sighted under the berth after a temporary station halt. The passenger has been alerted through the duty contact.",
-        replyDraft:
-          "We have located the wallet. Please meet the duty officer at Melmaruvathur for identity check and return.",
-        handoverState: "Next stop prepared for handover",
-        lastAction: "Passenger alert sent",
+        priority: "Critical",
+        staffEta: "4 mins",
+        staffResponseStatus: "Passenger alerted",
+        messages: [],
+        assignedStaff: [],
+        summary: "Wallet sighted during halt and secured for identity check.",
       },
     ],
     [],
   );
-  const [cases, setCases] = useState(initialCases);
-  const [selectedCaseId, setSelectedCaseId] = useState(initialCases[0].id);
-  const [replyDraft, setReplyDraft] = useState(initialCases[0].replyDraft);
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -221,68 +248,245 @@ const EmptyOpsDashboard = ({ roleLabel, onLogout }) => {
     return () => loop.stop();
   }, [pulse]);
 
-  const selectedCase = cases.find((item) => item.id === selectedCaseId) || cases[0];
+  const mapAlert = useMemo(
+    () => (alert) => {
+      const latestMessage = Array.isArray(alert.messages) && alert.messages.length > 0 ? alert.messages[alert.messages.length - 1] : null;
+
+      return {
+        id: alert._id || alert.id,
+        status: alert.status || "Reported",
+        passengerName: alert.passengerName || "Passenger",
+        itemType: alert.itemType || alert.item || "Belongings",
+        description: alert.description || alert.summary || "Lost-item complaint",
+        vehicleNumber: alert.vehicleNumber || "Train",
+        route: alert.route || `${alert.fromLocation || "Origin"} -> ${alert.toLocation || "Destination"}`,
+        fromLocation: alert.fromLocation || "",
+        toLocation: alert.toLocation || "",
+        nextStation: alert.recoveryStation || alert.meetingPoint || alert.toLocation || "Next station",
+        priority: alert.priority || "Normal",
+        staffEta: alert.staffEta || "8 mins",
+        staffResponseStatus: alert.staffResponseStatus || alert.alertPriorityReason || "Awaiting duty reply",
+        summary: alert.alertPriorityReason || alert.description || "Passenger reported a lost item on the train.",
+        replyDraft:
+          latestMessage?.text ||
+          `Acknowledged. ${alert.passengerName || "Passenger"}, our duty officer is reviewing the case and coordinating recovery.`,
+        messages: alert.messages || [],
+        assignedStaff: alert.assignedStaff || [],
+        handoverState: alert.meetingScheduled
+          ? `Handover planned at ${alert.meetingPoint || alert.recoveryStation || alert.toLocation || "the next station"}`
+          : alert.staffResponseStatus || "Awaiting recovery coordination",
+        lastAction: latestMessage ? latestMessage.text : "No staff reply yet",
+      };
+    },
+    [],
+  );
+
+  const displayAlerts = useMemo(() => {
+    if (onDuty) {
+      return alerts.length > 0 ? alerts : demoAlerts;
+    }
+
+    return [];
+  }, [alerts, demoAlerts, onDuty]);
+
+  const selectedAlert = useMemo(
+    () => displayAlerts.find((item) => item.id === selectedAlertId) || displayAlerts[0] || null,
+    [displayAlerts, selectedAlertId],
+  );
 
   useEffect(() => {
-    setReplyDraft(selectedCase?.replyDraft || "");
-  }, [selectedCase]);
+    if (selectedAlert) {
+      setReplyDraft(selectedAlert.replyDraft || "");
+    }
+  }, [selectedAlert]);
+
+  useEffect(() => {
+    const loadRoster = async () => {
+      try {
+        const response = await axios.get(`${API_BASE}/auth/duty/roster`);
+        setRoster(Array.isArray(response.data?.officers) ? response.data.officers : []);
+      } catch (error) {
+        console.log("Duty roster load failed:", error.message);
+      }
+    };
+
+    loadRoster();
+  }, []);
+
+  const fetchAlerts = async () => {
+    if (!onDuty) {
+      setAlerts([]);
+      setSelectedAlertId("");
+      return;
+    }
+
+    setIsLoadingAlerts(true);
+    setAlertError("");
+
+    try {
+      const response = await axios.get(`${API_BASE}/passenger/live-alerts`, {
+        params: { staffRole: dutyUnit },
+        headers: {
+          "X-User-Email": officerEmail || "",
+          "X-Professional-Id": professionalId || "",
+          "X-User-Name": staffName || officerLabel,
+          "X-Duty-Unit": dutyUnit,
+          "X-On-Duty": String(onDuty),
+        },
+      });
+
+      const incomingAlerts = Array.isArray(response.data?.alerts) ? response.data.alerts.map(mapAlert) : [];
+      setAlerts(incomingAlerts);
+
+      if (incomingAlerts.length > 0) {
+        setSelectedAlertId((currentSelected) => currentSelected || incomingAlerts[0].id);
+      } else {
+        setSelectedAlertId("");
+      }
+    } catch (error) {
+      setAlertError(error?.response?.data?.message || error.message || "Unable to load alerts");
+      setAlerts([]);
+    } finally {
+      setIsLoadingAlerts(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAlerts();
+
+    const timer = setInterval(() => {
+      fetchAlerts();
+    }, 8000);
+
+    return () => clearInterval(timer);
+  }, [dutyUnit, officerEmail, professionalId, staffName, onDuty]);
 
   const statusSummary = useMemo(() => {
-    const openCount = cases.filter((item) => item.status !== "Handed over").length;
-    const securedCount = cases.filter(
-      (item) => item.status === "Secured" || item.status === "Handed over",
-    ).length;
+    const source = onDuty ? displayAlerts : [];
 
     return {
-      openCount,
-      securedCount,
-      handoverCount: cases.filter((item) => item.handoverState !== "Awaiting passenger verification").length,
+      openCount: source.filter((item) => item.status !== "Handed over" && item.status !== "Closed").length,
+      securedCount: source.filter((item) => item.status === "Secured" || item.status === "Found").length,
+      handoverCount: source.filter((item) => item.status === "Meeting Scheduled" || item.status === "Handed over").length,
+      priorityCount: source.filter((item) => item.priority === "High" || item.priority === "Critical").length,
     };
-  }, [cases]);
+  }, [displayAlerts, onDuty]);
 
-  const updateSelectedCase = (updates) => {
-    if (!selectedCase) {
-      return;
-    }
-
-    setCases((currentCases) =>
-      currentCases.map((item) =>
-        item.id === selectedCase.id
-          ? {
-              ...item,
-              ...updates,
-            }
-          : item,
-      ),
+  const selectedRosterOfficer = useMemo(() => {
+    return (
+      roster.find((item) => item.dutyUnit === dutyUnit && item.onDutyStatus) ||
+      roster.find((item) => item.dutyUnit === dutyUnit) ||
+      roster.find((item) => item.onDutyStatus) ||
+      roster[0] ||
+      null
     );
+  }, [dutyUnit, roster]);
+
+  const syncDutyStatus = async (nextOnDuty) => {
+    setDutySyncing(true);
+    try {
+      const endpoint = nextOnDuty ? "/auth/duty/check-in" : "/auth/duty/check-out";
+      await axios.post(
+        `${API_BASE}${endpoint}`,
+        {
+          email: officerEmail || undefined,
+          professionalId: professionalId || undefined,
+          dutyUnit,
+          dutyStation: selectedRosterOfficer?.dutyStation || `${dutyUnit} duty desk`,
+          dutyDesk: selectedRosterOfficer?.dutyDesk || "Duty desk",
+          dutyNote: nextOnDuty ? "Checked in from SafeRide Guardian" : "Checked out from SafeRide Guardian",
+        },
+        {
+          headers: {
+            "X-User-Email": officerEmail || "",
+            "X-Professional-Id": professionalId || "",
+            "X-User-Name": staffName || officerLabel,
+            "X-Duty-Unit": dutyUnit,
+          },
+        },
+      );
+
+      if (setOnDuty) {
+        setOnDuty(nextOnDuty);
+      }
+
+      if (!nextOnDuty) {
+        setAlerts([]);
+        setSelectedAlertId("");
+      } else {
+        fetchAlerts();
+      }
+    } catch (error) {
+      setAlertError(error?.response?.data?.message || error.message || "Unable to update duty status");
+    } finally {
+      setDutySyncing(false);
+    }
   };
 
-  const applyStatus = (nextStatus) => {
-    updateSelectedCase({
-      status: nextStatus,
-      lastAction: `Status updated to ${nextStatus.toLowerCase()}`,
-    });
-  };
-
-  const sendReply = () => {
-    const trimmedReply = replyDraft.trim();
-    if (!trimmedReply) {
+  const updateSelectedAlert = async (path, payload) => {
+    if (!selectedAlert) {
       return;
     }
 
-    updateSelectedCase({
-      replyDraft: trimmedReply,
-      lastAction: "Reply sent to passenger contact",
+    try {
+      await axios({
+        method: path === "/respond" ? "post" : "patch",
+        url: `${API_BASE}/passenger/complaints/${selectedAlert.id}/staff${path}`,
+        data: payload,
+        headers: {
+          "X-User-Email": officerEmail || "",
+          "X-Professional-Id": professionalId || "",
+          "X-User-Name": staffName || officerLabel,
+          "X-Duty-Unit": dutyUnit,
+          "X-On-Duty": String(onDuty),
+        },
+      });
+
+      await fetchAlerts();
+    } catch (error) {
+      setAlertError(error?.response?.data?.message || error.message || "Unable to update complaint");
+    }
+  };
+
+  const sendReply = async () => {
+    const trimmedReply = replyDraft.trim();
+    if (!trimmedReply || !selectedAlert || String(selectedAlert.id).startsWith("DEMO-")) {
+      return;
+    }
+
+    await updateSelectedAlert("/respond", {
+      text: trimmedReply,
+      staffEta: selectedAlert.staffEta || "8 mins",
     });
   };
 
-  const coordinateHandover = () => {
-    updateSelectedCase({
-      status: "Handed over",
-      handoverState: `Handover confirmed at ${selectedCase.nextStation}`,
-      lastAction: "Station desk confirmed the handover slot",
-      replyDraft:
-        `${selectedCase.passengerName}, your item is being handed over at ${selectedCase.nextStation} after identity check.`,
+  const applyStatus = async (nextStatus) => {
+    if (!selectedAlert || String(selectedAlert.id).startsWith("DEMO-")) {
+      return;
+    }
+
+    await updateSelectedAlert("/status", {
+      status: nextStatus,
+      itemFound: nextStatus === "Found" || nextStatus === "Secured" || selectedAlert.status === "Found",
+      meetingScheduled: nextStatus === "Meeting Scheduled" || nextStatus === "Handed over",
+      meetingPoint: selectedAlert.nextStation || selectedAlert.toLocation || "Next station",
+      meetingTime: selectedAlert.staffEta || "Next available halt",
+      recoveryStation: selectedAlert.nextStation || selectedAlert.toLocation || "Next station",
+      recoveryNotes: `Updated by ${officerLabel}`,
+      staffResponseStatus: `Status updated to ${nextStatus}`,
+      staffEta: selectedAlert.staffEta || "8 mins",
+    });
+  };
+
+  const coordinateHandover = async () => {
+    if (!selectedAlert || String(selectedAlert.id).startsWith("DEMO-")) {
+      return;
+    }
+
+    await updateSelectedAlert("/handover", {
+      handoverStation: selectedAlert.nextStation || selectedAlert.toLocation || "Next station",
+      handoverTime: selectedAlert.staffEta || "Next halt",
+      recoveryNotes: `Handover coordinated by ${officerLabel}`,
     });
   };
 
@@ -293,6 +497,7 @@ const EmptyOpsDashboard = ({ roleLabel, onLogout }) => {
           <Animated.View
             style={[
               styles.opsPulse,
+              { backgroundColor: roleTheme.accent, shadowColor: roleTheme.glow },
               {
                 transform: [
                   {
@@ -305,16 +510,34 @@ const EmptyOpsDashboard = ({ roleLabel, onLogout }) => {
               },
             ]}
           />
-          <Text style={styles.opsKicker}>Dummy duty board</Text>
-          <Text style={styles.opsTitle}>{roleLabel}</Text>
+          <Text style={[styles.opsKicker, { color: roleTheme.accent }]}>Priority duty board</Text>
+          <Text style={[styles.opsTitle, { color: roleTheme.accent }]}>{roleLabel}</Text>
           <Text style={styles.opsSubtitle}>
-            Mock railway complaint handling for lost-item cases, duty replies,
-            and next-station handovers.
+            Live lost-item complaints for on-duty railway protection staff.
           </Text>
           <View style={styles.opsHeroTag}>
-            <Text style={styles.opsHeroTagText}>Mock staff duty data only</Text>
+            <Text style={[styles.opsHeroTagText, { color: roleTheme.accent }]}>{officerLabel}</Text>
           </View>
+          <Pressable
+            style={[
+              styles.opsDutyToggle,
+              onDuty ? styles.opsDutyOn : styles.opsDutyOff,
+              onDuty && { backgroundColor: roleTheme.accent, borderColor: roleTheme.accent },
+            ]}
+            onPress={() => syncDutyStatus(!onDuty)}
+            disabled={dutySyncing}
+          >
+            <Text style={styles.opsDutyToggleText}>
+              Duty {onDuty ? "ON" : "OFF"}{dutySyncing ? " ..." : ""}
+            </Text>
+          </Pressable>
         </View>
+
+        {alertError ? (
+          <View style={styles.opsErrorBanner}>
+            <Text style={styles.opsErrorText}>{alertError}</Text>
+          </View>
+        ) : null}
 
         <View style={styles.opsMetricRow}>
           <View style={styles.opsMetricCard}>
@@ -322,36 +545,45 @@ const EmptyOpsDashboard = ({ roleLabel, onLogout }) => {
             <Text style={styles.opsMetricValue}>{statusSummary.openCount}</Text>
           </View>
           <View style={styles.opsMetricCard}>
-            <Text style={styles.opsMetricLabel}>Secured items</Text>
-            <Text style={styles.opsMetricValue}>{statusSummary.securedCount}</Text>
+            <Text style={styles.opsMetricLabel}>Priority alerts</Text>
+            <Text style={styles.opsMetricValue}>{statusSummary.priorityCount}</Text>
           </View>
           <View style={styles.opsMetricCard}>
-            <Text style={styles.opsMetricLabel}>Handover points</Text>
-            <Text style={styles.opsMetricValue}>{statusSummary.handoverCount}</Text>
+            <Text style={styles.opsMetricLabel}>Recovered / secured</Text>
+            <Text style={styles.opsMetricValue}>{statusSummary.securedCount}</Text>
           </View>
         </View>
 
         <View style={styles.opsSection}>
           <View style={styles.opsSectionHeader}>
             <Text style={styles.opsSectionTitle}>Live complaint queue</Text>
-            <Text style={styles.opsSectionSubtitle}>Tap a card to review the case.</Text>
+            <Text style={styles.opsSectionSubtitle}>
+              {onDuty ? "Priority complaints assigned to you only." : "Check in to receive priority alerts."}
+            </Text>
           </View>
 
-          {cases.map((item) => {
-            const isSelected = item.id === selectedCaseId;
+          {!onDuty ? (
+            <View style={styles.opsEmptyState}>
+              <Text style={styles.opsEmptyTitle}>Not on duty</Text>
+              <Text style={styles.opsEmptyText}>
+                Check in to receive live passenger complaints, replies, and handover actions.
+              </Text>
+            </View>
+          ) : null}
+
+          {displayAlerts.map((item) => {
+            const isSelected = item.id === selectedAlertId || (!selectedAlertId && displayAlerts[0]?.id === item.id);
 
             return (
               <Pressable
                 key={item.id}
                 style={[styles.opsCaseCard, isSelected && styles.opsCaseCardActive]}
-                onPress={() => {
-                  setSelectedCaseId(item.id);
-                }}
+                onPress={() => setSelectedAlertId(item.id)}
               >
                 <View style={styles.opsCaseTopRow}>
                   <View style={styles.opsCaseMetaGroup}>
                     <Text style={styles.opsCaseId}>{item.id}</Text>
-                    <Text style={styles.opsCaseTitle}>{item.item}</Text>
+                    <Text style={styles.opsCaseTitle}>{item.itemType}</Text>
                   </View>
                   <View
                     style={[
@@ -369,45 +601,52 @@ const EmptyOpsDashboard = ({ roleLabel, onLogout }) => {
                 <Text style={styles.opsCaseSummary}>{item.summary}</Text>
 
                 <View style={styles.opsCaseMetaRow}>
-                  <Text style={styles.opsCaseMetaText}>{item.train}</Text>
-                  <Text style={styles.opsCaseMetaText}>{item.coach}</Text>
+                  <Text style={styles.opsCaseMetaText}>{item.vehicleNumber}</Text>
+                  <Text style={styles.opsCaseMetaText}>{item.route}</Text>
+                  <Text style={styles.opsCaseMetaText}>Priority: {item.priority}</Text>
                 </View>
               </Pressable>
             );
           })}
+
+          {isLoadingAlerts ? (
+            <Text style={styles.opsSectionSubtitle}>Refreshing complaint feed...</Text>
+          ) : null}
         </View>
 
-        {selectedCase && (
+        {selectedAlert ? (
           <View style={styles.opsDetailCard}>
             <View style={styles.opsSectionHeader}>
               <Text style={styles.opsSectionTitle}>Case detail</Text>
-              <Text style={styles.opsSectionSubtitle}>Assigned to the current duty desk.</Text>
+              <Text style={styles.opsSectionSubtitle}>Assigned to the current on-duty officer.</Text>
             </View>
 
             <View style={styles.opsDetailGrid}>
               <View style={styles.opsDetailBlock}>
                 <Text style={styles.opsDetailLabel}>Passenger</Text>
-                <Text style={styles.opsDetailValue}>{selectedCase.passengerName}</Text>
+                <Text style={styles.opsDetailValue}>{selectedAlert.passengerName}</Text>
+              </View>
+              <View style={styles.opsDetailBlock}>
+                <Text style={styles.opsDetailLabel}>Train / vehicle</Text>
+                <Text style={styles.opsDetailValue}>{selectedAlert.vehicleNumber}</Text>
               </View>
               <View style={styles.opsDetailBlock}>
                 <Text style={styles.opsDetailLabel}>Route</Text>
-                <Text style={styles.opsDetailValue}>{selectedCase.route}</Text>
+                <Text style={styles.opsDetailValue}>{selectedAlert.route}</Text>
               </View>
               <View style={styles.opsDetailBlock}>
                 <Text style={styles.opsDetailLabel}>Next station</Text>
-                <Text style={styles.opsDetailValue}>{selectedCase.nextStation}</Text>
-              </View>
-              <View style={styles.opsDetailBlock}>
-                <Text style={styles.opsDetailLabel}>Duty desk</Text>
-                <Text style={styles.opsDetailValue}>{selectedCase.dutyDesk}</Text>
+                <Text style={styles.opsDetailValue}>{selectedAlert.nextStation}</Text>
               </View>
             </View>
 
             <View style={styles.opsInfoPanel}>
-              <Text style={styles.opsDetailLabel}>Item status</Text>
-              <Text style={styles.opsInfoValue}>{selectedCase.status}</Text>
-              <Text style={styles.opsInfoHint}>{selectedCase.handoverState}</Text>
-              <Text style={styles.opsInfoHint}>Last action: {selectedCase.lastAction}</Text>
+              <Text style={styles.opsDetailLabel}>Issue details</Text>
+              <Text style={styles.opsInfoValue}>{selectedAlert.itemType}</Text>
+              <Text style={styles.opsInfoHint}>{selectedAlert.description}</Text>
+              <Text style={styles.opsInfoHint}>Priority: {selectedAlert.priority}</Text>
+              <Text style={styles.opsInfoHint}>{selectedAlert.handoverState}</Text>
+              <Text style={styles.opsInfoHint}>Last action: {selectedAlert.lastAction}</Text>
             </View>
 
             <View style={styles.opsReplyBlock}>
@@ -421,14 +660,15 @@ const EmptyOpsDashboard = ({ roleLabel, onLogout }) => {
                 multiline
               />
               <View style={styles.opsActionRow}>
-                <Pressable style={styles.opsActionButton} onPress={sendReply}>
+                <Pressable
+                  style={[styles.opsActionButton, { backgroundColor: roleTheme.accent }]}
+                  onPress={sendReply}
+                >
                   <Text style={styles.opsActionButtonText}>Send reply</Text>
                 </Pressable>
                 <Pressable
                   style={styles.opsActionButtonSecondary}
-                  onPress={() => {
-                    setReplyDraft(selectedCase.replyDraft);
-                  }}
+                  onPress={() => setReplyDraft(selectedAlert.replyDraft || "")}
                 >
                   <Text style={styles.opsActionButtonSecondaryText}>Reset text</Text>
                 </Pressable>
@@ -453,7 +693,7 @@ const EmptyOpsDashboard = ({ roleLabel, onLogout }) => {
               </Pressable>
             </View>
           </View>
-        )}
+        ) : null}
 
         <Pressable style={styles.opsLogoutButton} onPress={onLogout}>
           <Text style={styles.opsLogoutText}>Logout</Text>
@@ -579,7 +819,7 @@ const AppContent = () => {
     if (selectedRole === "TTR/RPF/Police") {
       return (
         /^TNPOLICE-\d{4,6}$/.test(normalized) ||
-        /^(TTR|RPF)-[A-Z]{2,3}-\d{4,6}$/.test(normalized)
+        /^(TTR|TTE|RPF)-[A-Z]{2,3}-\d{4,6}$/.test(normalized)
       );
     }
     return normalized.length >= 6;
@@ -592,6 +832,9 @@ const AppContent = () => {
     }
     if (normalized.startsWith("TTR-")) {
       return "TTR";
+    }
+    if (normalized.startsWith("TTE-")) {
+      return "TTE";
     }
     if (normalized.startsWith("RPF-")) {
       return "RPF";
@@ -2898,6 +3141,12 @@ const AppContent = () => {
       return (
         <EmptyOpsDashboard
           roleLabel={specificRole ? `${specificRole} dashboard` : "TTR/RPF/Police dashboard"}
+          officerEmail={(officialEmail || email).trim()}
+          professionalId={professionalId.trim()}
+          staffName={name.trim()}
+          specificRole={specificRole}
+          onDuty={onDuty}
+          setOnDuty={setOnDuty}
           onLogout={handleLogout}
         />
       );
@@ -3135,6 +3384,12 @@ const AppContent = () => {
                               title: "🎫 TTR – Train Ticket Examiner",
                               description:
                                 "Responsible for onboard train verification.",
+                            },
+                            {
+                              key: "TTE",
+                              title: "🎫 TTE – Train Ticket Examiner",
+                              description:
+                                "Responsible for passenger verification and assistance.",
                             },
                             {
                               key: "RPF",
@@ -4545,6 +4800,40 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.4,
   },
+  opsDutyToggle: {
+    marginTop: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  opsDutyOn: {
+    backgroundColor: "#0F5132",
+    borderColor: "#34D399",
+  },
+  opsDutyOff: {
+    backgroundColor: "#3F1D1D",
+    borderColor: "#FCA5A5",
+  },
+  opsDutyToggleText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "900",
+    letterSpacing: 0.4,
+  },
+  opsErrorBanner: {
+    backgroundColor: "#3F1D1D",
+    borderWidth: 1,
+    borderColor: "#FCA5A5",
+    borderRadius: 16,
+    padding: 12,
+  },
+  opsErrorText: {
+    color: "#FEE2E2",
+    fontSize: 12,
+    fontWeight: "700",
+  },
   opsMetricRow: {
     flexDirection: "row",
     gap: 12,
@@ -4583,6 +4872,24 @@ const styles = StyleSheet.create({
   opsSectionSubtitle: {
     color: "#94A3B8",
     fontSize: 12,
+  },
+  opsEmptyState: {
+    backgroundColor: "#0F172A",
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#1F2937",
+    gap: 6,
+  },
+  opsEmptyTitle: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  opsEmptyText: {
+    color: "#CBD5E1",
+    fontSize: 12,
+    lineHeight: 18,
   },
   opsCaseCard: {
     backgroundColor: "#0F172A",
