@@ -184,10 +184,6 @@ const EmptyOpsDashboard = ({
   const [dutyRoute, setDutyRoute] = useState("");
   const [dutyStation, setDutyStation] = useState("");
   const [dutyShift, setDutyShift] = useState("");
-  const [prototypeType, setPrototypeType] = useState("alerts");
-  const [prototypePayload, setPrototypePayload] = useState("");
-  const [prototypeInfo, setPrototypeInfo] = useState("");
-  const [prototypeSummary, setPrototypeSummary] = useState(null);
   const [officerNotes, setOfficerNotes] = useState("");
   const [coachRemark, setCoachRemark] = useState("");
   const [stationRemark, setStationRemark] = useState("");
@@ -199,65 +195,7 @@ const EmptyOpsDashboard = ({
   const roleTheme = OFFICER_ROLE_THEMES[dutyUnit] || OFFICER_ROLE_THEMES.TTR;
   const officerLabel = staffName || officerEmail || professionalId || `${dutyUnit} officer`;
 
-  const demoAlerts = useMemo(
-    () => [
-      {
-        id: "DEMO-OPS-2041",
-        status: "Item Being Checked",
-        passengerName: "Meera S.",
-        itemType: "Black backpack",
-        description: "Phone, wallet, and travel documents still inside the train",
-        vehicleNumber: "2241 City Express",
-        route: "Chennai Central -> Tambaram",
-        fromLocation: "Egmore",
-        toLocation: "Tambaram",
-        nextStation: "Tambaram",
-        priority: "High",
-        staffEta: "6 mins",
-        staffResponseStatus: "Awaiting duty reply",
-        messages: [],
-        assignedStaff: [],
-        summary: "Passenger got down briefly at Egmore. Belongings remain on the seat.",
-      },
-      {
-        id: "DEMO-OPS-2042",
-        status: "Passenger Contacted",
-        passengerName: "Arun K.",
-        itemType: "Silver phone",
-        description: "Charger pouch and seat tag recovered by duty staff",
-        vehicleNumber: "1187 Mail Fast",
-        route: "Villupuram -> Chennai Egmore",
-        fromLocation: "Tambaram",
-        toLocation: "Perambur",
-        nextStation: "Perambur",
-        priority: "High",
-        staffEta: "8 mins",
-        staffResponseStatus: "Passenger contacted for identity confirmation",
-        messages: [],
-        assignedStaff: [],
-        summary: "Passenger stepped out for water and missed the boarding call.",
-      },
-      {
-        id: "DEMO-OPS-2043",
-        status: "Item Found",
-        passengerName: "Lakshmi P.",
-        itemType: "Travel wallet",
-        description: "ID card and cash located under the berth",
-        vehicleNumber: "5608 Passenger Special",
-        route: "Tirupati -> Chennai Beach",
-        fromLocation: "A1",
-        toLocation: "Melmaruvathur",
-        nextStation: "Melmaruvathur",
-        priority: "Critical",
-        staffEta: "4 mins",
-        staffResponseStatus: "Passenger alerted",
-        messages: [],
-        assignedStaff: [],
-        summary: "Wallet sighted during halt and secured for identity check.",
-      },
-    ],
-    [],
-  );
+
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -319,11 +257,11 @@ const EmptyOpsDashboard = ({
 
   const displayAlerts = useMemo(() => {
     if (onDuty) {
-      return alerts.length > 0 ? alerts : demoAlerts;
+      return alerts.length > 0 ? alerts : [];
     }
 
     return [];
-  }, [alerts, demoAlerts, onDuty]);
+  }, [alerts, onDuty]);
 
   const selectedAlert = useMemo(
     () => displayAlerts.find((item) => item.id === selectedAlertId) || displayAlerts[0] || null,
@@ -352,18 +290,7 @@ const EmptyOpsDashboard = ({
     loadRoster();
   }, []);
 
-  const loadPrototypeSummary = async () => {
-    try {
-      const response = await axios.get(`${API_BASE}/passenger/prototype-data/summary`);
-      setPrototypeSummary(response.data?.summary || null);
-    } catch (error) {
-      console.log("Prototype summary load failed:", error.message);
-    }
-  };
 
-  useEffect(() => {
-    loadPrototypeSummary();
-  }, []);
 
   const loadDutyStatus = async () => {
     try {
@@ -538,34 +465,7 @@ const EmptyOpsDashboard = ({
     }
   };
 
-  const submitPrototypeRecord = async () => {
-    if (!prototypePayload.trim()) {
-      setPrototypeInfo("Enter JSON payload to add prototype data.");
-      return;
-    }
 
-    let parsedPayload;
-    try {
-      parsedPayload = JSON.parse(prototypePayload);
-    } catch (error) {
-      setPrototypeInfo("Invalid JSON. Please provide a valid payload.");
-      return;
-    }
-
-    try {
-      const response = await axios.post(
-        `${API_BASE}/passenger/prototype-data/${prototypeType}`,
-        parsedPayload,
-      );
-      setPrototypeInfo(response.data?.message || "Prototype record saved.");
-      setPrototypePayload("");
-      setPrototypeSummary(response.data?.summary || null);
-      fetchAlerts();
-      loadPrototypeSummary();
-    } catch (error) {
-      setPrototypeInfo(error?.response?.data?.message || error.message || "Unable to save prototype record.");
-    }
-  };
 
   const updateSelectedAlert = async (path, payload) => {
     if (!selectedAlert) {
@@ -594,7 +494,7 @@ const EmptyOpsDashboard = ({
 
   const sendReply = async () => {
     const trimmedReply = replyDraft.trim();
-    if (!trimmedReply || !selectedAlert || String(selectedAlert.id).startsWith("DEMO-")) {
+    if (!trimmedReply || !selectedAlert) {
       return;
     }
 
@@ -609,7 +509,7 @@ const EmptyOpsDashboard = ({
   };
 
   const markAcknowledgement = async (action) => {
-    if (!selectedAlert || String(selectedAlert.id).startsWith("DEMO-")) {
+    if (!selectedAlert) {
       return;
     }
 
@@ -622,7 +522,7 @@ const EmptyOpsDashboard = ({
   };
 
   const applyStatus = async (nextStatus) => {
-    if (!selectedAlert || String(selectedAlert.id).startsWith("DEMO-")) {
+    if (!selectedAlert) {
       return;
     }
 
@@ -643,7 +543,7 @@ const EmptyOpsDashboard = ({
   };
 
   const coordinateHandover = async () => {
-    if (!selectedAlert || String(selectedAlert.id).startsWith("DEMO-")) {
+    if (!selectedAlert) {
       return;
     }
 
@@ -1015,53 +915,7 @@ const EmptyOpsDashboard = ({
           )}
         </View>
 
-        <View style={styles.opsDetailCard}>
-          <View style={styles.opsSectionHeader}>
-            <Text style={styles.opsSectionTitle}>Prototype Data Lab</Text>
-            <Text style={styles.opsSectionSubtitle}>
-              Add your own dummy officers, staff, vehicles, complaints, alerts, or handover records.
-            </Text>
-          </View>
-          <View style={styles.opsActionPills}>
-            {["officers", "staff", "vehicles", "complaints", "alerts", "handover-records"].map((item) => (
-              <Pressable
-                key={item}
-                style={[
-                  styles.opsStatusAction,
-                  prototypeType === item && { borderColor: roleTheme.accent },
-                ]}
-                onPress={() => setPrototypeType(item)}
-              >
-                <Text style={styles.opsStatusActionText}>{item}</Text>
-              </Pressable>
-            ))}
-          </View>
-          <TextInput
-            style={styles.opsReplyInput}
-            value={prototypePayload}
-            onChangeText={setPrototypePayload}
-            placeholder='{"name":"Demo Officer","dutyUnit":"TTE"}'
-            placeholderTextColor="#6B7280"
-            multiline
-          />
-          <View style={styles.opsActionRow}>
-            <Pressable
-              style={[styles.opsActionButton, { backgroundColor: roleTheme.accent }]}
-              onPress={submitPrototypeRecord}
-            >
-              <Text style={styles.opsActionButtonText}>Save dummy data</Text>
-            </Pressable>
-            <Pressable style={styles.opsActionButtonSecondary} onPress={loadPrototypeSummary}>
-              <Text style={styles.opsActionButtonSecondaryText}>Refresh summary</Text>
-            </Pressable>
-          </View>
-          {prototypeInfo.length > 0 ? <Text style={styles.opsInfoHint}>{prototypeInfo}</Text> : null}
-          {prototypeSummary ? (
-            <Text style={styles.opsInfoHint}>
-              Officers: {prototypeSummary.officers} | Staff: {prototypeSummary.staff} | Vehicles: {prototypeSummary.vehicles} | Complaints: {prototypeSummary.complaints} | Alerts: {prototypeSummary.alerts} | Handover: {prototypeSummary.handoverRecords}
-            </Text>
-          ) : null}
-        </View>
+
 
         <Pressable style={styles.opsLogoutButton} onPress={onLogout}>
           <Text style={styles.opsLogoutText}>Logout</Text>
@@ -1980,24 +1834,7 @@ const AppContent = () => {
     resetForm();
   };
 
-  const handleOpenTrainGuideDemo = () => {
-    setRole("TTR/RPF/Police");
-    setSpecificRole("TTR");
-    setShowRoleSelection(false);
-    setForgotPasswordMode(false);
-    setOnDuty(true);
-    setError("");
 
-    // Demo-friendly defaults for guide presentation.
-    setName((prev) => prev.trim() || "Guide Demo Officer");
-    setProfessionalId("TTR-SR-12345");
-    setOfficialEmail("guide.demo@railnet.gov.in");
-    setTravelNumber("12631");
-    setPnrRange("4528193000-4528193999");
-    setJurisdiction("Chennai Central Division");
-
-    setIsAuthenticated(true);
-  };
 
   const handleRoleChange = (nextRole) => {
     setRole(nextRole);
@@ -2672,16 +2509,16 @@ const AppContent = () => {
 
       {complaintSubmitted && (
         <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Matched Onboard Staff</Text>
-          <Text style={styles.cardText}>Conductor Priya S • TN-01-AB-1234</Text>
-          <Text style={styles.cardText}>Route: Velachery → CMBT</Text>
-          <Text style={styles.cardText}>
-            Current stop: Medavakkam • ETA 8 mins
+          <Text style={styles.cardTitle}>Complaint Status</Text>
+          <Text style={styles.successText}>
+            ✅ Complaint submitted successfully
           </Text>
+          <Text style={styles.cardText}>Your complaint ID has been generated and assigned.</Text>
+          <Text style={styles.cardText}>Status: Awaiting staff assignment</Text>
           <View style={styles.statusRow}>
             <View style={styles.statusDotLarge} />
             <Text style={styles.statusText}>
-              Alert delivered in 58 seconds via push + SMS + voice.
+              Our on-duty staff will receive your complaint and respond within minutes. You will receive updates via notifications.
             </Text>
           </View>
           <TouchableOpacity
@@ -2689,7 +2526,7 @@ const AppContent = () => {
             onPress={handleStaffConfirm}
           >
             <Text style={styles.secondaryButtonText}>
-              Simulate staff update
+              Proceed to tracking
             </Text>
           </TouchableOpacity>
         </View>
@@ -2697,10 +2534,9 @@ const AppContent = () => {
 
       {staffConfirmed && (
         <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Live Recovery Tracking</Text>
-          <Text style={styles.cardText}>Status: Item SAFE ✅</Text>
-          <Text style={styles.cardText}>Collect at Guindy 10:15AM 📍</Text>
-          <Text style={styles.cardText}>Live ETA: 11 mins</Text>
+          <Text style={styles.cardTitle}>Item Status</Text>
+          <Text style={styles.cardText}>Status: Staff has acknowledged receipt</Text>
+          <Text style={styles.cardText}>Your item is now in the custody of railway staff.</Text>
           <View style={styles.timelineRow}>
             <View style={styles.timelineDotActive} />
             <View>
@@ -2708,16 +2544,16 @@ const AppContent = () => {
                 Complaint → Staff Confirmation
               </Text>
               <Text style={styles.timelineSubtitle}>
-                Matched on vehicle + timing + geo-location
+                Your complaint was matched with on-duty staff.
               </Text>
             </View>
           </View>
           <View style={styles.timelineRow}>
             <View style={styles.timelineDot} />
             <View>
-              <Text style={styles.timelineTitle}>Rendezvous QR Pickup</Text>
+              <Text style={styles.timelineTitle}>Item Pickup</Text>
               <Text style={styles.timelineSubtitle}>
-                Scan QR to close custody log
+                Staff will coordinate a secure handoff location.
               </Text>
             </View>
           </View>
@@ -2862,40 +2698,43 @@ const AppContent = () => {
 
         <View style={styles.cardBlock}>
           <Text style={styles.cardTitle}>Active Complaint Queue</Text>
-          <View style={styles.queueItem}>
-            <View>
-              <Text style={styles.queueTitle}>Black backpack</Text>
-              <Text style={styles.queueMeta}>
-                TN-01-AB-1234 • Stop: Medavakkam
-              </Text>
-            </View>
-            <Text style={styles.queueStatus}>NEW</Text>
-          </View>
-          <View style={styles.queueItem}>
-            <View>
-              <Text style={styles.queueTitle}>Passport pouch</Text>
-              <Text style={styles.queueMeta}>Route: Velachery → CMBT</Text>
-            </View>
-            <Text style={styles.queueStatusAmber}>HIGH</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={handleStaffConfirm}
-          >
-            <Text style={styles.primaryButtonText}>Mark item SAFE</Text>
-          </TouchableOpacity>
+          {Array.isArray(displayAlerts) && displayAlerts.length > 0 ? (
+            displayAlerts.slice(0, 5).map((alert) => (
+              <View key={alert.id} style={styles.queueItem}>
+                <View>
+                  <Text style={styles.queueTitle}>{alert.itemType || "Item"}</Text>
+                  <Text style={styles.queueMeta}>
+                    {alert.vehicleNumber || "Train"} • {alert.nextStation || alert.route || "Transit"}
+                  </Text>
+                </View>
+                <Text style={alert.priority === "High" ? styles.queueStatusAmber : styles.queueStatus}>
+                  {alert.priority || "NORMAL"}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.emptyQueueText}>No active complaints assigned. Check back for new assignments.</Text>
+          )}
+          {Array.isArray(displayAlerts) && displayAlerts.length > 0 && (
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handleStaffConfirm}
+            >
+              <Text style={styles.primaryButtonText}>Mark item SAFE</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {staffConfirmed && (
           <View style={styles.cardBlock}>
             <Text style={styles.cardTitle}>Custody & Handoff</Text>
-            <Text style={styles.cardText}>Item tagged: QR-8721</Text>
-            <Text style={styles.cardText}>Pickup window: 10:15AM @ Guindy</Text>
+            <Text style={styles.cardText}>Item custody logged.</Text>
+            <Text style={styles.cardText}>Ready for passenger pickup or handover coordination.</Text>
             <TouchableOpacity
               style={styles.secondaryButton}
               onPress={handleHandoffComplete}
             >
-              <Text style={styles.secondaryButtonText}>Scan QR handoff</Text>
+              <Text style={styles.secondaryButtonText}>Complete Handoff</Text>
             </TouchableOpacity>
             {handoffComplete && (
               <Text style={styles.successText}>
@@ -3007,62 +2846,67 @@ const AppContent = () => {
         </View>
 
         <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Active Train Info</Text>
-          <Text style={styles.cardText}>
-            Train: {trainNumber} - Chennai Express
-          </Text>
-          <Text style={styles.cardText}>Coach: {coachAllotted}</Text>
-          <Text style={styles.cardText}>From: Chennai</Text>
-          <Text style={styles.cardText}>To: Madurai</Text>
-          <Text style={styles.cardText}>Current Station: Tambaram</Text>
-          <Text style={styles.cardText}>Next Station: Chengalpattu</Text>
-        </View>
-
-        <View style={styles.alertCard}>
-          <Text style={styles.alertTitle}>⚠ LOST ITEM ALERT</Text>
-          <Text style={styles.alertText}>Passenger: Ramya V</Text>
-          <Text style={styles.alertText}>PNR: 4567891234</Text>
-          <Text style={styles.alertText}>Item: Passport</Text>
-          <Text style={styles.alertText}>Coach: {coachAllotted}</Text>
-          <Text style={styles.alertText}>Berth: 21</Text>
-          <Text style={styles.alertText}>Reported: 10:15 AM</Text>
-          <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.actionButtonSecondary]}
-            >
-              <Text style={styles.actionButtonSecondaryText}>View details</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.actionButton,
-                styles.actionButtonPrimary,
-                styles.actionButtonSpacing,
-              ]}
-              onPress={handleStaffConfirm}
-            >
-              <Text style={styles.actionButtonPrimaryText}>Accept</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.cardTitle}>Active Assignments</Text>
+          {Array.isArray(displayAlerts) && displayAlerts.length > 0 ? (
+            <View>
+              <Text style={styles.cardText}>
+                You have {displayAlerts.length} assigned complaint{displayAlerts.length !== 1 ? "s" : ""}.
+              </Text>
+              <View style={styles.alertCard}>
+                {displayAlerts[0] && (
+                  <View>
+                    <Text style={styles.alertTitle}>CURRENT ASSIGNMENT</Text>
+                    <Text style={styles.alertText}>Passenger: {displayAlerts[0].passengerName || "Passenger"}</Text>
+                    <Text style={styles.alertText}>Item: {displayAlerts[0].itemType || "Item"}</Text>
+                    {displayAlerts[0].vehicleNumber && (
+                      <Text style={styles.alertText}>Vehicle: {displayAlerts[0].vehicleNumber}</Text>
+                    )}
+                    {displayAlerts[0].nextStation && (
+                      <Text style={styles.alertText}>Location: {displayAlerts[0].nextStation}</Text>
+                    )}
+                    <Text style={styles.alertText}>Status: {displayAlerts[0].status || "Pending"}</Text>
+                    <View style={styles.actionRow}>
+                      <TouchableOpacity
+                        style={[styles.actionButton, styles.actionButtonSecondary]}
+                      >
+                        <Text style={styles.actionButtonSecondaryText}>View details</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.actionButton,
+                          styles.actionButtonPrimary,
+                          styles.actionButtonSpacing,
+                        ]}
+                        onPress={handleStaffConfirm}
+                      >
+                        <Text style={styles.actionButtonPrimaryText}>Action</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              </View>
+            </View>
+          ) : (
+            <Text style={styles.cardText}>No active assignments. Check back for new cases.</Text>
+          )}
         </View>
 
         <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Item Verification</Text>
+          <Text style={styles.cardTitle}>Complaint Resolution</Text>
           <View style={styles.optionList}>
-            <Text style={styles.optionItem}>📸 Upload item photo</Text>
-            <Text style={styles.optionItem}>✅ Mark item found</Text>
-            <Text style={styles.optionItem}>❌ Mark not found</Text>
-            <Text style={styles.optionItem}>
-              🔁 Escalate to RPF (high-value)
-            </Text>
+            <Text style={styles.optionItem}>✅ Item found and documented</Text>
+            <Text style={styles.optionItem}>❌ Item not located</Text>
+            <Text style={styles.optionItem}>🔁 Escalate for further investigation</Text>
+            <Text style={styles.optionItem}>📞 Passenger contacted</Text>
           </View>
           <Text style={styles.helperText}>
-            Auto GPS stamp + coach location captured on confirmation.
+            Update status to keep passenger informed of progress.
           </Text>
           <View style={styles.actionRow}>
             <TouchableOpacity
               style={[styles.actionButton, styles.actionButtonSecondary]}
             >
-              <Text style={styles.actionButtonSecondaryText}>Upload photo</Text>
+              <Text style={styles.actionButtonSecondaryText}>View Case</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -3071,13 +2915,13 @@ const AppContent = () => {
                 styles.actionButtonSpacing,
               ]}
             >
-              <Text style={styles.actionButtonPrimaryText}>Mark found</Text>
+              <Text style={styles.actionButtonPrimaryText}>Update Status</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Passenger Communication</Text>
+          <Text style={styles.cardTitle}>Officer Communication</Text>
           <View style={styles.messageRow}>
             <View style={styles.messageChip}>
               <Text style={styles.messageChipText}>"Item secured in S3"</Text>
@@ -3494,7 +3338,54 @@ const AppContent = () => {
     );
   };
 
+  // Role-based access validation
+  const canAccessDashboard = () => {
+    if (!isAuthenticated) return false;
+    
+    // Passengers can only access Passenger dashboard
+    if (role === "Passenger") return true;
+    
+    // Cab/Auto drivers can only access Cab/Auto dashboard
+    if (role === "Cab/Auto") return true;
+    
+    // Driver/Conductor can only access Driver/Conductor dashboard
+    if (role === "Driver/Conductor") return true;
+    
+    // TTR/RPF/Police officers must have a valid specific role
+    if (role === "TTR/RPF/Police") {
+      return ["TTR", "TTE", "RPF", "Police"].includes(specificRole);
+    }
+    
+    return false;
+  };
+
+  // Render role-based authorization error
+  const renderRoleAccessDenied = () => (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.accessDeniedContainer}>
+        <View style={styles.accessDeniedCard}>
+          <Ionicons name="shield-alert-outline" size={56} color="#EF4444" />
+          <Text style={styles.accessDeniedTitle}>Access Denied</Text>
+          <Text style={styles.accessDeniedMessage}>
+            Your account role does not have access to this dashboard. Please log out and sign in with the correct account.
+          </Text>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { backgroundColor: "#EF4444", borderColor: "#EF4444" }]}
+            onPress={handleLogout}
+          >
+            <Text style={styles.secondaryButtonText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+
   const renderDashboard = () => {
+    // Check if user has access to any dashboard
+    if (!canAccessDashboard()) {
+      return renderRoleAccessDenied();
+    }
+
     if (role === "Passenger") {
       const trimmedEmail = email.trim();
       const displayName =
@@ -5097,17 +4988,6 @@ const AppContent = () => {
                                 </Text>
                               </TouchableOpacity>
                             </View>
-
-                            {!isRegister && role === "TTR/RPF/Police" && (
-                              <TouchableOpacity
-                                style={styles.textButton}
-                                onPress={handleOpenTrainGuideDemo}
-                              >
-                                <Text style={styles.switchLink}>
-                                  Open train demo without professional details
-                                </Text>
-                              </TouchableOpacity>
-                            )}
                           </View>
                         )}
                       </Animated.View>
@@ -5141,6 +5021,33 @@ const styles = StyleSheet.create({
   },
   logoutButtonFull: {
     marginTop: 12,
+  },
+  accessDeniedContainer: {
+    flex: 1,
+    padding: 20,
+    justifyContent: "center",
+    backgroundColor: "#F8FAFC",
+  },
+  accessDeniedCard: {
+    backgroundColor: "#FEF2F2",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    padding: 24,
+    alignItems: "center",
+    gap: 16,
+  },
+  accessDeniedTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#B91C1C",
+    marginTop: 8,
+  },
+  accessDeniedMessage: {
+    fontSize: 14,
+    color: "#7F1D1D",
+    textAlign: "center",
+    lineHeight: 22,
   },
   opsShell: {
     flex: 1,
