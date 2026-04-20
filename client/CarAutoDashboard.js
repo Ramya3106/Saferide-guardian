@@ -162,6 +162,9 @@ const CarAutoDashboard = ({ onLogout }) => {
       const staffRole = vehicleType === "cab" ? "cab" : "auto";
       const response = await axios.get(`${API_BASE}/passenger/live-alerts`, {
         params: { staffRole },
+        headers: {
+          "X-User-Role": "Cab/Auto",
+        },
       });
       const alerts = response?.data?.alerts || [];
       setComplaints(alerts.map(normalizeComplaint));
