@@ -1,20 +1,36 @@
 import { Platform } from "react-native";
 import Constants from "expo-constants";
 
-const getDevHost = () => {
-  const hostUri =
-    Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
-
-  if (!hostUri) {
+const extractHost = (value) => {
+  if (!value || typeof value !== "string") {
     return null;
   }
 
-  const withoutScheme = hostUri.includes("://")
-    ? hostUri.split("://")[1]
-    : hostUri;
-
+  const withoutScheme = value.includes("://") ? value.split("://")[1] : value;
   const host = withoutScheme.split(":")[0];
-  return host || null;
+  if (!host || host === "localhost" || host === "127.0.0.1") {
+    return null;
+  }
+
+  return host;
+};
+
+const getDevHost = () => {
+  const hostCandidates = [
+    Constants.expoConfig?.hostUri,
+    Constants.expoGoConfig?.debuggerHost,
+    Constants.manifest?.debuggerHost,
+    Constants.manifest2?.extra?.expoClient?.hostUri,
+  ];
+
+  for (const candidate of hostCandidates) {
+    const host = extractHost(candidate);
+    if (host) {
+      return host;
+    }
+  }
+
+  return null;
 };
 
 const getApiBase = () => {
