@@ -1,5 +1,3 @@
-
-import React, { useEffect, useState } from "react";
 import React, { useState, useEffect, useRef } from "react";
 import {
   BackHandler,
@@ -16,8 +14,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   FlatList,
-  Modal,
-
   ActivityIndicator,
 
   Animated,
@@ -27,6 +23,7 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { getApiBase } from "./apiConfig";
 import * as Location from "expo-location";
+import * as ImagePicker from "expo-image-picker";
 
 const API_BASE = getApiBase();
 
@@ -96,6 +93,7 @@ const CarAutoDashboard = ({ onLogout }) => {
   const [endingArea, setEndingArea] = useState("");
   const [shiftStartTime, setShiftStartTime] = useState("");
   const [shiftEndTime, setShiftEndTime] = useState("");
+  const [idPhotoUri, setIdPhotoUri] = useState(null);
 
   // Dashboard states
   const [complaints, setComplaints] = useState([]);
@@ -103,9 +101,9 @@ const CarAutoDashboard = ({ onLogout }) => {
   const [acceptedComplaint, setAcceptedComplaint] = useState(null);
   const [itemConfirmation, setItemConfirmation] = useState(null);
   const [itemFound, setItemFound] = useState(null);
+  const [itemPhotoUri, setItemPhotoUri] = useState(null);
   const [meetingPoint, setMeetingPoint] = useState("");
   const [pickupTime, setPickupTime] = useState("");
-  const [showQRModal, setShowQRModal] = useState(false);
   const [isShareingLocation, setIsShareingLocation] = useState(false);
   const [recoveryStats, setRecoveryStats] = useState({
     totalToday: 12,
@@ -117,6 +115,81 @@ const CarAutoDashboard = ({ onLogout }) => {
   // Handle vehicle type selection
   const handleVehicleSelection = (type) => {
     setVehicleType(type);
+  };
+
+  const pickPhoto = async (source, setPhotoUri) => {
+    try {
+      if (source === "camera") {
+        const cameraPermission =
+          await ImagePicker.requestCameraPermissionsAsync();
+        if (!cameraPermission.granted) {
+          Alert.alert(
+            "Camera Permission Needed",
+            "Allow camera access to capture a photo."
+          );
+          return;
+        }
+
+        const cameraResult = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 0.8,
+        });
+
+        if (!cameraResult.canceled && cameraResult.assets?.[0]?.uri) {
+          setPhotoUri(cameraResult.assets[0].uri);
+        }
+        return;
+      }
+
+      const libraryPermission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!libraryPermission.granted) {
+        Alert.alert(
+          "Gallery Permission Needed",
+          "Allow photo library access to select a photo."
+        );
+        return;
+      }
+
+      const libraryResult = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (!libraryResult.canceled && libraryResult.assets?.[0]?.uri) {
+        setPhotoUri(libraryResult.assets[0].uri);
+      }
+    } catch (error) {
+      console.log("Error while picking photo:", error?.message);
+      Alert.alert("Upload Failed", "Unable to select image. Please try again.");
+    }
+  };
+
+  const showPhotoSourceOptions = (setPhotoUri, title) => {
+    Alert.alert(title, "Choose image source", [
+      {
+        text: "Open Camera",
+        onPress: () => pickPhoto("camera", setPhotoUri),
+      },
+      {
+        text: "Choose from Gallery",
+        onPress: () => pickPhoto("gallery", setPhotoUri),
+      },
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+    ]);
+  };
+
+  const handleUploadIdPhoto = () => {
+    showPhotoSourceOptions(setIdPhotoUri, "Upload ID Photo");
+  };
+
+  const handleUploadItemPhoto = () => {
+    showPhotoSourceOptions(setItemPhotoUri, "Upload Item Photo");
   };
 
   const normalizeComplaint = (complaint) => {
@@ -164,15 +237,11 @@ const CarAutoDashboard = ({ onLogout }) => {
 
   useEffect(() => {
     const onBackPress = () => {
-      if (showQRModal) {
-        setShowQRModal(false);
-        return true;
-      }
-
       if (acceptedComplaint) {
         setAcceptedComplaint(null);
         setItemConfirmation(null);
         setItemFound(null);
+        setItemPhotoUri(null);
         setMeetingPoint("");
         setPickupTime("");
         return true;
@@ -198,7 +267,7 @@ const CarAutoDashboard = ({ onLogout }) => {
     );
 
     return () => subscription.remove();
-  }, [acceptedComplaint, currentStep, showQRModal]);
+  }, [acceptedComplaint, currentStep]);
 
   // Handle continue from vehicle selection
   const handleContinueVehicleSelection = () => {
@@ -228,6 +297,7 @@ const CarAutoDashboard = ({ onLogout }) => {
   const handleAcceptComplaint = (complaint) => {
     setAcceptedComplaint(complaint);
     setItemConfirmation("itemPhoto");
+    setItemPhotoUri(null);
   };
 
   // Handle item confirmation
@@ -263,9 +333,9 @@ const CarAutoDashboard = ({ onLogout }) => {
     setAcceptedComplaint(null);
     setItemConfirmation(null);
     setItemFound(null);
+    setItemPhotoUri(null);
     setMeetingPoint("");
     setPickupTime("");
-    setShowQRModal(false);
   };
 
   // Handle share live location
@@ -446,12 +516,29 @@ const CarAutoDashboard = ({ onLogout }) => {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>📷 Upload ID (Optional)</Text>
-            <TouchableOpacity style={styles.uploadButton}>
+            <TouchableOpacity
+              style={styles.uploadButton}
+              onPress={handleUploadIdPhoto}
+            >
               <ShakyIcon name="cloud-upload" size={24} color="#2563EB" />
               <Text style={styles.uploadButtonText}>
                 Tap to upload ID for verification
               </Text>
             </TouchableOpacity>
+            {idPhotoUri && (
+              <View style={styles.uploadedPhotoPreviewWrapper}>
+                <Image
+                  source={{ uri: idPhotoUri }}
+                  style={styles.uploadedPhotoPreview}
+                />
+                <View style={styles.uploadedPhotoMetaRow}>
+                  <Text style={styles.uploadedPhotoText}>ID photo selected</Text>
+                  <TouchableOpacity onPress={() => setIdPhotoUri(null)}>
+                    <Text style={styles.removePhotoText}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </View>
         </View>
 
@@ -642,7 +729,14 @@ const CarAutoDashboard = ({ onLogout }) => {
       <View style={styles.backButtonContainer}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => setAcceptedComplaint(null)}
+          onPress={() => {
+            setAcceptedComplaint(null);
+            setItemConfirmation(null);
+            setItemFound(null);
+            setItemPhotoUri(null);
+            setMeetingPoint("");
+            setPickupTime("");
+          }}
         >
           <ShakyIcon name="arrow-back" size={24} color="#2563EB" />
           <Text style={styles.backButtonText}>Back to Dashboard</Text>
@@ -666,10 +760,30 @@ const CarAutoDashboard = ({ onLogout }) => {
               </Text>
             </View>
 
-            <TouchableOpacity style={styles.uploadPhotoButton}>
+            <TouchableOpacity
+              style={styles.uploadPhotoButton}
+              onPress={handleUploadItemPhoto}
+            >
               <ShakyIcon name="camera" size={40} color="#2563EB" />
-              <Text style={styles.uploadPhotoText}>Tap to Upload Photo</Text>
+              <Text style={styles.uploadPhotoText}>
+                {itemPhotoUri ? "Change Photo" : "Tap to Upload Photo"}
+              </Text>
             </TouchableOpacity>
+
+            {itemPhotoUri && (
+              <View style={styles.uploadedPhotoPreviewWrapper}>
+                <Image
+                  source={{ uri: itemPhotoUri }}
+                  style={styles.uploadedPhotoPreview}
+                />
+                <View style={styles.uploadedPhotoMetaRow}>
+                  <Text style={styles.uploadedPhotoText}>Photo selected</Text>
+                  <TouchableOpacity onPress={() => setItemPhotoUri(null)}>
+                    <Text style={styles.removePhotoText}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
 
             <View style={styles.confirmationButtons}>
               <TouchableOpacity
@@ -732,18 +846,13 @@ const CarAutoDashboard = ({ onLogout }) => {
                   <Text style={styles.locationButtonText}>Share Live Location</Text>
                 </>
               )}
-
-            <TouchableOpacity style={styles.locationButton}>
-              <ShakyIcon name="location" size={24} color="#FFFFFF" />
-              <Text style={styles.locationButtonText}>Share Live Location</Text>
-
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.primaryButton}
-              onPress={() => setShowQRModal(true)}
+              onPress={handleCompleteHandover}
             >
-              <Text style={styles.primaryButtonText}>📍 Next: QR Handover</Text>
+              <Text style={styles.primaryButtonText}>✅ Complete Handover</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -770,6 +879,9 @@ const CarAutoDashboard = ({ onLogout }) => {
                   complaints.filter((c) => c.id !== acceptedComplaint.id)
                 );
                 setAcceptedComplaint(null);
+                setItemConfirmation(null);
+                setItemFound(null);
+                setItemPhotoUri(null);
               }}
             >
               <Text style={styles.primaryButtonText}>
@@ -779,67 +891,6 @@ const CarAutoDashboard = ({ onLogout }) => {
           </View>
         </View>
       )}
-
-      {/* QR Handover Modal */}
-      <Modal
-        visible={showQRModal}
-        transparent={true}
-        animationType="slide"
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity
-              onPress={() => setShowQRModal(false)}
-            >
-              <ShakyIcon name="close" size={28} color="#2563EB" />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>QR Handover</Text>
-            <View style={{ width: 28 }} />
-          </View>
-
-          <ScrollView contentContainerStyle={styles.modalContent}>
-            <View style={styles.qrSection}>
-              <Text style={styles.qrTitle}>📲 Scan Passenger's QR</Text>
-              <View style={styles.qrPlaceholder}>
-                <ShakyIcon
-                  name="qr-code"
-                  size={80}
-                  color="#CBD5E1"
-                />
-              </View>
-              <TouchableOpacity style={styles.scanButton}>
-                <ShakyIcon name="camera" size={24} color="#FFFFFF" />
-                <Text style={styles.scanButtonText}>Scan QR Code</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.qrSection}>
-              <Text style={styles.qrTitle}>🎫 Or Show Your QR</Text>
-              <View style={styles.qrPlaceholder}>
-                <ShakyIcon
-                  name="qr-code"
-                  size={80}
-                  color="#CBD5E1"
-                />
-              </View>
-              <Text style={styles.driverQRText}>
-                Driver QR - Let passenger scan this
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.completeButton}
-              onPress={handleCompleteHandover}
-            >
-              <Text style={styles.completeButtonText}>
-                ✅ Complete Handover
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
     </ScrollView>
   );
 
@@ -966,6 +1017,35 @@ const styles = StyleSheet.create({
     color: "#2563EB",
     fontWeight: "600",
     marginTop: 8,
+  },
+  uploadedPhotoPreviewWrapper: {
+    marginTop: 12,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    borderRadius: 12,
+    padding: 10,
+  },
+  uploadedPhotoPreview: {
+    width: "100%",
+    height: 170,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  uploadedPhotoMetaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  uploadedPhotoText: {
+    color: "#1E40AF",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  removePhotoText: {
+    color: "#DC2626",
+    fontWeight: "700",
+    fontSize: 13,
   },
 
   // Button Styles
@@ -1371,74 +1451,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // Modal Styles
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1E293B",
-  },
-  modalContent: {
-    flexGrow: 1,
-    padding: 16,
-  },
-  qrSection: {
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  qrTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 16,
-  },
-  qrPlaceholder: {
-    width: 200,
-    height: 200,
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "#CBD5E1",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  scanButton: {
-    backgroundColor: "#2563EB",
-    borderRadius: 12,
-    flexDirection: "row",
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  scanButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    marginLeft: 8,
-  },
-  driverQRText: {
-    fontSize: 13,
-    color: "#64748B",
-    marginTop: 12,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#E2E8F0",
-    marginVertical: 24,
-  },
   completeButton: {
     backgroundColor: "#22C55E",
     borderRadius: 12,
