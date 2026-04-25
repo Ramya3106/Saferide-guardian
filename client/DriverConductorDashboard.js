@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from "react";
 import React, { useState, useEffect, useRef } from "react";
 import {
   BackHandler,
@@ -1011,11 +1010,6 @@ const DriverConductorDashboard = ({ onLogout }) => {
                   <Text style={styles.locationButtonText}>Share Live Location</Text>
                 </>
               )}
-
-            <TouchableOpacity style={styles.locationButton}>
-              <ShakyIcon name="location" size={24} color="#FFFFFF" />
-              <Text style={styles.locationButtonText}>Share Live Location</Text>
-
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.notifyButton}>
