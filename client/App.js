@@ -28,6 +28,7 @@ import CarAutoDashboard from "./CarAutoDashboard";
 import DriverConductorDashboard from "./DriverConductorDashboard";
 
 const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
+const NON_OFFICIAL_ROLES = new Set(["Passenger", "Driver/Conductor", "Cab/Auto"]);
 const OFFICIAL_DOMAINS = {
   "TTR/RPF/Police": ["railnet.gov.in", "tnpolice.gov.in"],
 };
@@ -686,7 +687,17 @@ const AppContent = () => {
     showRoleSelection,
   ]);
 
-  const applyUserProfile = (profile = {}) => {
+  const applyUserProfile = (profile = {}, { preserveSelectedRole = false } = {}) => {
+    const profileRole = (profile.role || "").trim();
+    const shouldKeepSelectedRole =
+      preserveSelectedRole &&
+      NON_OFFICIAL_ROLES.has(role) &&
+      NON_OFFICIAL_ROLES.has(profileRole || role);
+
+    if (!shouldKeepSelectedRole && profileRole) {
+      setRole(profileRole);
+    }
+
     setName(profile.name || "");
     setPhone(profile.phone || "");
     setEmail(profile.email || "");
@@ -840,7 +851,7 @@ const AppContent = () => {
           return;
         }
 
-        applyUserProfile(profile);
+        applyUserProfile(profile, { preserveSelectedRole: true });
         setIsAuthenticated(true);
       } catch (err) {
         const message = err?.response?.data?.message || "Unable to log in.";
@@ -906,6 +917,10 @@ const AppContent = () => {
       const { data } = await sendCode(otpEmail);
       const sent = Boolean(data?.sent || data?.devCode);
       setIsOtpSent(sent);
+      if (data?.devCode) {
+        setEmailOtp(String(data.devCode));
+        setError("Email not delivered. Development code applied automatically.");
+      }
       if (!sent && data?.message) {
         setError(data.message);
       }
@@ -973,6 +988,10 @@ const AppContent = () => {
       });
       const sent = Boolean(data?.sent || data?.devCode);
       setIsResetCodeSent(sent);
+      if (data?.devCode) {
+        setResetCode(String(data.devCode));
+        setError("Email not delivered. Development reset code applied automatically.");
+      }
       if (!sent && data?.message) {
         setError(data.message);
       }
@@ -1100,8 +1119,12 @@ const AppContent = () => {
           email: trimmedEmail,
         },
       );
-      const sent = Boolean(data?.sent);
+      const sent = Boolean(data?.sent || data?.devCode);
       setIsResetCodeSent(sent);
+      if (data?.devCode) {
+        setResetCode(String(data.devCode));
+        setError("Email not delivered. Development reset code applied automatically.");
+      }
       if (!sent && data?.message) {
         setError(data.message);
       }
