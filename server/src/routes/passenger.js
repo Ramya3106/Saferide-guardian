@@ -145,7 +145,10 @@ router.get("/complaints", async (req, res) => {
       return res.status(400).json({ message: "User email required" });
     }
 
-    const complaints = await Complaint.find({ passengerEmail: userEmail }).sort({ createdAt: -1 });
+    const complaints = await Complaint.find({
+      passengerEmail: userEmail,
+      hiddenByPassenger: { $ne: true },
+    }).sort({ createdAt: -1 });
 
     res.json({
       complaints: complaints,
@@ -154,6 +157,38 @@ router.get("/complaints", async (req, res) => {
   } catch (error) {
     console.error("Error fetching complaints:", error);
     res.status(500).json({ message: "Error fetching complaints" });
+  }
+});
+
+// DELETE /api/passenger/complaints/:id - Remove a complaint from passenger history
+router.delete("/complaints/:id", async (req, res) => {
+  try {
+    const complaintId = req.params.id;
+    const userEmail = getUserEmail(req);
+
+    if (!userEmail) {
+      return res.status(400).json({ message: "User email required" });
+    }
+
+    const complaint = await Complaint.findOne({
+      _id: complaintId,
+      passengerEmail: userEmail,
+    });
+
+    if (!complaint) {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+
+    complaint.hiddenByPassenger = true;
+    await complaint.save();
+
+    res.json({
+      complaint,
+      message: "Complaint removed from history",
+    });
+  } catch (error) {
+    console.error("Error deleting complaint:", error);
+    res.status(500).json({ message: "Error deleting complaint" });
   }
 });
 

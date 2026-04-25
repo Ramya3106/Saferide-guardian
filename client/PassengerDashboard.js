@@ -13,11 +13,11 @@ import {
   Image,
   Linking,
   Animated,
-  Pressable,
 
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 import axios from "axios";
 import { getApiBase } from "./apiConfig";
 
@@ -72,16 +72,19 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
   };
 
   const ShakyIcon = ({ style, ...props }) => (
-    <Pressable onHoverIn={startIconShake} onHoverOut={stopIconShake}>
-      <AnimatedIonicon {...props} style={[iconShakeStyle, style]} />
-    </Pressable>
+    <AnimatedIonicon
+      {...props}
+      style={[iconShakeStyle, style]}
+      pointerEvents="none"
+    />
   );
 
   // State management
   const [activeJourney, setActiveJourney] = useState(null);
   const [complaints, setComplaints] = useState([]);
   const [currentComplaint, setCurrentComplaint] = useState(null);
-  const [gpsEnabled, setGpsEnabled] = useState(true);
+  const [gpsEnabled, setGpsEnabled] = useState(false);
+  const [gpsBusy, setGpsBusy] = useState(false);
   const [showComplaintModal, setShowComplaintModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
@@ -180,12 +183,81 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
     ]);
   };
 
+  const handleDeleteComplaint = (complaintId) => {
+    Alert.alert(
+      "Delete Complaint",
+      "This will remove the complaint from your history.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await axios.delete(`${API_BASE}/passenger/complaints/${complaintId}`, {
+                headers: { "X-User-Email": userEmail },
+              });
+
+              setComplaints((prev) =>
+                prev.filter((complaint) => complaint._id !== complaintId),
+              );
+            } catch (error) {
+              console.log("Error deleting complaint:", error.message);
+              Alert.alert(
+                "Delete Failed",
+                "Unable to remove the complaint from history. Please try again.",
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleProfilePress = () => {
+    Alert.alert("Profile", `Name: ${userName || "Passenger"}`);
+  };
+
   // Fetch active journey on load
   useEffect(() => {
     fetchActiveJourney();
     fetchComplaintHistory();
+    syncGpsFromDevice();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const updateGpsOnServer = async (enabled, coords = null) => {
+    const payload = {
+      enabled,
+      ...(coords
+        ? {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+          }
+        : {}),
+    };
+
+    await axios.post(`${API_BASE}/passenger/gps`, payload, {
+      headers: { "X-User-Email": userEmail },
+    });
+  };
+
+  const syncGpsFromDevice = async () => {
+    try {
+      const servicesEnabled = await Location.hasServicesEnabledAsync();
+      const permission = await Location.getForegroundPermissionsAsync();
+      const enabled = servicesEnabled && permission.status === "granted";
+
+      setGpsEnabled(enabled);
+      await updateGpsOnServer(enabled);
+    } catch (error) {
+      setGpsEnabled(false);
+      console.log("Error checking GPS state:", error.message);
+    }
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -456,17 +528,57 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
 
   // Update GPS status
   const handleGpsToggle = async () => {
-    setGpsEnabled(!gpsEnabled);
+    if (gpsBusy) {
+      return;
+    }
+
+    setGpsBusy(true);
+
     try {
-      await axios.post(
-        `${API_BASE}/passenger/gps`,
-        { enabled: !gpsEnabled },
-        {
-          headers: { "X-User-Email": userEmail },
-        },
-      );
+      if (gpsEnabled) {
+        setGpsEnabled(false);
+        await updateGpsOnServer(false);
+        return;
+      }
+
+      const servicesEnabled = await Location.hasServicesEnabledAsync();
+      if (!servicesEnabled) {
+        Alert.alert(
+          "Enable Location",
+          "Please turn on device location services to enable GPS.",
+        );
+        setGpsEnabled(false);
+        await updateGpsOnServer(false);
+        return;
+      }
+
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status !== "granted") {
+        Alert.alert(
+          "Location Permission Required",
+          "Allow location permission to enable GPS.",
+        );
+        setGpsEnabled(false);
+        await updateGpsOnServer(false);
+        return;
+      }
+
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      setGpsEnabled(true);
+      await updateGpsOnServer(true, {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
     } catch (error) {
+      setGpsEnabled(false);
+      await updateGpsOnServer(false);
       console.log("Error updating GPS:", error.message);
+      Alert.alert("GPS Error", "Unable to update GPS right now.");
+    } finally {
+      setGpsBusy(false);
     }
   };
 
@@ -476,17 +588,26 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
   const renderHeader = () => (
     <View style={styles.headerSection}>
       <View style={styles.headerContent}>
-        <View>
-          <Text style={styles.passengerName}>{userName}</Text>
-          <Text style={styles.mobileNumber}>📞 {userPhone}</Text>
-        </View>
-        <TouchableOpacity style={styles.gpsButton} onPress={handleGpsToggle}>
+        <TouchableOpacity
+          style={styles.profileButton}
+          onPress={handleProfilePress}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="person-circle-outline" size={34} color="#1E293B" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.gpsButton, gpsBusy && styles.gpsButtonDisabled]}
+          onPress={handleGpsToggle}
+          disabled={gpsBusy}
+        >
           <ShakyIcon
             name={gpsEnabled ? "location" : "location-outline"}
             size={20}
             color={gpsEnabled ? "#22C55E" : "#64748B"}
           />
-          <Text style={styles.gpsText}>GPS {gpsEnabled ? "ON" : "OFF"}</Text>
+          <Text style={styles.gpsText}>
+            {gpsBusy ? "GPS..." : `GPS ${gpsEnabled ? "ON" : "OFF"}`}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -500,13 +621,6 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
             <Text style={styles.badgeText}>{notificationCount}</Text>
           </View>
         )}
-
-      <TouchableOpacity style={styles.notificationBell}>
-        <ShakyIcon name="notifications-outline" size={24} color="#1E293B" />
-        <View style={styles.notificationBadge}>
-          <Text style={styles.badgeText}>3</Text>
-        </View>
-
       </TouchableOpacity>
     </View>
   );
@@ -578,7 +692,10 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                 ? "Report Lost Item"
                 : `Lost Item - ${transportType?.toUpperCase()}`}
             </Text>
-            <TouchableOpacity onPress={resetComplaintModal}>
+            <TouchableOpacity
+              onPress={resetComplaintModal}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
               <ShakyIcon name="close" size={24} color="#1E293B" />
             </TouchableOpacity>
           </View>
@@ -605,7 +722,10 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                     onPress={() => handleTransportSelect("car")}
                   >
                     <ShakyIcon name="car" size={40} color="#2563EB" />
-                    <Text style={styles.transportButtonText}>🚗 Car</Text>
+                    <View style={styles.transportButtonLabelRow}>
+                      <Text style={styles.transportEmoji}>🚗</Text>
+                      <Text style={styles.transportButtonText}>Car</Text>
+                    </View>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -964,64 +1084,41 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         <View>
           {complaints.slice(0, 3).map((complaint) => (
             <View key={complaint._id} style={styles.historyItem}>
-              <View>
-                <Text style={styles.historyItemTitle}>
-                  {complaint.itemType}
-                </Text>
-                <Text style={styles.historyItemMeta}>
-                  {complaint.vehicleNumber} • {complaint.route}
-                </Text>
-                <Text style={styles.historyItemDate}>
-                  {new Date(complaint.createdAt).toLocaleDateString()}
-                </Text>
+              <View style={styles.historyItemTopRow}>
+                <View style={styles.historyItemMain}>
+                  <Text style={styles.historyItemTitle}>
+                    {complaint.itemType}
+                  </Text>
+                  <Text style={styles.historyItemMeta}>
+                    {complaint.vehicleNumber} • {complaint.route}
+                  </Text>
+                  <Text style={styles.historyItemDate}>
+                    {new Date(complaint.createdAt).toLocaleDateString()}
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    complaint.status === "Recovered" && styles.statusBadgeSuccess,
+                    complaint.status === "Closed" && styles.statusBadgeInfo,
+                  ]}
+                >
+                  <Text style={styles.statusBadgeText}>{complaint.status}</Text>
+                </View>
               </View>
-              <View
-                style={[
-                  styles.statusBadge,
-                  complaint.status === "Recovered" && styles.statusBadgeSuccess,
-                  complaint.status === "Closed" && styles.statusBadgeInfo,
-                ]}
+
+              <TouchableOpacity
+                style={styles.deleteComplaintButton}
+                onPress={() => handleDeleteComplaint(complaint._id)}
               >
-                <Text style={styles.statusBadgeText}>{complaint.status}</Text>
-              </View>
+                <Text style={styles.deleteComplaintText}>Delete</Text>
+              </TouchableOpacity>
             </View>
           ))}
         </View>
       ) : (
         <Text style={styles.emptyText}>No complaints yet</Text>
       )}
-    </View>
-  );
-
-  // Section 10: Emergency & Help
-  const renderEmergencyHelp = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>🆘 Emergency & Help</Text>
-      <View style={styles.emergencyGrid}>
-        <TouchableOpacity
-          style={styles.emergencyButton}
-          onPress={() => alert("Calling emergency hotline...")}
-        >
-          <ShakyIcon name="call" size={28} color="#DC2626" />
-          <Text style={styles.emergencyButtonText}>Emergency Call</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.emergencyButton}
-          onPress={() => alert("📞 Helpline: +91-XXXX-XXXXX")}
-        >
-          <ShakyIcon name="information-circle" size={28} color="#2563EB" />
-          <Text style={styles.emergencyButtonText}>Helpline</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.emergencyButton}
-          onPress={() => alert("FAQ coming soon!")}
-        >
-          <ShakyIcon name="help-circle" size={28} color="#7C3AED" />
-          <Text style={styles.emergencyButtonText}>FAQ & Help</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 
@@ -1037,7 +1134,10 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>📋 Complaint History</Text>
-            <TouchableOpacity onPress={() => setShowHistoryModal(false)}>
+            <TouchableOpacity
+              onPress={() => setShowHistoryModal(false)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
               <ShakyIcon name="close" size={24} color="#1E293B" />
             </TouchableOpacity>
           </View>
@@ -1080,6 +1180,13 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                   <Text style={styles.historyFullDate}>
                     {new Date(complaint.createdAt).toLocaleString()}
                   </Text>
+
+                  <TouchableOpacity
+                    style={styles.deleteComplaintButton}
+                    onPress={() => handleDeleteComplaint(complaint._id)}
+                  >
+                    <Text style={styles.deleteComplaintText}>Delete</Text>
+                  </TouchableOpacity>
                 </View>
               ))
             ) : (
@@ -1102,7 +1209,10 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Notifications</Text>
-            <TouchableOpacity onPress={() => setShowNotificationModal(false)}>
+            <TouchableOpacity
+              onPress={() => setShowNotificationModal(false)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
               <Ionicons name="close" size={24} color="#1E293B" />
             </TouchableOpacity>
           </View>
@@ -1154,6 +1264,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                 setTrackingData(null);
                 setSelectedTrackingComplaint(null);
               }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
               <Ionicons name="close" size={24} color="#1E293B" />
             </TouchableOpacity>
@@ -1211,7 +1322,6 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         {renderHistoryModal()}
         {renderNotificationModal()}
         {renderTrackingModal()}
-        {renderEmergencyHelp()}
 
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
           <ShakyIcon name="log-out" size={20} color="#FFFFFF" />
@@ -1254,6 +1364,16 @@ const styles = StyleSheet.create({
     color: "#64748B",
     marginTop: 4,
   },
+  profileButton: {
+    width: 42,
+    height: 42,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 21,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
   gpsButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1262,6 +1382,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
     gap: 4,
+  },
+  gpsButtonDisabled: {
+    opacity: 0.6,
   },
   gpsText: {
     fontSize: 11,
@@ -1650,6 +1773,16 @@ const styles = StyleSheet.create({
     color: "#1E293B",
     textAlign: "center",
   },
+  transportButtonLabelRow: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  transportEmoji: {
+    fontSize: 14,
+  },
   backButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1703,6 +1836,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  historyItemTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  historyItemMain: {
+    flex: 1,
+  },
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
@@ -1818,6 +1960,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#94A3B8",
     marginTop: 6,
+  },
+  deleteComplaintButton: {
+    alignSelf: "flex-start",
+    marginTop: 10,
+    backgroundColor: "#FEE2E2",
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  deleteComplaintText: {
+    color: "#DC2626",
+    fontWeight: "700",
+    fontSize: 13,
   },
   emergencyGrid: {
     flexDirection: "row",

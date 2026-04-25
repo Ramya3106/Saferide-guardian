@@ -95,6 +95,10 @@ const complaintSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    hiddenByPassenger: {
+      type: Boolean,
+      default: false,
+    },
     staffId: {
       type: String,
       default: null,

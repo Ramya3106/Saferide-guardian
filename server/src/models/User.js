@@ -2,7 +2,12 @@ const mongoose = require("mongoose");
 const crypto = require("crypto");
 
 // Encryption configuration
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
+const ENCRYPTION_KEY =
+  process.env.ENCRYPTION_KEY ||
+  crypto
+    .createHash('sha256')
+    .update('saferide-guardian-dev-encryption-key')
+    .digest('hex');
 const ALGORITHM = 'aes-256-cbc';
 
 // Encryption helper functions

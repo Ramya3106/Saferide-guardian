@@ -51,12 +51,19 @@ const fromAddress = (
 ).trim();
 const returnDevCode =
   String(process.env.RETURN_VERIFY_CODE || "").toLowerCase() === "true";
+const shouldReturnDevCode =
+  returnDevCode || process.env.NODE_ENV !== "production";
+const allowSelfSignedTls =
+  String(process.env.SMTP_ALLOW_SELF_SIGNED || "").toLowerCase() === "true" ||
+  (!process.env.SMTP_ALLOW_SELF_SIGNED &&
+    process.env.NODE_ENV !== "production");
 const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
 const OFFICIAL_DOMAINS = {
   "TTR/RPF/Police": ["railnet.gov.in", "tnpolice.gov.in"],
 };
 const OFFICIAL_ROLES = new Set(["TTR/RPF/Police"]);
 const OPERATIONAL_ROLES = new Set(["Driver/Conductor", "Cab/Auto"]);
+const NON_OFFICIAL_ROLES = new Set(["Passenger", "Driver/Conductor", "Cab/Auto"]);
 
 const createTransporter = () => {
   if (!mailUser || !pass) return null;
@@ -67,6 +74,13 @@ const createTransporter = () => {
       user: mailUser,
       pass,
     },
+    ...(allowSelfSignedTls
+      ? {
+          tls: {
+            rejectUnauthorized: false,
+          },
+        }
+      : {}),
   });
 };
 
@@ -217,7 +231,7 @@ router.post("/send-verify-code", async (req, res) => {
 
   const transporter = createTransporter();
   if (!transporter) {
-    if (returnDevCode) {
+    if (shouldReturnDevCode) {
       const code = generateCode();
       const expiresAt = Date.now() + VERIFY_CODE_TTL_MS;
       verificationStore.set(email, { code, expiresAt, attempts: 0 });
@@ -277,12 +291,12 @@ router.post("/send-verify-code", async (req, res) => {
     console.log(`✅ Verification code sent to ${email}`);
     return res.status(200).json({
       sent: true,
-      ...(returnDevCode ? { devCode: code } : {}),
+      ...(shouldReturnDevCode ? { devCode: code } : {}),
     });
   } catch (error) {
     console.error("❌ Email error:", error);
     verificationStore.delete(email); // Cleanup on fail
-    if (returnDevCode) {
+    if (shouldReturnDevCode) {
       const fallbackCode = generateCode();
       const expiresAt = Date.now() + VERIFY_CODE_TTL_MS;
       verificationStore.set(email, {
@@ -489,7 +503,10 @@ router.post("/login", async (req, res) => {
       } else if (!isValidEmail(email)) {
         return res.status(400).json({ message: "Enter a valid email." });
       }
-      user = await User.findOne({ email, role });
+      user = await findUserByEmail(email, { includePassword: true });
+      if (user && !NON_OFFICIAL_ROLES.has(user.role)) {
+        user = null;
+      }
     } else if (isOfficialRole(role)) {
       if (!isValidProfessionalId(role, professionalId)) {
         return res
@@ -501,7 +518,10 @@ router.post("/login", async (req, res) => {
       if (!isValidEmail(email)) {
         return res.status(400).json({ message: "Enter a valid email." });
       }
-      user = await User.findOne({ email, role }).select("+password");
+      user = await findUserByEmail(email, { includePassword: true });
+      if (user && !NON_OFFICIAL_ROLES.has(user.role)) {
+        user = null;
+      }
     }
 
     if (!user) {
@@ -785,7 +805,7 @@ router.post("/forgot-password", async (req, res) => {
 
     const transporter = createTransporter();
     if (!transporter) {
-      if (returnDevCode) {
+      if (shouldReturnDevCode) {
         const resetCode = generateCode();
         const expiresAt = Date.now() + RESET_CODE_TTL_MS;
 
@@ -847,13 +867,13 @@ router.post("/forgot-password", async (req, res) => {
       console.log(`✅ Password reset code sent to ${officialEmail}`);
       return res.status(200).json({
         sent: true,
-        ...(returnDevCode ? { devCode: resetCode } : {}),
+        ...(shouldReturnDevCode ? { devCode: resetCode } : {}),
       });
     } catch (error) {
       console.error("❌ Email error:", error);
       resetPasswordStore.delete(officialEmail);
 
-      if (returnDevCode) {
+      if (shouldReturnDevCode) {
         const fallbackCode = generateCode();
         const expiresAt = Date.now() + RESET_CODE_TTL_MS;
         resetPasswordStore.set(officialEmail, {
@@ -1122,6 +1142,17 @@ router.post("/forgot-password-user", async (req, res) => {
 
     const transporter = createTransporter();
     if (!transporter) {
+      if (shouldReturnDevCode) {
+        const resetCode = generateCode();
+        const expiresAt = Date.now() + RESET_CODE_TTL_MS;
+        verificationStore.set(email, { code: resetCode, expiresAt, attempts: 0 });
+        return res.status(200).json({
+          sent: false,
+          devCode: resetCode,
+          message: "Email service not configured. Using dev code.",
+        });
+      }
+
       return res.status(500).json({
         message: getEmailServiceUnavailableMessage(),
       });
@@ -1154,6 +1185,22 @@ router.post("/forgot-password-user", async (req, res) => {
     } catch (error) {
       verificationStore.delete(email);
       console.error("Forgot password user email error:", error.message);
+
+      if (shouldReturnDevCode) {
+        const fallbackCode = generateCode();
+        const expiresAt = Date.now() + RESET_CODE_TTL_MS;
+        verificationStore.set(email, {
+          code: fallbackCode,
+          expiresAt,
+          attempts: 0,
+        });
+        return res.status(200).json({
+          sent: false,
+          devCode: fallbackCode,
+          message: "Email failed. Using dev code.",
+        });
+      }
+
       return res.status(500).json({ message: "Failed to send reset email." });
     }
   } catch (error) {
