@@ -32,6 +32,11 @@ const NON_OFFICIAL_ROLES = new Set(["Passenger", "Driver/Conductor", "Cab/Auto"]
 const OFFICIAL_DOMAINS = {
   "TTR/RPF/Police": ["railnet.gov.in", "tnpolice.gov.in"],
 };
+const OFFICIAL_STAFF_ROLE_MAP = {
+  TTR: "train",
+  RPF: "train",
+  Police: "train",
+};
 const API_BASE = getApiBase();
 
 const sendCode = (emailAddress) =>
@@ -213,6 +218,7 @@ const AppContent = () => {
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [specificRole, setSpecificRole] = useState("");
   const [onDuty, setOnDuty] = useState(true);
+  const [officialComplaints, setOfficialComplaints] = useState([]);
 
   // Animation refs
   const formAnim = useRef(new Animated.Value(0)).current;
@@ -221,6 +227,27 @@ const AppContent = () => {
   const shieldShakeLoopRef = useRef(null);
   const titleFade = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
+  const priorityPulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(priorityPulse, {
+          toValue: 0.35,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(priorityPulse, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+
+    return () => loop.stop();
+  }, [priorityPulse]);
 
   const isRegister = mode === "register";
   const isOfficialRole = role === "TTR/RPF/Police";
@@ -312,6 +339,95 @@ const AppContent = () => {
     () => confirmNewPassword.length > 0 && newPassword === confirmNewPassword,
     [confirmNewPassword, newPassword],
   );
+
+  const getPriorityMeta = (priorityLevel) => {
+    if (priorityLevel === "HIGH") {
+      return {
+        label: "HIGH",
+        dot: "🔴",
+        containerStyle: styles.priorityBadgeHigh,
+        textStyle: styles.priorityTextHigh,
+      };
+    }
+
+    if (priorityLevel === "MEDIUM") {
+      return {
+        label: "MEDIUM",
+        dot: "🟡",
+        containerStyle: styles.priorityBadgeMedium,
+        textStyle: styles.priorityTextMedium,
+      };
+    }
+
+    return {
+      label: "LOW",
+      dot: "⚪",
+      containerStyle: styles.priorityBadgeLow,
+      textStyle: styles.priorityTextLow,
+    };
+  };
+
+  const renderPriorityBadge = (priorityLevel) => {
+    const meta = getPriorityMeta(priorityLevel);
+    const badge = (
+      <View style={[styles.priorityBadge, meta.containerStyle]}>
+        <Text style={[styles.priorityBadgeText, meta.textStyle]}>
+          {meta.dot} {meta.label}
+        </Text>
+      </View>
+    );
+
+    if (priorityLevel === "HIGH") {
+      return <Animated.View style={{ opacity: priorityPulse }}>{badge}</Animated.View>;
+    }
+
+    return badge;
+  };
+
+  const normalizeOfficialComplaint = (complaint) => {
+    const createdAt = complaint?.createdAt || complaint?.timestamp || new Date();
+    return {
+      id: complaint?._id || complaint?.id,
+      passengerName: complaint?.passengerName || "Passenger",
+      item: complaint?.itemType || complaint?.description || "Lost item",
+      location:
+        complaint?.lastSeenLocation || complaint?.fromLocation || complaint?.route || "Unknown",
+      vehicleNumber: complaint?.vehicleNumber || "N/A",
+      description: complaint?.description || "",
+      priorityLevel: complaint?.priorityLevel || "LOW",
+      reportedTime: new Date(createdAt).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
+  };
+
+  const fetchOfficialComplaints = async () => {
+    if (role !== "TTR/RPF/Police") {
+      return;
+    }
+
+    const staffRole = OFFICIAL_STAFF_ROLE_MAP[specificRole] || "train";
+    try {
+      const response = await axios.get(`${API_BASE}/passenger/live-alerts`, {
+        params: { staffRole },
+      });
+      const alerts = response?.data?.alerts || [];
+      setOfficialComplaints(alerts.map(normalizeOfficialComplaint));
+    } catch (error) {
+      console.log("Error fetching official live complaints:", error.message);
+    }
+  };
+
+  useEffect(() => {
+    if (role !== "TTR/RPF/Police") {
+      return undefined;
+    }
+
+    fetchOfficialComplaints();
+    const interval = setInterval(fetchOfficialComplaints, 10000);
+    return () => clearInterval(interval);
+  }, [role, specificRole]);
 
   const canSubmit = useMemo(() => {
     const trimmedEmail = email.trim();
@@ -1691,6 +1807,7 @@ const AppContent = () => {
     const trainNumber = travelNumber.trim() || "12631";
     const coachAllotted = "S3";
     const shiftTime = "08:00 AM - 04:00 PM";
+    const activeAlert = officialComplaints[0] || null;
 
     return (
       <View>
@@ -1709,7 +1826,7 @@ const AppContent = () => {
                 color="#1E40AF"
                 style={styles.notificationIcon}
               />
-              <Text style={styles.notificationText}>3</Text>
+              <Text style={styles.notificationText}>{officialComplaints.length}</Text>
             </View>
           </View>
           <View style={styles.authorityMetaRow}>
@@ -1793,12 +1910,18 @@ const AppContent = () => {
 
         <View style={styles.alertCard}>
           <Text style={styles.alertTitle}>⚠ LOST ITEM ALERT</Text>
-          <Text style={styles.alertText}>Passenger: Ramya V</Text>
-          <Text style={styles.alertText}>PNR: 4567891234</Text>
-          <Text style={styles.alertText}>Item: Passport</Text>
-          <Text style={styles.alertText}>Coach: {coachAllotted}</Text>
-          <Text style={styles.alertText}>Berth: 21</Text>
-          <Text style={styles.alertText}>Reported: 10:15 AM</Text>
+          {activeAlert ? (
+            <>
+              <View style={styles.priorityBadgeRow}>{renderPriorityBadge(activeAlert.priorityLevel)}</View>
+              <Text style={styles.alertText}>Passenger: {activeAlert.passengerName}</Text>
+              <Text style={styles.alertText}>Item: {activeAlert.item}</Text>
+              <Text style={styles.alertText}>Coach/Vehicle: {activeAlert.vehicleNumber || coachAllotted}</Text>
+              <Text style={styles.alertText}>Location: {activeAlert.location}</Text>
+              <Text style={styles.alertText}>Reported: {activeAlert.reportedTime}</Text>
+            </>
+          ) : (
+            <Text style={styles.alertText}>No active train alerts right now.</Text>
+          )}
           <View style={styles.actionRow}>
             <TouchableOpacity
               style={[styles.actionButton, styles.actionButtonSecondary]}
@@ -1922,6 +2045,7 @@ const AppContent = () => {
     const displayEmail = officialEmail.trim() || "Not set";
     const displayProfessionalId = professionalId.trim() || "RPF-CH-11456";
     const displayJurisdiction = jurisdiction.trim() || "Chennai Central Zone";
+    const activeAlert = officialComplaints[0] || null;
 
     return (
       <View>
@@ -1940,7 +2064,7 @@ const AppContent = () => {
                 color="#1E40AF"
                 style={styles.notificationIcon}
               />
-              <Text style={styles.notificationText}>2</Text>
+              <Text style={styles.notificationText}>{officialComplaints.length}</Text>
             </View>
           </View>
           <View style={styles.authorityMetaRow}>
@@ -2006,12 +2130,19 @@ const AppContent = () => {
         </View>
 
         <View style={styles.alertCard}>
-          <Text style={styles.alertTitle}>🚨 HIGH PRIORITY ALERT</Text>
-          <Text style={styles.alertText}>Item: Laptop</Text>
-          <Text style={styles.alertText}>Location: Train 12631 - S3</Text>
-          <Text style={styles.alertText}>Escalated by: TTR</Text>
-          <Text style={styles.alertText}>Reason: Possible theft</Text>
-          <Text style={styles.alertText}>Reported: 10:30 AM</Text>
+          <Text style={styles.alertTitle}>🚨 PRIORITY ALERT</Text>
+          {activeAlert ? (
+            <>
+              <View style={styles.priorityBadgeRow}>{renderPriorityBadge(activeAlert.priorityLevel)}</View>
+              <Text style={styles.alertText}>Item: {activeAlert.item}</Text>
+              <Text style={styles.alertText}>Passenger: {activeAlert.passengerName}</Text>
+              <Text style={styles.alertText}>Location: {activeAlert.location}</Text>
+              <Text style={styles.alertText}>Coach/Vehicle: {activeAlert.vehicleNumber}</Text>
+              <Text style={styles.alertText}>Reported: {activeAlert.reportedTime}</Text>
+            </>
+          ) : (
+            <Text style={styles.alertText}>No active train alerts right now.</Text>
+          )}
           <View style={styles.actionRow}>
             <TouchableOpacity
               style={[styles.actionButton, styles.actionButtonPrimary]}
@@ -2091,6 +2222,7 @@ const AppContent = () => {
     const displayRole = specificRole || "Police";
     const displayJurisdiction = jurisdiction.trim() || "Trichy";
     const displayStation = "Trichy Junction";
+    const activeAlert = officialComplaints[0] || null;
 
     return (
       <View>
@@ -2107,7 +2239,7 @@ const AppContent = () => {
                 color="#B91C1C"
                 style={styles.notificationIcon}
               />
-              <Text style={styles.notificationText}>1</Text>
+              <Text style={styles.notificationText}>{officialComplaints.length}</Text>
             </View>
           </View>
           <View style={styles.authorityMetaRow}>
@@ -2181,11 +2313,18 @@ const AppContent = () => {
 
         <View style={styles.alertCard}>
           <Text style={styles.alertTitle}>🚨 LEGAL CASE ALERT</Text>
-          <Text style={styles.alertText}>Item: Passport</Text>
-          <Text style={styles.alertText}>Train: 12631</Text>
-          <Text style={styles.alertText}>Station: Trichy</Text>
-          <Text style={styles.alertText}>Escalated by: RPF</Text>
-          <Text style={styles.alertText}>Case ID: SG-2026-108</Text>
+          {activeAlert ? (
+            <>
+              <View style={styles.priorityBadgeRow}>{renderPriorityBadge(activeAlert.priorityLevel)}</View>
+              <Text style={styles.alertText}>Item: {activeAlert.item}</Text>
+              <Text style={styles.alertText}>Passenger: {activeAlert.passengerName}</Text>
+              <Text style={styles.alertText}>Station/Location: {activeAlert.location}</Text>
+              <Text style={styles.alertText}>Vehicle: {activeAlert.vehicleNumber}</Text>
+              <Text style={styles.alertText}>Reported: {activeAlert.reportedTime}</Text>
+            </>
+          ) : (
+            <Text style={styles.alertText}>No active train alerts right now.</Text>
+          )}
           <View style={styles.actionRow}>
             <TouchableOpacity
               style={[styles.actionButton, styles.actionButtonPrimary]}
@@ -4406,6 +4545,42 @@ const styles = StyleSheet.create({
   alertText: {
     color: "#7F1D1D",
     marginBottom: 4,
+  },
+  priorityBadgeRow: {
+    marginBottom: 8,
+  },
+  priorityBadge: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    marginBottom: 2,
+  },
+  priorityBadgeHigh: {
+    backgroundColor: "#FEE2E2",
+    borderColor: "#FCA5A5",
+  },
+  priorityBadgeMedium: {
+    backgroundColor: "#FEF9C3",
+    borderColor: "#FDE047",
+  },
+  priorityBadgeLow: {
+    backgroundColor: "#F8FAFC",
+    borderColor: "#CBD5E1",
+  },
+  priorityBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  priorityTextHigh: {
+    color: "#B91C1C",
+  },
+  priorityTextMedium: {
+    color: "#92400E",
+  },
+  priorityTextLow: {
+    color: "#334155",
   },
   actionRow: {
     flexDirection: "row",
