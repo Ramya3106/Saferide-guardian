@@ -24,7 +24,7 @@ import { getApiBase } from "./apiConfig";
 const API_BASE = getApiBase();
 const AnimatedIonicon = Animated.createAnimatedComponent(Ionicons);
 
-const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
+const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUserRole, onLogout }) => {
   const iconShakeValue = useRef(new Animated.Value(0)).current;
   const iconShakeLoopRef = useRef(null);
   const screenFadeAnim = useRef(new Animated.Value(0)).current;
@@ -151,6 +151,12 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
   const [selectedTrackingComplaint, setSelectedTrackingComplaint] =
     useState(null);
   const [trackingData, setTrackingData] = useState(null);
+
+  const requestHeaders = (extra = {}) => ({
+    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+    "X-User-Role": authUserRole || "Passenger",
+    ...extra,
+  });
 
   // Transport selection
   const [transportType, setTransportType] = useState(null); // 'train', 'car', 'bus', 'auto'
@@ -300,9 +306,10 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
   const fetchActiveJourney = async () => {
     try {
       const response = await axios.get(`${API_BASE}/passenger/dashboard`, {
-        headers: { "X-User-Email": userEmail },
+        headers: requestHeaders({ "X-User-Email": userEmail }),
       });
-      setActiveJourney(response.data.journey || null);
+      const payload = response.data?.data || response.data || {};
+      setActiveJourney(payload.journey || null);
     } catch (error) {
       console.log("Error fetching journey:", error.message);
     }
@@ -313,9 +320,10 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE}/passenger/complaints`, {
-        headers: { "X-User-Email": userEmail },
+        headers: requestHeaders({ "X-User-Email": userEmail }),
       });
-      setComplaints(response.data.complaints || []);
+      const payload = response.data?.data || response.data || {};
+      setComplaints(payload.complaints || []);
     } catch (error) {
       console.log("Error fetching complaints:", error.message);
     } finally {
@@ -333,10 +341,11 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
       const response = await axios.get(
         `${API_BASE}/passenger/tracking/${complaintId}`,
         {
-          headers: { "X-User-Email": userEmail },
+          headers: requestHeaders({ "X-User-Email": userEmail }),
         },
       );
-      const nextTracking = response.data.tracking || null;
+      const payload = response.data?.data || response.data || {};
+      const nextTracking = payload.tracking || null;
       setTrackingData(nextTracking);
       return nextTracking;
     } catch (error) {
@@ -382,13 +391,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
 
   const handleOpenLiveTracking = async (complaint) => {
     setSelectedTrackingComplaint(complaint);
-    const nextTracking = await fetchTrackingData(complaint?._id);
-
-    if (nextTracking?.liveLocationAvailable) {
-      await openDriverLiveMap(nextTracking);
-      return;
-    }
-
+    await fetchTrackingData(complaint?._id);
     setShowTrackingModal(true);
   };
 
@@ -461,14 +464,15 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
           photoUri,
         },
         {
-          headers: {
+          headers: requestHeaders({
             "X-User-Email": userEmail,
             "X-User-Name": userName,
-          },
+          }),
         },
       );
 
-      const createdComplaint = response.data.complaint;
+      const payload = response.data?.data || response.data || {};
+      const createdComplaint = payload.complaint;
       setCurrentComplaint(createdComplaint);
       setComplaints((prev) => [createdComplaint, ...prev]);
       setSelectedTrackingComplaint(createdComplaint);
@@ -525,7 +529,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         `${API_BASE}/passenger/gps`,
         { enabled: !gpsEnabled },
         {
-          headers: { "X-User-Email": userEmail },
+          headers: requestHeaders({ "X-User-Email": userEmail }),
         },
       );
     } catch (error) {
@@ -1255,7 +1259,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                   Complaint ID: {selectedTrackingComplaint.complaintId || selectedTrackingComplaint._id?.substring(0, 10)}
                 </Text>
                 <Text style={styles.trackingMeta}>
-                  Status: {selectedTrackingComplaint.status || "Submitted"}
+                  Status: {trackingData?.status || selectedTrackingComplaint.status || "Submitted"}
                 </Text>
                 <Text style={styles.trackingMeta}>
                   Item: {selectedTrackingComplaint.itemType} • {selectedTrackingComplaint.vehicleNumber}
@@ -1267,8 +1271,71 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
                   Routed to: {selectedTrackingComplaint.submitAuthority || "On-duty officers"}
                 </Text>
                 <Text style={styles.trackingMeta}>
-                  Priority: {selectedTrackingComplaint.priority || "Normal"}
+                  Priority: {trackingData?.priority || selectedTrackingComplaint.priority || "Normal"}
                 </Text>
+                {trackingData?.staffResponseStatus ? (
+                  <Text style={styles.trackingMeta}>
+                    Officer update: {trackingData.staffResponseStatus}
+                  </Text>
+                ) : null}
+                {trackingData?.seenAt ? (
+                  <Text style={styles.trackingMeta}>
+                    Seen at: {new Date(trackingData.seenAt).toLocaleString()}
+                  </Text>
+                ) : null}
+                {trackingData?.acknowledgedAt ? (
+                  <Text style={styles.trackingMeta}>
+                    Acknowledged at: {new Date(trackingData.acknowledgedAt).toLocaleString()}
+                  </Text>
+                ) : null}
+                {trackingData?.officerNotes ? (
+                  <Text style={styles.trackingMeta}>Officer notes: {trackingData.officerNotes}</Text>
+                ) : null}
+                {trackingData?.coachRemark ? (
+                  <Text style={styles.trackingMeta}>Coach remark: {trackingData.coachRemark}</Text>
+                ) : null}
+                {trackingData?.stationRemark ? (
+                  <Text style={styles.trackingMeta}>Station remark: {trackingData.stationRemark}</Text>
+                ) : null}
+                {trackingData?.meetingPoint ? (
+                  <Text style={styles.trackingMeta}>Meeting point: {trackingData.meetingPoint}</Text>
+                ) : null}
+                {trackingData?.meetingTime ? (
+                  <Text style={styles.trackingMeta}>Meeting time: {trackingData.meetingTime}</Text>
+                ) : null}
+                {trackingData?.liveLocationAvailable && trackingData?.staffLocation ? (
+                  <View>
+                    <Text style={[styles.trackingMeta, { fontWeight: "700", marginTop: 6 }]}>Live officer location</Text>
+                    <Text style={styles.trackingMeta}>
+                      Latitude: {trackingData.staffLocation.latitude}
+                    </Text>
+                    <Text style={styles.trackingMeta}>
+                      Longitude: {trackingData.staffLocation.longitude}
+                    </Text>
+                    <Text style={styles.trackingMeta}>
+                      Updated: {trackingData.staffLocation.lastUpdated ? new Date(trackingData.staffLocation.lastUpdated).toLocaleTimeString() : "--"}
+                    </Text>
+                    <TouchableOpacity
+                      style={[styles.liveTrackingButton, { marginTop: 8 }]}
+                      onPress={() => openDriverLiveMap(trackingData)}
+                    >
+                      <Ionicons name="navigate" size={16} color="#FFFFFF" />
+                      <Text style={styles.liveTrackingButtonText}>Open live map</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+                {Array.isArray(trackingData?.updates) && trackingData.updates.length > 0 ? (
+                  <View>
+                    <Text style={[styles.trackingMeta, { fontWeight: "700", marginTop: 6 }]}>Latest timeline</Text>
+                    {trackingData.updates.slice(0, 5).map((entry, index) => (
+                      <Text key={`${entry.timestamp || "update"}-${index}`} style={styles.trackingMeta}>
+                        - {entry.text || "Status updated"}
+                        {entry.staffName ? ` (${entry.staffName})` : ""}
+                        {entry.timestamp ? ` at ${new Date(entry.timestamp).toLocaleTimeString()}` : ""}
+                      </Text>
+                    ))}
+                  </View>
+                ) : null}
                 <Text style={styles.trackingMeta}>
                   Next step: Officers on duty will review, reply, and coordinate recovery.
                 </Text>
