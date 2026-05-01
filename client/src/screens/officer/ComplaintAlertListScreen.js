@@ -8,7 +8,10 @@ const ComplaintAlertListScreen = ({ alerts, selectedId, onSelect }) => {
       <ScrollView contentContainerStyle={styles.list}>
         {alerts.length === 0 ? (
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyText}>No active complaint alerts.</Text>
+            <Text style={styles.emptyTitle}>No Complaints Assigned</Text>
+            <Text style={styles.emptyText}>
+              You don't have any complaints assigned yet. Check back later or contact your supervisor for new assignments.
+            </Text>
           </View>
         ) : (
           alerts.map((alert) => {
@@ -93,8 +96,16 @@ const styles = StyleSheet.create({
     borderColor: "#CBD5E1",
     borderRadius: 12,
   },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0F172A",
+    marginBottom: 6,
+  },
   emptyText: {
     color: "#475569",
+    fontSize: 13,
+    lineHeight: 18,
   },
 });
 
