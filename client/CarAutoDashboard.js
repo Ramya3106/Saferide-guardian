@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   BackHandler,
   View,
@@ -21,11 +21,20 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApiBase } from "./apiConfig";
 import * as Location from "expo-location";
 import * as ImagePicker from "expo-image-picker";
 
 const API_BASE = getApiBase();
+const DAILY_SUMMARY_STORAGE_PREFIX = "carAutoDailySummary";
+
+const getLocalDateKey = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 const AnimatedIonicon = Animated.createAnimatedComponent(Ionicons);
 
@@ -105,12 +114,143 @@ const CarAutoDashboard = ({ onLogout }) => {
   const [meetingPoint, setMeetingPoint] = useState("");
   const [pickupTime, setPickupTime] = useState("");
   const [isShareingLocation, setIsShareingLocation] = useState(false);
-  const [recoveryStats, setRecoveryStats] = useState({
-    totalToday: 12,
-    recovered: 8,
-    pending: 3,
-    successRate: 67,
-  });
+  const [dailyRecoveredCount, setDailyRecoveredCount] = useState(0);
+  const [currentDateKey, setCurrentDateKey] = useState(() => getLocalDateKey());
+  const seenComplaintIdsRef = useRef(new Set());
+  const priorityPulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(priorityPulse, {
+          toValue: 0.35,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(priorityPulse, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+
+    return () => loop.stop();
+  }, [priorityPulse]);
+
+  const getPriorityMeta = (priorityLevel) => {
+    if (priorityLevel === "HIGH") {
+      return {
+        label: "HIGH",
+        dot: "🔴",
+        containerStyle: styles.priorityBadgeHigh,
+        textStyle: styles.priorityTextHigh,
+      };
+    }
+
+    if (priorityLevel === "MEDIUM") {
+      return {
+        label: "MEDIUM",
+        dot: "🟡",
+        containerStyle: styles.priorityBadgeMedium,
+        textStyle: styles.priorityTextMedium,
+      };
+    }
+
+    return {
+      label: "LOW",
+      dot: "⚪",
+      containerStyle: styles.priorityBadgeLow,
+      textStyle: styles.priorityTextLow,
+    };
+  };
+
+  const renderPriorityBadge = (priorityLevel) => {
+    const meta = getPriorityMeta(priorityLevel);
+    const badge = (
+      <View style={[styles.priorityBadge, meta.containerStyle]}>
+        <Text style={[styles.priorityBadgeText, meta.textStyle]}>
+          {meta.dot} {meta.label}
+        </Text>
+      </View>
+    );
+
+    if (priorityLevel === "HIGH") {
+      return <Animated.View style={{ opacity: priorityPulse }}>{badge}</Animated.View>;
+    }
+
+    return badge;
+  };
+
+  const getDailySummaryStorageKey = (dateKey = currentDateKey, modeKey = vehicleType || "unselected") => {
+    return `${DAILY_SUMMARY_STORAGE_PREFIX}:${modeKey}:${dateKey}`;
+  };
+
+  const loadDailySummary = async (dateKey = currentDateKey, modeKey = vehicleType || "unselected") => {
+    try {
+      const storageKey = getDailySummaryStorageKey(dateKey, modeKey);
+      const storedValue = await AsyncStorage.getItem(storageKey);
+      const parsedValue = storedValue ? JSON.parse(storedValue) : null;
+
+      if (parsedValue) {
+        seenComplaintIdsRef.current = new Set(parsedValue.seenComplaintIds || []);
+        setDailyRecoveredCount(parsedValue.recoveredCount || 0);
+      } else {
+        seenComplaintIdsRef.current = new Set();
+        setDailyRecoveredCount(0);
+      }
+    } catch (error) {
+      console.log("Error loading daily summary:", error?.message);
+    }
+  };
+
+  const saveDailySummary = async (nextSummary, dateKey = currentDateKey, modeKey = vehicleType || "unselected") => {
+    try {
+      const storageKey = getDailySummaryStorageKey(dateKey, modeKey);
+      await AsyncStorage.setItem(storageKey, JSON.stringify(nextSummary));
+    } catch (error) {
+      console.log("Error saving daily summary:", error?.message);
+    }
+  };
+
+  useEffect(() => {
+    loadDailySummary(currentDateKey, vehicleType || "unselected");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicleType, currentDateKey]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const nextDateKey = getLocalDateKey();
+      if (nextDateKey !== currentDateKey) {
+        setCurrentDateKey(nextDateKey);
+      }
+    }, 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [currentDateKey]);
+
+  const dailySummary = useMemo(() => {
+    const totalToday = seenComplaintIdsRef.current.size;
+    const pending = complaints.length;
+    const successRate =
+      totalToday > 0 ? Math.round((dailyRecoveredCount / totalToday) * 100) : 0;
+
+    return {
+      totalToday,
+      recovered: dailyRecoveredCount,
+      pending,
+      successRate,
+    };
+  }, [complaints.length, dailyRecoveredCount]);
+
+  useEffect(() => {
+    saveDailySummary({
+      seenComplaintIds: Array.from(seenComplaintIdsRef.current),
+      recoveredCount: dailyRecoveredCount,
+    }, currentDateKey, vehicleType || "unselected");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dailyRecoveredCount, currentDateKey, vehicleType]);
 
   // Handle vehicle type selection
   const handleVehicleSelection = (type) => {
@@ -205,6 +345,7 @@ const CarAutoDashboard = ({ onLogout }) => {
         minute: "2-digit",
       }),
       status: complaint?.status || "pending",
+      priorityLevel: complaint?.priorityLevel || "LOW",
     };
   };
 
@@ -219,7 +360,17 @@ const CarAutoDashboard = ({ onLogout }) => {
         params: { staffRole },
       });
       const alerts = response?.data?.alerts || [];
-      setComplaints(alerts.map(normalizeComplaint));
+      const normalizedAlerts = alerts.map(normalizeComplaint);
+      normalizedAlerts.forEach((alert) => {
+        if (alert?.id) {
+          seenComplaintIdsRef.current.add(String(alert.id));
+        }
+      });
+      setComplaints(normalizedAlerts);
+      saveDailySummary({
+        seenComplaintIds: Array.from(seenComplaintIdsRef.current),
+        recoveredCount: dailyRecoveredCount,
+      }, currentDateKey, vehicleType || "unselected");
     } catch (error) {
       console.log("Error fetching car/auto live complaints:", error.message);
     }
@@ -318,14 +469,7 @@ const CarAutoDashboard = ({ onLogout }) => {
   // Handle complete handover
   const handleCompleteHandover = () => {
     if (acceptedComplaint) {
-      setRecoveryStats({
-        ...recoveryStats,
-        recovered: recoveryStats.recovered + 1,
-        pending: recoveryStats.pending - 1,
-        successRate: Math.round(
-          ((recoveryStats.recovered + 1) / recoveryStats.totalToday) * 100
-        ),
-      });
+      setDailyRecoveredCount((prevCount) => prevCount + 1);
       setComplaints(
         complaints.filter((c) => c.id !== acceptedComplaint.id)
       );
@@ -459,7 +603,9 @@ const CarAutoDashboard = ({ onLogout }) => {
 
         <View style={styles.formContainer}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>🚘 Vehicle Number *</Text>
+            <Text style={styles.label}>
+              {vehicleType === "auto" ? "🛺 Vehicle Number *" : "🚘 Vehicle Number *"}
+            </Text>
             <TextInput
               style={styles.input}
               placeholder="TN-01-AB-1234"
@@ -606,7 +752,9 @@ const CarAutoDashboard = ({ onLogout }) => {
 
           {/* Active Duty Card */}
           <View style={styles.dutyCard}>
-            <Text style={styles.cardTitle}>🚘 Active Duty</Text>
+            <Text style={styles.cardTitle}>
+              {vehicleType === "auto" ? "🛺 Active Duty" : "🚘 Active Duty"}
+            </Text>
             <View style={styles.dutyInfo}>
               <View style={styles.dutyRow}>
                 <Text style={styles.dutyLabel}>Vehicle:</Text>
@@ -646,6 +794,9 @@ const CarAutoDashboard = ({ onLogout }) => {
                     <View style={styles.complaintHeader}>
                       <Text style={styles.complaintTitle}>⚠ Lost Item Alert</Text>
                       <Text style={styles.complaintTime}>{item.time}</Text>
+                    </View>
+                    <View style={styles.priorityBadgeRow}>
+                      {renderPriorityBadge(item.priorityLevel)}
                     </View>
                     <Text style={styles.complaintDetail}>
                       👤 Passenger: <Text style={styles.bold}>{item.passengerName}</Text>
@@ -687,19 +838,19 @@ const CarAutoDashboard = ({ onLogout }) => {
             <Text style={styles.sectionTitle}>📊 Daily Summary</Text>
             <View style={styles.summaryGrid}>
               <View style={styles.summaryCard}>
-                <Text style={styles.summaryNumber}>{recoveryStats.totalToday}</Text>
+                <Text style={styles.summaryNumber}>{dailySummary.totalToday}</Text>
                 <Text style={styles.summaryLabel}>Today</Text>
               </View>
               <View style={styles.summaryCard}>
-                <Text style={styles.summaryNumber}>{recoveryStats.recovered}</Text>
+                <Text style={styles.summaryNumber}>{dailySummary.recovered}</Text>
                 <Text style={styles.summaryLabel}>Recovered</Text>
               </View>
               <View style={styles.summaryCard}>
-                <Text style={styles.summaryNumber}>{recoveryStats.pending}</Text>
+                <Text style={styles.summaryNumber}>{dailySummary.pending}</Text>
                 <Text style={styles.summaryLabel}>Pending</Text>
               </View>
               <View style={styles.summaryCard}>
-                <Text style={styles.summaryNumber}>{recoveryStats.successRate}%</Text>
+                <Text style={styles.summaryNumber}>{dailySummary.successRate}%</Text>
                 <Text style={styles.summaryLabel}>Success</Text>
               </View>
             </View>
@@ -1241,6 +1392,41 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#9A3412",
     fontWeight: "500",
+  },
+  priorityBadgeRow: {
+    marginBottom: 8,
+  },
+  priorityBadge: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+  },
+  priorityBadgeHigh: {
+    backgroundColor: "#FEE2E2",
+    borderColor: "#FCA5A5",
+  },
+  priorityBadgeMedium: {
+    backgroundColor: "#FEF9C3",
+    borderColor: "#FDE047",
+  },
+  priorityBadgeLow: {
+    backgroundColor: "#F8FAFC",
+    borderColor: "#CBD5E1",
+  },
+  priorityBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  priorityTextHigh: {
+    color: "#B91C1C",
+  },
+  priorityTextMedium: {
+    color: "#92400E",
+  },
+  priorityTextLow: {
+    color: "#334155",
   },
   complaintDetail: {
     fontSize: 13,
