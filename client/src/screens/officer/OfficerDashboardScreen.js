@@ -62,6 +62,7 @@ const OfficerDashboardScreen = ({
 
   const buildHeaders = (extra = {}) => ({
     ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+    "X-User-Role": "TTR/RPF/Police",
     ...extra,
   });
 
@@ -320,11 +321,40 @@ const OfficerDashboardScreen = ({
 
         {activeView === "dashboard" ? (
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Officer Dashboard</Text>
-            <Text style={styles.sectionMeta}>Active alerts: {alerts.length}</Text>
-            <Text style={styles.sectionMeta}>Current unit: {dutyUnit}</Text>
-            <Text style={styles.sectionMeta}>Duty mode: {onDuty ? "ON" : "OFF"}</Text>
-            <Text style={styles.sectionMeta}>Selected complaint: {selectedComplaint?.id || "None"}</Text>
+            <Text style={styles.sectionTitle}>Your Profile</Text>
+            <View style={styles.profileSection}>
+              <Text style={styles.profileLabel}>Officer Name:</Text>
+              <Text style={styles.profileValue}>{officerName}</Text>
+              
+              <Text style={styles.profileLabel}>Email:</Text>
+              <Text style={styles.profileValue}>{officerEmail || "Not provided"}</Text>
+              
+              <Text style={styles.profileLabel}>Professional ID:</Text>
+              <Text style={styles.profileValue}>{professionalId || "Not provided"}</Text>
+              
+              <Text style={styles.profileLabel}>Role:</Text>
+              <Text style={styles.profileValue}>{dutyUnit}</Text>
+              
+              <Text style={styles.profileLabel}>Duty Status:</Text>
+              <Text style={[styles.profileValue, onDuty ? styles.onDutyText : styles.offDutyText]}>
+                {onDuty ? "ON DUTY" : "OFF DUTY"}
+              </Text>
+            </View>
+
+            {alerts.length === 0 ? (
+              <View style={styles.emptyStateSection}>
+                <Text style={styles.emptyStateTitle}>No Complaints Assigned</Text>
+                <Text style={styles.emptyStateMessage}>
+                  You don't have any complaints assigned yet. Check back later or contact your supervisor for new assignments.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.complaintsSummarySection}>
+                <Text style={styles.complaintsSummaryTitle}>Your Assignments</Text>
+                <Text style={styles.complaintsSummaryCount}>Active Complaints: {alerts.length}</Text>
+                <Text style={styles.complaintsSummaryHint}>Go to "Complaint Alert List" to view details</Text>
+              </View>
+            )}
           </View>
         ) : null}
 
@@ -434,6 +464,82 @@ const styles = StyleSheet.create({
   sectionMeta: {
     fontSize: 13,
     color: "#334155",
+  },
+  profileSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#E2E8F0",
+    gap: 10,
+  },
+  profileLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#475569",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  profileValue: {
+    fontSize: 14,
+    color: "#0F172A",
+    fontWeight: "500",
+    marginBottom: 8,
+  },
+  onDutyText: {
+    color: "#16A34A",
+    fontWeight: "700",
+  },
+  offDutyText: {
+    color: "#DC2626",
+    fontWeight: "700",
+  },
+  emptyStateSection: {
+    marginTop: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 12,
+    backgroundColor: "#F0F9FF",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E0F2FE",
+    alignItems: "center",
+  },
+  emptyStateTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0369A1",
+    marginBottom: 8,
+  },
+  emptyStateMessage: {
+    fontSize: 12,
+    color: "#0C4A6E",
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  complaintsSummarySection: {
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: "#F0FDF4",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#DCFCE7",
+  },
+  complaintsSummaryTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#15803D",
+    marginBottom: 6,
+  },
+  complaintsSummaryCount: {
+    fontSize: 13,
+    color: "#166534",
+    fontWeight: "600",
+  },
+  complaintsSummaryHint: {
+    fontSize: 12,
+    color: "#4B5563",
+    marginTop: 6,
+    fontStyle: "italic",
   },
   error: {
     color: "#B91C1C",
