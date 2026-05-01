@@ -2,27 +2,56 @@ const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
 const Complaint = require("../models/Complaint");
+const ComplaintReply = require("../models/ComplaintReply");
 const Journey = require("../models/Journey");
 const User = require("../models/User");
+const { success, failure } = require("../utils/apiResponse");
+const { logAction } = require("../utils/actionLogger");
 const { routeComplaintToActiveOfficers } = require("../services/complaintRoutingService");
-const { USE_PROTOTYPE_DATA } = require("../config/prototypeMode");
 const {
-  addPrototypeRecord,
-  appendComplaintFromMongo,
-  appendHandoverRecord,
-  getPrototypeSummary,
-  listPrototypeData,
-  normalizeEntity,
-} = require("../mock/prototypeDataStore");
-const {
-  DEMO_DUTY_ROSTER,
   inferDutyUnit,
   normalizeDutyUnit,
   toDutyOfficer,
 } = require("../utils/dutyRoster");
+const {
+  isValidStatusTransition,
+  getValidNextStatuses,
+  isActiveStatus,
+  getStatusDescription,
+} = require("../utils/complaintStatusFlow");
 
 // Middleware to extract user email from headers
 const getUserEmail = (req) => req.headers["x-user-email"] || "";
+
+// Middleware to get user role from headers
+const getUserRole = (req) => {
+  const role = req.headers["x-user-role"] || req.auth?.role || "";
+  return String(role).trim();
+};
+
+// Role validation middleware for Passenger routes
+const requirePassengerRole = (req, res, next) => {
+  const userRole = getUserRole(req);
+  if (userRole !== "Passenger") {
+    return res.status(403).json({
+      message: "Passenger role required to access this resource",
+      error: "INSUFFICIENT_ROLE"
+    });
+  }
+  return next();
+};
+
+// Role validation middleware for Officer routes
+const requireOfficerRole = (req, res, next) => {
+  const userRole = getUserRole(req);
+  if (userRole !== "TTR/RPF/Police") {
+    return res.status(403).json({
+      message: "Officer role required to access this resource",
+      error: "INSUFFICIENT_ROLE"
+    });
+  }
+  return next();
+};
 
 const resolveTransportFilters = (staffRole) => {
   switch ((staffRole || "").toLowerCase()) {
@@ -123,11 +152,7 @@ const resolveCurrentOfficer = async (req) => {
     }
   }
 
-  const demoOfficer = DEMO_DUTY_ROSTER.find(
-    (officer) => officer.staffEmail === officerIdentity.email || officer.professionalId === officerIdentity.professionalId || officer.dutyUnit === officerIdentity.dutyUnit,
-  );
-
-  return demoOfficer ? toDutyOfficer(demoOfficer, { isDemo: true }) : null;
+  return null;
 };
 
 const buildOfficerRecipient = (officer) => {
@@ -177,37 +202,21 @@ const staffTimelineEntry = (staffName, text, status) => ({
   timestamp: new Date(),
 });
 
-router.get("/prototype-data", (req, res) => {
-  return res.json({
-    mode: USE_PROTOTYPE_DATA ? "prototype" : "integration-ready",
-    note:
-      "Prototype dataset uses dummy values only and is isolated from future official integration.",
-    data: listPrototypeData(),
-  });
-});
-
-router.get("/prototype-data/summary", (req, res) => {
-  return res.json({
-    mode: USE_PROTOTYPE_DATA ? "prototype" : "integration-ready",
-    summary: getPrototypeSummary(),
-  });
-});
-
-router.post("/prototype-data/:entity", (req, res) => {
-  const entity = normalizeEntity(req.params.entity);
-  if (!entity) {
-    return res.status(400).json({ message: "Unsupported prototype entity." });
+const persistComplaintReply = async ({ complaint, currentOfficer, message, statusUpdate }) => {
+  if (!complaint || !currentOfficer) {
+    return null;
   }
 
-  const payload = req.body || {};
-  const record = addPrototypeRecord(entity, payload);
-  return res.status(201).json({
-    mode: USE_PROTOTYPE_DATA ? "prototype" : "integration-ready",
-    message: `${entity} record saved for prototype testing`,
-    record,
-    summary: getPrototypeSummary(),
+  return ComplaintReply.create({
+    complaintId: complaint._id,
+    officerId: String(currentOfficer.staffId || currentOfficer.staffEmail || "unknown-officer"),
+    officerRole: String(currentOfficer.dutyUnit || currentOfficer.staffRole || "TTR"),
+    message: String(message || "Status update").trim(),
+    statusUpdate: String(statusUpdate || complaint.status || "Seen").trim(),
+    repliedAt: new Date(),
   });
-});
+};
+
 
 // GET /api/passenger/dashboard - Get active journey
 router.get("/dashboard", async (req, res) => {
@@ -265,9 +274,7 @@ router.post("/complaints", async (req, res) => {
     } = req.body;
 
     if (!vehicleNumber || !itemType || !description || !transportType) {
-      return res.status(400).json({
-        message: "Missing required fields",
-      });
+      return failure(res, 400, "Missing required fields", "VALIDATION_ERROR");
     }
 
     // Generate unique QR code ID
@@ -326,10 +333,12 @@ router.post("/complaints", async (req, res) => {
     savedComplaint.complaintId = savedComplaint.complaintId || complaintId;
     savedComplaint.assignedStaff = routedOfficers;
     savedComplaint.staffNotified = routedOfficers.length > 0;
-    savedComplaint.staffId = routedOfficers[0]?.staffId || "DEMO-DUTY-001";
-    savedComplaint.staffName = routedOfficers[0]?.staffName || submitAuthorityValue || "Duty Officer";
+    savedComplaint.staffId = routedOfficers[0]?.staffId || null;
+    savedComplaint.staffName = routedOfficers[0]?.staffName || submitAuthorityValue || null;
+    savedComplaint.assignedToUnit = routedOfficers.length > 0 ? (routedOfficers[0]?.dutyUnit || null) : null;
+    savedComplaint.assignedAt = routedOfficers.length > 0 ? new Date() : null;
     savedComplaint.staffEta = routedOfficers.length > 0 ? "6 mins" : "Pending assignment";
-    savedComplaint.status = "Submitted";
+    savedComplaint.status = routedOfficers.length > 0 ? "Staff Notified" : "Submitted";
     savedComplaint.staffResponseStatus = routedOfficers.length > 0 ? "Pending response" : "Awaiting duty roster";
     savedComplaint.dispatchMode = routingResult?.escalationLevel || savedComplaint.dispatchMode;
     savedComplaint.alertPriorityReason = routingResult?.routingReason || savedComplaint.alertPriorityReason;
@@ -338,18 +347,27 @@ router.post("/complaints", async (req, res) => {
     await savedComplaint.save();
     console.log("✅ Second save successful");
 
-    if (USE_PROTOTYPE_DATA) {
-      appendComplaintFromMongo(savedComplaint.toObject ? savedComplaint.toObject() : savedComplaint);
-    }
+    await logAction({
+      action: "COMPLAINT_CREATED_AND_ROUTED",
+      actorType: "PASSENGER",
+      actorId: userEmail,
+      entityType: "Complaint",
+      entityId: String(savedComplaint._id),
+      complaintId: savedComplaint.complaintId,
+      metadata: {
+        priority,
+        notifiedOfficers: routedOfficers.length,
+        dispatchMode: savedComplaint.dispatchMode,
+      },
+    });
 
-    res.status(201).json({
+    return success(res, 201, "Complaint created successfully", {
       complaint: savedComplaint,
-      message: "Complaint created successfully",
     });
   } catch (error) {
     console.error("❌ Error creating complaint:", error?.message);
     console.error("Full error:", error);
-    res.status(500).json({ message: "Error creating complaint: " + error?.message });
+    return failure(res, 500, "Error creating complaint", "INTERNAL_ERROR", error?.message);
   }
 });
 
@@ -373,8 +391,8 @@ router.get("/complaints", async (req, res) => {
   }
 });
 
-// GET /api/passenger/live-alerts - Live complaints for staff dashboards
-router.get("/live-alerts", async (req, res) => {
+// GET /api/passenger/live-alerts - Live complaints for staff dashboards (Officer role only)
+router.get("/live-alerts", requireOfficerRole, async (req, res) => {
   try {
     const { staffRole } = req.query;
     const transportFilters = resolveTransportFilters(staffRole);
@@ -385,7 +403,7 @@ router.get("/live-alerts", async (req, res) => {
         const user = await User.findOne({
           email: officerIdentity.email,
           role: "TTR/RPF/Police",
-        }).select("email name professionalId role onDutyStatus dutyCheckInAt dutyDesk dutyUnit dutyStation dutyNote jurisdiction");
+        }).select("_id email name professionalId role onDutyStatus dutyCheckInAt dutyDesk dutyUnit dutyStation dutyNote jurisdiction");
 
         if (user) {
           return toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
@@ -396,18 +414,14 @@ router.get("/live-alerts", async (req, res) => {
         const user = await User.findOne({
           professionalId: officerIdentity.professionalId,
           role: "TTR/RPF/Police",
-        }).select("email name professionalId role onDutyStatus dutyCheckInAt dutyDesk dutyUnit dutyStation dutyNote jurisdiction");
+        }).select("_id email name professionalId role onDutyStatus dutyCheckInAt dutyDesk dutyUnit dutyStation dutyNote jurisdiction");
 
         if (user) {
           return toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
         }
       }
 
-      const demoOfficer = DEMO_DUTY_ROSTER.find(
-        (officer) => officer.staffEmail === officerIdentity.email || officer.professionalId === officerIdentity.professionalId || officer.dutyUnit === officerIdentity.dutyUnit,
-      );
-
-      return demoOfficer ? toDutyOfficer(demoOfficer, { isDemo: true }) : null;
+      return null;
     })();
 
     if (!currentOfficer || !currentOfficer.onDutyStatus) {
@@ -418,7 +432,10 @@ router.get("/live-alerts", async (req, res) => {
       });
     }
 
+    // Filter complaints assigned specifically to this officer
+    const citizenUserObjectId = currentOfficer.userId ? new mongoose.Types.ObjectId(currentOfficer.userId) : null;
     const query = {
+      assignedTo: citizenUserObjectId,
       transportType: { $in: transportFilters },
       status: {
         $in: [
@@ -445,8 +462,8 @@ router.get("/live-alerts", async (req, res) => {
     }
 
     const complaintList = await Complaint.find(query).sort({ createdAt: -1 });
+    
     const alerts = complaintList
-      .filter((complaint) => complaintMatchesOfficer(complaint, currentOfficer))
       .sort((left, right) => {
         const priorityOrder = { Critical: 0, High: 1, Normal: 2, Low: 3 };
         const leftPriority = priorityOrder[left.priority] ?? 4;
@@ -464,10 +481,14 @@ router.get("/live-alerts", async (req, res) => {
         currentOfficer,
       }));
 
+    const message = alerts.length === 0 
+      ? "No complaints assigned yet. Awaiting assignment." 
+      : "Live alerts retrieved successfully";
+
     res.json({
       alerts,
       officer: currentOfficer,
-      message: "Live alerts retrieved successfully",
+      message,
     });
   } catch (error) {
     console.error("Error fetching live alerts:", error);
@@ -475,21 +496,21 @@ router.get("/live-alerts", async (req, res) => {
   }
 });
 
-router.post("/complaints/:id/staff/respond", async (req, res) => {
+router.post("/complaints/:id/staff/respond", requireOfficerRole, async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
     if (!complaint) {
-      return res.status(404).json({ message: "Complaint not found" });
+      return failure(res, 404, "Complaint not found", "NOT_FOUND");
     }
 
     const currentOfficer = await resolveCurrentOfficer(req);
     if (!currentOfficer || !currentOfficer.onDutyStatus || !complaintMatchesOfficer(complaint, currentOfficer)) {
-      return res.status(403).json({ message: "On-duty officer access required." });
+      return failure(res, 403, "On-duty officer access required.", "OFFICER_OFF_DUTY");
     }
 
     const text = String(req.body?.text || "").trim();
     if (!text) {
-      return res.status(400).json({ message: "Reply text required" });
+      return failure(res, 400, "Reply text required", "VALIDATION_ERROR");
     }
 
     const replyMessage = {
@@ -515,30 +536,47 @@ router.post("/complaints/:id/staff/respond", async (req, res) => {
     complaint.staffEta = req.body?.staffEta || complaint.staffEta || "8 mins";
     await complaint.save();
 
-    if (USE_PROTOTYPE_DATA) {
-      appendComplaintFromMongo(complaint.toObject ? complaint.toObject() : complaint);
-    }
-
-    return res.json({
-      message: "Reply saved successfully",
+    const storedReply = await persistComplaintReply({
       complaint,
+      currentOfficer,
+      message: text,
+      statusUpdate: complaint.status,
+    });
+
+    await logAction({
+      action: "OFFICER_REPLIED_TO_PASSENGER",
+      actorType: "OFFICER",
+      actorId: currentOfficer.staffId || currentOfficer.staffEmail,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      entityType: "Complaint",
+      entityId: String(complaint._id),
+      complaintId: complaint.complaintId || String(complaint._id),
+      metadata: {
+        replyId: storedReply?._id?.toString?.() || null,
+        status: complaint.status,
+      },
+    });
+
+    return success(res, 200, "Reply saved successfully", {
+      complaint,
+      reply: storedReply,
     });
   } catch (error) {
     console.error("Staff respond error:", error.message);
-    return res.status(500).json({ message: "Unable to save reply." });
+    return failure(res, 500, "Unable to save reply.", "INTERNAL_ERROR", error.message);
   }
 });
 
-router.patch("/complaints/:id/staff/acknowledge", async (req, res) => {
+router.patch("/complaints/:id/staff/acknowledge", requireOfficerRole, async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
     if (!complaint) {
-      return res.status(404).json({ message: "Complaint not found" });
+      return failure(res, 404, "Complaint not found", "NOT_FOUND");
     }
 
     const currentOfficer = await resolveCurrentOfficer(req);
     if (!currentOfficer || !currentOfficer.onDutyStatus || !complaintMatchesOfficer(complaint, currentOfficer)) {
-      return res.status(403).json({ message: "On-duty officer access required." });
+      return failure(res, 403, "On-duty officer access required.", "OFFICER_OFF_DUTY");
     }
 
     const action = String(req.body?.action || "Seen").trim();
@@ -573,38 +611,71 @@ router.patch("/complaints/:id/staff/acknowledge", async (req, res) => {
 
     await complaint.save();
 
-    if (USE_PROTOTYPE_DATA) {
-      appendComplaintFromMongo(complaint.toObject ? complaint.toObject() : complaint);
-    }
-
-    return res.json({
-      message: `Complaint ${nextStatus.toLowerCase()} successfully`,
+    const storedReply = await persistComplaintReply({
       complaint,
+      currentOfficer,
+      message: isAcknowledged ? "Complaint acknowledged" : "Complaint seen",
+      statusUpdate: nextStatus,
+    });
+
+    await logAction({
+      action: "OFFICER_ACKNOWLEDGEMENT_UPDATED",
+      actorType: "OFFICER",
+      actorId: currentOfficer.staffId || currentOfficer.staffEmail,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      entityType: "Complaint",
+      entityId: String(complaint._id),
+      complaintId: complaint.complaintId || String(complaint._id),
+      metadata: {
+        replyId: storedReply?._id?.toString?.() || null,
+        status: nextStatus,
+      },
+    });
+
+    return success(res, 200, `Complaint ${nextStatus.toLowerCase()} successfully`, {
+      complaint,
+      reply: storedReply,
     });
   } catch (error) {
     console.error("Staff acknowledge error:", error.message);
-    return res.status(500).json({ message: "Unable to update acknowledgement state." });
+    return failure(res, 500, "Unable to update acknowledgement state.", "INTERNAL_ERROR", error.message);
   }
 });
 
-router.patch("/complaints/:id/staff/status", async (req, res) => {
+router.patch("/complaints/:id/staff/status", requireOfficerRole, async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
     if (!complaint) {
-      return res.status(404).json({ message: "Complaint not found" });
+      return failure(res, 404, "Complaint not found", "NOT_FOUND");
     }
 
     const currentOfficer = await resolveCurrentOfficer(req);
     if (!currentOfficer || !currentOfficer.onDutyStatus || !complaintMatchesOfficer(complaint, currentOfficer)) {
-      return res.status(403).json({ message: "On-duty officer access required." });
+      return failure(res, 403, "On-duty officer access required.", "OFFICER_OFF_DUTY");
     }
 
-    const status = String(req.body?.status || "").trim();
-    if (!status) {
-      return res.status(400).json({ message: "Status required" });
+    const newStatus = String(req.body?.status || "").trim();
+    if (!newStatus) {
+      return failure(res, 400, "Status required", "VALIDATION_ERROR");
     }
 
-    complaint.status = status;
+    // Validate status transition
+    if (!isValidStatusTransition(complaint.status, newStatus)) {
+      const validNextStatuses = getValidNextStatuses(complaint.status);
+      return failure(
+        res,
+        400,
+        `Cannot transition from "${complaint.status}" to "${newStatus}"`,
+        "INVALID_STATUS_TRANSITION",
+        {
+          currentStatus: complaint.status,
+          requestedStatus: newStatus,
+          validNextStatuses,
+        }
+      );
+    }
+
+    complaint.status = newStatus;
     complaint.itemFound = Boolean(req.body?.itemFound ?? complaint.itemFound);
     complaint.meetingScheduled = Boolean(req.body?.meetingScheduled ?? complaint.meetingScheduled);
     complaint.meetingPoint = req.body?.meetingPoint || complaint.meetingPoint || null;
@@ -615,37 +686,57 @@ router.patch("/complaints/:id/staff/status", async (req, res) => {
     complaint.officerNotes = String(req.body?.notes || complaint.officerNotes || "").trim() || complaint.officerNotes || null;
     complaint.coachRemark = String(req.body?.coachRemark || complaint.coachRemark || "").trim() || complaint.coachRemark || null;
     complaint.stationRemark = String(req.body?.stationRemark || complaint.stationRemark || "").trim() || complaint.stationRemark || null;
-    complaint.staffResponseStatus = req.body?.staffResponseStatus || `Status updated to ${status}`;
+    complaint.staffResponseStatus = `Status updated to ${newStatus}`;
     complaint.messages = complaint.messages || [];
     complaint.messages.push(
-      staffTimelineEntry(currentOfficer.staffName, `Status changed to ${status.toLowerCase()}`, currentOfficer),
+      staffTimelineEntry(currentOfficer.staffName, `Status changed to ${newStatus}`, currentOfficer),
     );
     await complaint.save();
 
-    if (USE_PROTOTYPE_DATA) {
-      appendComplaintFromMongo(complaint.toObject ? complaint.toObject() : complaint);
-    }
-
-    return res.json({
-      message: "Status updated successfully",
+    const storedReply = await persistComplaintReply({
       complaint,
+      currentOfficer,
+      message: `Status changed to ${newStatus}`,
+      statusUpdate: newStatus,
+    });
+
+    await logAction({
+      action: "OFFICER_STATUS_UPDATED",
+      actorType: "OFFICER",
+      actorId: currentOfficer.staffId || currentOfficer.staffEmail,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      entityType: "Complaint",
+      entityId: String(complaint._id),
+      complaintId: complaint.complaintId || String(complaint._id),
+      metadata: {
+        replyId: storedReply?._id?.toString?.() || null,
+        oldStatus: complaint.status,
+        newStatus,
+        statusDescription: getStatusDescription(newStatus),
+      },
+    });
+
+    return success(res, 200, "Status updated successfully", {
+      complaint,
+      reply: storedReply,
+      statusDescription: getStatusDescription(newStatus),
     });
   } catch (error) {
     console.error("Staff status error:", error.message);
-    return res.status(500).json({ message: "Unable to update complaint status." });
+    return failure(res, 500, "Unable to update complaint status.", "INTERNAL_ERROR", error.message);
   }
 });
 
-router.patch("/complaints/:id/staff/handover", async (req, res) => {
+router.patch("/complaints/:id/staff/handover", requireOfficerRole, async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
     if (!complaint) {
-      return res.status(404).json({ message: "Complaint not found" });
+      return failure(res, 404, "Complaint not found", "NOT_FOUND");
     }
 
     const currentOfficer = await resolveCurrentOfficer(req);
     if (!currentOfficer || !currentOfficer.onDutyStatus || !complaintMatchesOfficer(complaint, currentOfficer)) {
-      return res.status(403).json({ message: "On-duty officer access required." });
+      return failure(res, 403, "On-duty officer access required.", "OFFICER_OFF_DUTY");
     }
 
     const handoverStation = String(req.body?.handoverStation || req.body?.meetingPoint || complaint.recoveryStation || "").trim();
@@ -667,28 +758,35 @@ router.patch("/complaints/:id/staff/handover", async (req, res) => {
     );
     await complaint.save();
 
-    if (USE_PROTOTYPE_DATA) {
-      const plainComplaint = complaint.toObject ? complaint.toObject() : complaint;
-      appendComplaintFromMongo(plainComplaint);
-      appendHandoverRecord({
-        complaintId: plainComplaint.complaintId || plainComplaint._id?.toString() || req.params.id,
-        complaintRef: plainComplaint._id?.toString() || req.params.id,
-        officerId: currentOfficer.staffId,
-        officerName: currentOfficer.staffName,
-        station: handoverStation || "Next station",
-        handoverTime: handoverTime || "Pending",
-        status: "planned",
-        notes: complaint.recoveryNotes || null,
-      });
-    }
-
-    return res.json({
-      message: "Handover coordinated successfully",
+    const storedReply = await persistComplaintReply({
       complaint,
+      currentOfficer,
+      message: `Handover arranged at ${handoverStation || "the next station"}`,
+      statusUpdate: "Ready for Handover",
+    });
+
+    await logAction({
+      action: "OFFICER_HANDOVER_ARRANGED",
+      actorType: "OFFICER",
+      actorId: currentOfficer.staffId || currentOfficer.staffEmail,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      entityType: "Complaint",
+      entityId: String(complaint._id),
+      complaintId: complaint.complaintId || String(complaint._id),
+      metadata: {
+        replyId: storedReply?._id?.toString?.() || null,
+        handoverStation: handoverStation || null,
+        handoverTime: handoverTime || null,
+      },
+    });
+
+    return success(res, 200, "Handover coordinated successfully", {
+      complaint,
+      reply: storedReply,
     });
   } catch (error) {
     console.error("Staff handover error:", error.message);
-    return res.status(500).json({ message: "Unable to coordinate handover." });
+    return failure(res, 500, "Unable to coordinate handover.", "INTERNAL_ERROR", error.message);
   }
 });
 
