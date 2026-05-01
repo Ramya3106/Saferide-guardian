@@ -931,65 +931,6 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
     </Modal>
   );
 
-  // Section 5: Complaint Status Tracker
-  const renderComplaintTracker = () => {
-    if (!currentComplaint) return null;
-
-    const statuses = [
-      { key: "raised", label: "🟡 Complaint Raised", completed: true },
-      {
-        key: "notified",
-        label: "🔵 Staff Notified",
-        completed: currentComplaint.staffNotified,
-      },
-      {
-        key: "found",
-        label: "🟢 Item Found",
-        completed: currentComplaint.itemFound,
-      },
-      {
-        key: "scheduled",
-        label: "📍 Meeting Scheduled",
-        completed: currentComplaint.meetingScheduled,
-      },
-      {
-        key: "collected",
-        label: "✅ Item Collected",
-        completed: currentComplaint.itemCollected,
-      },
-    ];
-
-    return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📊 Complaint Status</Text>
-        <View style={styles.trackerCard}>
-          {statuses.map((status, index) => (
-            <View key={status.key}>
-              <View style={styles.statusStep}>
-                <View
-                  style={[
-                    styles.statusCircle,
-                    status.completed && styles.statusCircleActive,
-                  ]}
-                >
-                  <Text style={styles.statusStepText}>{status.label}</Text>
-                </View>
-              </View>
-              {index < statuses.length - 1 && (
-                <View
-                  style={[
-                    styles.statusLine,
-                    status.completed && styles.statusLineActive,
-                  ]}
-                />
-              )}
-            </View>
-          ))}
-        </View>
-      </View>
-    );
-  };
-
   // Section 6: Live Tracking Map
   const renderLiveTracking = () => {
     if (!currentComplaint) return null;
@@ -1008,35 +949,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
     );
   };
 
-  // Section 7: Staff Message Panel
-  const renderStaffMessages = () => {
-    if (!currentComplaint) return null;
-
-    return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>💬 Staff Messages</Text>
-        <View style={styles.messagesCard}>
-          {currentComplaint.messages && currentComplaint.messages.length > 0 ? (
-            currentComplaint.messages.map((msg, idx) => (
-              <View key={idx} style={styles.messageItem}>
-                <Text style={styles.messageStaff}>
-                  👤 {msg.staffName || "Staff"}
-                </Text>
-                <Text style={styles.messageText}>{msg.text}</Text>
-                <Text style={styles.messageTime}>{msg.timestamp}</Text>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.noMessagesText}>
-              Waiting for staff update...
-            </Text>
-          )}
-        </View>
-      </View>
-    );
-  };
-
-  // Section 8: QR Code Pickup
+  // Section 7: QR Code Pickup
   const renderQRCodePickup = () => {
     if (!currentComplaint || !currentComplaint.itemFound) return null;
 
@@ -1315,8 +1228,6 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, onLogout }) => {
         {renderActiveJourney()}
         {renderPrimaryAction()}
         {renderComplaintPanel()}
-        {renderComplaintTracker()}
-        {renderStaffMessages()}
         {renderQRCodePickup()}
         {renderComplaintHistory()}
         {renderHistoryModal()}
