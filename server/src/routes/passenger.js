@@ -24,6 +24,35 @@ const resolveTransportFilters = (staffRole) => {
   }
 };
 
+// AI-style priority prediction based on item type and description
+const predictPriority = (itemType = "", description = "") => {
+  const text = `${itemType} ${description}`.toLowerCase();
+
+  // HIGH priority items
+  const highPriorityKeywords = ["passport", "document", "id", "certificate"];
+  if (highPriorityKeywords.some((keyword) => text.includes(keyword))) {
+    console.log(
+      `[Priority] Item: "${itemType}" | Description: "${description}" | Assigned: HIGH`
+    );
+    return { priorityLevel: "HIGH", priorityScore: 90 };
+  }
+
+  // MEDIUM priority items
+  const mediumPriorityKeywords = ["wallet", "bag", "phone", "laptop"];
+  if (mediumPriorityKeywords.some((keyword) => text.includes(keyword))) {
+    console.log(
+      `[Priority] Item: "${itemType}" | Description: "${description}" | Assigned: MEDIUM`
+    );
+    return { priorityLevel: "MEDIUM", priorityScore: 60 };
+  }
+
+  // LOW priority - everything else
+  console.log(
+    `[Priority] Item: "${itemType}" | Description: "${description}" | Assigned: LOW`
+  );
+  return { priorityLevel: "LOW", priorityScore: 30 };
+};
+
 // GET /api/passenger/dashboard - Get active journey
 router.get("/dashboard", async (req, res) => {
   try {
@@ -87,6 +116,7 @@ router.post("/complaints", async (req, res) => {
 
     // Generate unique QR code ID
     const qrCode = `QR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const { priorityLevel, priorityScore } = predictPriority(itemType, description);
 
     console.log("📝 Creating complaint for email:", userEmail);
 
@@ -110,6 +140,8 @@ router.post("/complaints", async (req, res) => {
       submitAuthority: submitAuthority || "Staff",
       qrCode,
       status: "Reported",
+      priorityLevel,
+      priorityScore,
     });
 
     console.log("💾 Saving complaint to MongoDB...");
@@ -201,7 +233,7 @@ router.get("/live-alerts", async (req, res) => {
     const complaintList = await Complaint.find({
       transportType: { $in: transportFilters },
       status: { $in: ["Reported", "Staff Notified"] },
-    }).sort({ createdAt: -1 });
+    }).sort({ priorityScore: -1, createdAt: -1 });
 
     res.json({
       alerts: complaintList,
