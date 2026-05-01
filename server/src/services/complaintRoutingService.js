@@ -1,7 +1,6 @@
 const User = require("../models/User");
 const DutyAttendance = require("../models/DutyAttendance");
 const Notification = require("../models/Notification");
-const { DEMO_DUTY_ROSTER } = require("../utils/dutyRoster");
 
 const normalize = (value) =>
   String(value || "")
@@ -101,26 +100,8 @@ const buildCandidatePool = async () => {
   }).sort({ checkInTime: 1 });
 
   const sessionCandidates = await mergeOfficerDirectory(activeSessions);
-  const sessionKeySet = new Set(sessionCandidates.map((item) => item.officerKey));
 
-  const demoCandidates = DEMO_DUTY_ROSTER.filter((officer) => officer.onDutyStatus)
-    .map((officer) => ({
-      officerKey: getOfficerKey({ officerEmail: officer.staffEmail, officerId: officer.staffId }),
-      officerId: officer.staffId,
-      officerEmail: officer.staffEmail,
-      officerName: officer.staffName,
-      dutyUnit: String(officer.dutyUnit || "").toUpperCase(),
-      assignedTrain: officer.assignedTrain || null,
-      assignedRoute: officer.assignedRoute || null,
-      assignedStation: officer.dutyStation || null,
-      assignedShift: officer.assignedShift || null,
-      jurisdiction: officer.jurisdiction || null,
-      source: "demo",
-      onDutyAt: new Date(),
-    }))
-    .filter((item) => item.officerKey && !sessionKeySet.has(item.officerKey));
-
-  return [...sessionCandidates, ...demoCandidates];
+  return sessionCandidates;
 };
 
 const createNotificationEntries = async (complaintData, selectedOfficers, priorityRank, reason) => {
