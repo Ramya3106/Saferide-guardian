@@ -212,6 +212,16 @@ const complaintSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    assignedToUnit: {
+      type: String,
+      enum: ["TTR", "TTE", "RPF", "Police", null],
+      default: null,
+      index: true,
+    },
+    assignedAt: {
+      type: Date,
+      default: null,
+    },
     staffEta: {
       type: String,
       default: null,
