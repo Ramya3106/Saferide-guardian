@@ -5,7 +5,6 @@ const router = express.Router();
 const User = require("../models/User");
 const DutyAttendance = require("../models/DutyAttendance");
 const {
-  DEMO_DUTY_ROSTER,
   buildDutyRoster,
   inferDutyUnit,
   inferDutyUnitFromProfessionalId,
@@ -64,7 +63,6 @@ const OFFICIAL_DOMAINS = {
 };
 const OFFICIAL_ROLES = new Set(["TTR/RPF/Police"]);
 const OPERATIONAL_ROLES = new Set(["Driver/Conductor", "Cab/Auto"]);
-const demoDutySessions = new Map();
 
 const createTransporter = () => {
   if (!mailUser || !pass) return null;
@@ -189,18 +187,7 @@ const getDutyOfficerRecord = async (req) => {
     return toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
   }
 
-  const matchingDemo = DEMO_DUTY_ROSTER.find((officer) => {
-    if (email && officer.staffEmail === email) {
-      return true;
-    }
-    if (professionalId && officer.professionalId === professionalId) {
-      return true;
-    }
-    const requestedUnit = getDutyUnitFromRequest(req);
-    return requestedUnit && officer.dutyUnit === requestedUnit;
-  });
-
-  return matchingDemo ? toDutyOfficer(matchingDemo, { isDemo: true }) : null;
+  return null;
 };
 
 const toDutyResponse = (officer) => ({
@@ -763,20 +750,6 @@ router.get("/duty/status", async (req, res) => {
       });
     }
 
-    const demoOfficer = DEMO_DUTY_ROSTER.find(
-      (officer) => officer.staffEmail === email || officer.professionalId === professionalId,
-    );
-
-    if (demoOfficer) {
-      const officer = toDutyOfficer(demoOfficer, { isDemo: true });
-      const attendance = demoDutySessions.get(buildOfficerKey(officer)) || null;
-      return res.json({
-        ...toDutyResponse(officer),
-        attendance: normalizeAttendance(attendance),
-        message: "Duty status retrieved successfully",
-      });
-    }
-
     return res.status(404).json({ message: "Duty officer not found." });
   } catch (error) {
     console.error("Duty status error:", error.message);
@@ -793,12 +766,9 @@ router.get("/duty/roster", async (req, res) => {
     }).select("email name professionalId role onDutyStatus dutyCheckInAt dutyCheckOutAt dutyStation dutyDesk dutyUnit dutyNote jurisdiction");
 
     const roster = buildDutyRoster(officers);
-    const data = roster.length > 0
-      ? roster
-      : DEMO_DUTY_ROSTER.map((officer) => toDutyOfficer(officer, { isDemo: true }));
 
     return res.json({
-      officers: data,
+      officers: roster,
       message: "Duty roster retrieved successfully",
     });
   } catch (error) {
@@ -822,52 +792,7 @@ router.post("/duty/check-in", async (req, res) => {
     }
 
     if (!user) {
-      const demoOfficer = DEMO_DUTY_ROSTER.find(
-        (officer) => officer.staffEmail === email || officer.professionalId === professionalId || officer.dutyUnit === dutyUnit,
-      );
-
-      if (!demoOfficer) {
-        return res.status(404).json({ message: "Duty officer not found." });
-      }
-
-      const rosterOfficer = toDutyOfficer(
-        {
-          ...demoOfficer,
-          onDutyStatus: true,
-          dutyCheckInAt: new Date(),
-          dutyCheckOutAt: null,
-          dutyStation: req.body?.dutyStation || demoOfficer.dutyStation,
-          dutyDesk: req.body?.dutyDesk || demoOfficer.dutyDesk,
-          dutyUnit,
-          dutyNote: req.body?.dutyNote || demoOfficer.dutyNote || null,
-        },
-        { isDemo: true },
-      );
-
-      const officerKey = buildOfficerKey(rosterOfficer);
-      const existingDemoSession = demoDutySessions.get(officerKey);
-      if (existingDemoSession && existingDemoSession.status === "ACTIVE") {
-        return res.status(409).json({ message: "Officer already checked in and active." });
-      }
-
-      const attendancePayload = getAttendancePayload(req, rosterOfficer);
-      const demoSession = {
-        id: `DEMO-ATD-${Date.now()}`,
-        ...attendancePayload,
-        checkInTime: new Date(),
-        checkOutTime: null,
-        status: "ACTIVE",
-        source: "demo",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      demoDutySessions.set(officerKey, demoSession);
-
-      return res.json({
-        officer: rosterOfficer,
-        attendance: normalizeAttendance(demoSession),
-        message: "Checked in successfully.",
-      });
+      return res.status(404).json({ message: "Duty officer not found." });
     }
 
     const officer = toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
@@ -921,43 +846,7 @@ router.post("/duty/check-out", async (req, res) => {
     }
 
     if (!user) {
-      const demoOfficer = DEMO_DUTY_ROSTER.find(
-        (officer) => officer.staffEmail === email || officer.professionalId === professionalId || officer.dutyUnit === dutyUnit,
-      );
-
-      if (!demoOfficer) {
-        return res.status(404).json({ message: "Duty officer not found." });
-      }
-
-      const resolvedDemoOfficer = toDutyOfficer(
-          {
-            ...demoOfficer,
-            onDutyStatus: false,
-            dutyCheckInAt: demoOfficer.dutyCheckInAt || null,
-            dutyCheckOutAt: new Date(),
-          },
-          { isDemo: true },
-        );
-      const officerKey = buildOfficerKey(resolvedDemoOfficer);
-      const activeDemoSession = demoDutySessions.get(officerKey);
-
-      if (!activeDemoSession || activeDemoSession.status !== "ACTIVE") {
-        return res.status(400).json({ message: "Cannot check out without an active check-in." });
-      }
-
-      const closedDemoSession = {
-        ...activeDemoSession,
-        status: "INACTIVE",
-        checkOutTime: new Date(),
-        updatedAt: new Date(),
-      };
-      demoDutySessions.set(officerKey, closedDemoSession);
-
-      return res.json({
-        officer: resolvedDemoOfficer,
-        attendance: normalizeAttendance(closedDemoSession),
-        message: "Checked out successfully.",
-      });
+      return res.status(404).json({ message: "Duty officer not found." });
     }
 
     const officer = toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
