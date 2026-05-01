@@ -168,6 +168,9 @@ const DriverConductorDashboard = ({
     try {
       const response = await axios.get(`${API_BASE}/passenger/live-alerts`, {
         params: { staffRole },
+        headers: {
+          "X-User-Role": "Driver/Conductor",
+        },
       });
       const alerts = response?.data?.alerts || [];
       setComplaints(alerts.map(normalizeComplaint));
