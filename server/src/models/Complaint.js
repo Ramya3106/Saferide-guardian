@@ -79,6 +79,18 @@ const complaintSchema = new mongoose.Schema(
       enum: ["Reported", "Staff Notified", "Accepted", "Found", "Meeting Scheduled", "Recovered", "Closed"],
       default: "Reported",
     },
+    priorityLevel: {
+      type: String,
+      enum: ["HIGH", "MEDIUM", "LOW"],
+      default: "LOW",
+      index: true,
+    },
+    priorityScore: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
     staffNotified: {
       type: Boolean,
       default: false,
