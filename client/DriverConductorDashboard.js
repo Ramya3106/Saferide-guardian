@@ -118,6 +118,71 @@ const DriverConductorDashboard = ({ onLogout }) => {
   const [forwardedComplaints, setForwardedComplaints] = useState([]);
   const [busChecked, setBusChecked] = useState(false);
   const [isShareingLocation, setIsShareingLocation] = useState(false);
+  const priorityPulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(priorityPulse, {
+          toValue: 0.35,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(priorityPulse, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+
+    return () => loop.stop();
+  }, [priorityPulse]);
+
+  const getPriorityMeta = (priorityLevel) => {
+    if (priorityLevel === "HIGH") {
+      return {
+        label: "HIGH",
+        dot: "🔴",
+        containerStyle: styles.priorityBadgeHigh,
+        textStyle: styles.priorityTextHigh,
+      };
+    }
+
+    if (priorityLevel === "MEDIUM") {
+      return {
+        label: "MEDIUM",
+        dot: "🟡",
+        containerStyle: styles.priorityBadgeMedium,
+        textStyle: styles.priorityTextMedium,
+      };
+    }
+
+    return {
+      label: "LOW",
+      dot: "⚪",
+      containerStyle: styles.priorityBadgeLow,
+      textStyle: styles.priorityTextLow,
+    };
+  };
+
+  const renderPriorityBadge = (priorityLevel) => {
+    const meta = getPriorityMeta(priorityLevel);
+    const badge = (
+      <View style={[styles.priorityBadge, meta.containerStyle]}>
+        <Text style={[styles.priorityBadgeText, meta.textStyle]}>
+          {meta.dot} {meta.label}
+        </Text>
+      </View>
+    );
+
+    if (priorityLevel === "HIGH") {
+      return <Animated.View style={{ opacity: priorityPulse }}>{badge}</Animated.View>;
+    }
+
+    return badge;
+  };
 
   const normalizeComplaint = (complaint) => {
     const createdAt = complaint?.createdAt || complaint?.timestamp || new Date();
@@ -131,6 +196,7 @@ const DriverConductorDashboard = ({ onLogout }) => {
         minute: "2-digit",
       }),
       status: complaint?.status || "pending",
+      priorityLevel: complaint?.priorityLevel || "LOW",
     };
   };
 
@@ -570,6 +636,9 @@ const DriverConductorDashboard = ({ onLogout }) => {
                   <Text style={styles.alertTitle}>⚠ LOST ITEM ALERT</Text>
                   <Text style={styles.alertTime}>{item.reportedTime}</Text>
                 </View>
+                <View style={styles.priorityBadgeRow}>
+                  {renderPriorityBadge(item.priorityLevel)}
+                </View>
                 <Text style={styles.alertDetail}>
                   👤 Passenger: <Text style={styles.bold}>{item.passengerName}</Text>
                 </Text>
@@ -735,6 +804,9 @@ const DriverConductorDashboard = ({ onLogout }) => {
                     <View style={styles.queueHeader}>
                       <Text style={styles.queueId}>Complaint #{item.id}</Text>
                       <Text style={styles.queueTime}>{item.reportedTime}</Text>
+                    </View>
+                    <View style={styles.priorityBadgeRow}>
+                      {renderPriorityBadge(item.priorityLevel)}
                     </View>
                     <View style={styles.queueContent}>
                       <Text style={styles.queueDetail}>
@@ -1369,6 +1441,41 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#9A3412",
     marginBottom: 6,
+  },
+  priorityBadgeRow: {
+    marginBottom: 8,
+  },
+  priorityBadge: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+  },
+  priorityBadgeHigh: {
+    backgroundColor: "#FEE2E2",
+    borderColor: "#FCA5A5",
+  },
+  priorityBadgeMedium: {
+    backgroundColor: "#FEF9C3",
+    borderColor: "#FDE047",
+  },
+  priorityBadgeLow: {
+    backgroundColor: "#F8FAFC",
+    borderColor: "#CBD5E1",
+  },
+  priorityBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  priorityTextHigh: {
+    color: "#B91C1C",
+  },
+  priorityTextMedium: {
+    color: "#92400E",
+  },
+  priorityTextLow: {
+    color: "#334155",
   },
   bold: {
     fontWeight: "700",
