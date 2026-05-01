@@ -1,50 +1,3 @@
-const DEMO_DUTY_ROSTER = [
-  {
-    staffId: "DEMO-TTR-2041",
-    staffName: "A. Karthik",
-    staffEmail: "karthik.ttr@railnet.gov.in",
-    staffRole: "TTR/RPF/Police",
-    dutyUnit: "TTR",
-    dutyStation: "Chennai Egmore",
-    dutyDesk: "Coach control desk",
-    jurisdiction: "Chennai Division",
-    onDutyStatus: true,
-  },
-  {
-    staffId: "DEMO-TTE-1187",
-    staffName: "S. Meera",
-    staffEmail: "meera.tte@railnet.gov.in",
-    staffRole: "TTR/RPF/Police",
-    dutyUnit: "TTE",
-    dutyStation: "Tambaram",
-    dutyDesk: "Ticket verification bay",
-    jurisdiction: "Tambaram Section",
-    onDutyStatus: true,
-  },
-  {
-    staffId: "DEMO-RPF-7720",
-    staffName: "R. Prakash",
-    staffEmail: "prakash.rpf@railnet.gov.in",
-    staffRole: "TTR/RPF/Police",
-    dutyUnit: "RPF",
-    dutyStation: "Perambur",
-    dutyDesk: "Platform protection unit",
-    jurisdiction: "Chennai Suburban",
-    onDutyStatus: true,
-  },
-  {
-    staffId: "DEMO-POL-5514",
-    staffName: "Inspector N. Kavitha",
-    staffEmail: "kavitha.police@tnpolice.gov.in",
-    staffRole: "TTR/RPF/Police",
-    dutyUnit: "Police",
-    dutyStation: "Mambalam",
-    dutyDesk: "Passenger assistance desk",
-    jurisdiction: "Southern Zone",
-    onDutyStatus: false,
-  },
-];
-
 const normalizeDutyUnit = (value) => {
   const normalized = String(value || "").trim().toUpperCase();
 
@@ -129,9 +82,11 @@ const toDutyOfficer = (record, { isDemo = false } = {}) => {
   const staffName = record.staffName || record.name || "Duty Officer";
   const staffEmail = (record.staffEmail || record.email || "").toString().trim().toLowerCase();
   const dutyUnit = inferDutyUnit(record);
+  const userId = record._id ? String(record._id) : null;
 
   return {
     staffId,
+    userId,
     staffName,
     staffEmail,
     staffRole: record.staffRole || record.role || "TTR/RPF/Police",
@@ -153,7 +108,6 @@ const buildDutyRoster = (records = []) => {
 };
 
 module.exports = {
-  DEMO_DUTY_ROSTER,
   buildDutyRoster,
   inferDutyUnit,
   inferDutyUnitFromProfessionalId,
