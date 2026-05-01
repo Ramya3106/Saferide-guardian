@@ -28,28 +28,28 @@ const DutyStatusCard = ({
       <View style={styles.grid}>
         <TextInput
           style={styles.input}
-          placeholder="Assigned Train"
+          placeholder="Enter assigned train number"
           placeholderTextColor="#64748B"
           value={dutyTrain}
           onChangeText={onChangeTrain}
         />
         <TextInput
           style={styles.input}
-          placeholder="Assigned Route"
+          placeholder="Enter assigned route"
           placeholderTextColor="#64748B"
           value={dutyRoute}
           onChangeText={onChangeRoute}
         />
         <TextInput
           style={styles.input}
-          placeholder="Assigned Station"
+          placeholder="Enter assigned station"
           placeholderTextColor="#64748B"
           value={dutyStation}
           onChangeText={onChangeStation}
         />
         <TextInput
           style={styles.input}
-          placeholder="Duty Shift"
+          placeholder="Enter duty shift time"
           placeholderTextColor="#64748B"
           value={dutyShift}
           onChangeText={onChangeShift}
@@ -57,10 +57,10 @@ const DutyStatusCard = ({
       </View>
 
       <View style={styles.row}>
-        <Pressable style={[styles.action, styles.primary]} disabled={syncing || onDuty} onPress={onCheckIn}>
+        <Pressable style={[styles.action, styles.primary, syncing || onDuty ? styles.actionDisabled : {}]} disabled={syncing} onPress={onCheckIn}>
           <Text style={styles.actionText}>Check-In</Text>
         </Pressable>
-        <Pressable style={[styles.action, styles.danger]} disabled={syncing || !onDuty} onPress={onCheckOut}>
+        <Pressable style={[styles.action, styles.danger, syncing || !onDuty ? styles.actionDisabled : {}]} disabled={syncing} onPress={onCheckOut}>
           <Text style={styles.actionText}>Check-Out</Text>
         </Pressable>
       </View>
@@ -137,6 +137,9 @@ const styles = StyleSheet.create({
   },
   danger: {
     backgroundColor: "#B91C1C",
+  },
+  actionDisabled: {
+    opacity: 0.5,
   },
   actionText: {
     color: "#FFFFFF",
