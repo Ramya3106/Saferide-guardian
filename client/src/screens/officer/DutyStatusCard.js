@@ -57,10 +57,10 @@ const DutyStatusCard = ({
       </View>
 
       <View style={styles.row}>
-        <Pressable style={[styles.action, styles.primary, syncing || onDuty ? styles.actionDisabled : {}]} disabled={syncing} onPress={onCheckIn}>
+        <Pressable style={[styles.action, styles.primary, syncing || onDuty ? styles.actionDisabled : {}]} disabled={syncing || onDuty} onPress={onCheckIn}>
           <Text style={styles.actionText}>Check-In</Text>
         </Pressable>
-        <Pressable style={[styles.action, styles.danger, syncing || !onDuty ? styles.actionDisabled : {}]} disabled={syncing} onPress={onCheckOut}>
+        <Pressable style={[styles.action, styles.danger, syncing || !onDuty ? styles.actionDisabled : {}]} disabled={syncing || !onDuty} onPress={onCheckOut}>
           <Text style={styles.actionText}>Check-Out</Text>
         </Pressable>
       </View>
