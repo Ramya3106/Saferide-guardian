@@ -1125,6 +1125,8 @@ const AppContent = () => {
   const canSubmit = useMemo(() => {
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
+    const trimmedProfessionalId = professionalId.trim();
+    const officerLoginIdentifier = trimmedEmail || trimmedProfessionalId;
     const baseRegisterReady =
       name.trim().length >= 2 &&
       phone.trim().length >= 8 &&
@@ -1190,9 +1192,7 @@ const AppContent = () => {
     }
 
     if (isOfficialRole) {
-      const hasOfficialLoginEmail = isValidEmail(trimmedEmail);
-      const hasProfessionalId = isProfessionalIdValid(role, professionalId);
-      return (hasOfficialLoginEmail || hasProfessionalId) && trimmedPassword.length >= 6;
+      return officerLoginIdentifier.length >= 4 && trimmedPassword.length >= 6;
     }
 
     if (loginWithOtp) {
@@ -1759,8 +1759,9 @@ const AppContent = () => {
       try {
         const { data } = await axios.post(`${API_BASE}/auth/login`, {
           role,
+          identifier: email.trim().toLowerCase() || professionalId.trim().toUpperCase(),
           email: email.trim().toLowerCase(),
-          professionalId: professionalId.trim(),
+          professionalId: professionalId.trim().toUpperCase(),
           password: password.trim(),
           method: "password",
         });
@@ -1771,15 +1772,14 @@ const AppContent = () => {
           return;
         }
 
-        const inferredRole = inferSpecificRoleFromId(
-          profile.professionalId || professionalId,
-        );
+        const inferredRole = data?.specificRole || inferSpecificRoleFromId(profile.professionalId || professionalId);
 
         setProfessionalId(profile.professionalId || professionalId);
         setSpecificRole(inferredRole);
         setAuthToken(data?.token || "");
         setAuthUserId(String(profile?.id || profile?._id || ""));
         setAuthUserRole(String(data?.role || profile?.role || role));
+        setOfficialEmail(profile.email || email.trim().toLowerCase());
         setError("");
         setIsAuthenticated(true);
       } catch (err) {
@@ -1794,6 +1794,7 @@ const AppContent = () => {
       try {
         const { data } = await axios.post(`${API_BASE}/auth/login`, {
           role,
+          identifier: email.trim().toLowerCase(),
           email: email.trim().toLowerCase(),
           password: password.trim(),
           method: "password",
@@ -3800,7 +3801,10 @@ const AppContent = () => {
 
                         {(!isOfficialRole || !isRegister) && (
                           <View style={styles.inputGroup}>
-                            <AnimatedLabel text={requiredLabel("Email address")} iconName="mail" />
+                            <AnimatedLabel
+                              text={requiredLabel(isOfficialRole ? "Email / username" : "Email address")}
+                              iconName="mail"
+                            />
                             <TextInput
                               style={[
                                 styles.input,
@@ -3808,12 +3812,12 @@ const AppContent = () => {
                                   isVerified &&
                                   styles.inputDisabled,
                               ]}
-                              placeholder="you@example.com"
+                              placeholder={isOfficialRole ? "ttr_demo / you@example.com" : "you@example.com"}
                               placeholderTextColor="#94A3B8"
                               value={email}
                               onChangeText={setEmail}
                               autoCapitalize="none"
-                              keyboardType="email-address"
+                              keyboardType={isOfficialRole ? "default" : "email-address"}
                               editable={!(isRegister && isVerified)}
                             />
                           </View>
@@ -3821,7 +3825,7 @@ const AppContent = () => {
 
                         {isOfficialRole && !forgotPasswordMode && (
                           <View style={styles.inputGroup}>
-                            <Text style={styles.label}>{requiredLabel("Professional ID")}</Text>
+                            <Text style={styles.label}>{requiredLabel("Professional ID / optional badge")}</Text>
                             <TextInput
                               style={styles.input}
                               placeholder={
