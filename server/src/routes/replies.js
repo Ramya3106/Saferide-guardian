@@ -6,6 +6,7 @@ const ComplaintReply = require("../models/ComplaintReply");
 const User = require("../models/User");
 const { success, failure } = require("../utils/apiResponse");
 const { logAction } = require("../utils/actionLogger");
+const { emitSocketEvent } = require("../utils/socket");
 
 const router = express.Router();
 
@@ -61,6 +62,24 @@ router.post("/", async (req, res) => {
     });
     complaint.status = statusUpdate;
     await complaint.save();
+
+    emitSocketEvent("complaint:reply", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      reply: reply.toObject ? reply.toObject() : reply,
+      actorRole: officerRole,
+      source: "reply-route",
+    });
+
+    emitSocketEvent("complaint:status-change", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      newStatus: statusUpdate,
+      actorRole: officerRole,
+      source: "reply-route",
+    });
 
     await logAction({
       action: "COMPLAINT_REPLY_CREATED",

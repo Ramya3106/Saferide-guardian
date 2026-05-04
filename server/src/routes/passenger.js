@@ -8,6 +8,7 @@ const User = require("../models/User");
 const { success, failure } = require("../utils/apiResponse");
 const { logAction } = require("../utils/actionLogger");
 const { routeComplaintToActiveOfficers } = require("../services/complaintRoutingService");
+const { emitSocketEvent } = require("../utils/socket");
 const {
   inferDutyUnit,
   normalizeDutyUnit,
@@ -111,6 +112,19 @@ const detectPriority = ({ transportType, itemType, description }) => {
   }
 
   return "Normal";
+};
+
+const maskPhoneNumber = (value) => {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (!digits) {
+    return null;
+  }
+
+  if (digits.length <= 4) {
+    return digits;
+  }
+
+  return `${"*".repeat(Math.max(digits.length - 4, 4))}${digits.slice(-4)}`;
 };
 
 const getRequestOfficerIdentity = (req) => {
@@ -257,20 +271,34 @@ router.post("/complaints", async (req, res) => {
     }
 
     const {
+      complaintType,
+      complaintDescription,
+      complaintTime,
       transportType,
       vehicleNumber,
       itemType,
       description,
+      lostItemType,
+      passengerPhoneMasked,
+      pnrMock,
+      trainName,
+      coach,
+      seat,
       photoUri,
       fromLocation,
       toLocation,
       departureTime,
       arrivalTime,
       lastSeenLocation,
+      currentTrainLocation,
+      currentLat,
+      currentLng,
       timestamp,
       journeyId,
       route,
       submitAuthority,
+      severity,
+      priority,
     } = req.body;
 
     if (!vehicleNumber || !itemType || !description || !transportType) {
@@ -284,7 +312,15 @@ router.post("/complaints", async (req, res) => {
     console.log("📝 Creating complaint for email:", userEmail);
 
     const submitAuthorityValue = normalizeSubmitAuthority(submitAuthority);
-    const priority = detectPriority({ transportType, itemType, description });
+    const resolvedComplaintType = complaintType || lostItemType || itemType || transportType;
+    const resolvedComplaintDescription = complaintDescription || description;
+    const resolvedComplaintTime = complaintTime || timestamp || new Date();
+    const resolvedPriority = priority || severity || detectPriority({ transportType, itemType, description });
+    const resolvedLocation = currentTrainLocation || lastSeenLocation || fromLocation || route || null;
+    const resolvedPassengerPhoneMasked = passengerPhoneMasked || maskPhoneNumber(req.body?.passengerPhone || req.body?.phone);
+    const resolvedTrainName = trainName || vehicleNumber || null;
+    const resolvedCoach = coach || req.body?.coachNumber || null;
+    const resolvedSeat = seat || req.body?.berthNumber || null;
     const assignedStaff = [];
 
     const complaint = new Complaint({
@@ -292,7 +328,15 @@ router.post("/complaints", async (req, res) => {
       passengerEmail: userEmail,
       passengerName: req.headers["x-user-name"] || "Passenger",
       transportType: transportType || "bus",
+      complaintType: resolvedComplaintType,
+      complaintDescription: resolvedComplaintDescription,
+      complaintTime: resolvedComplaintTime,
+      passengerPhoneMasked: resolvedPassengerPhoneMasked,
+      pnrMock: pnrMock || complaintId,
       vehicleNumber,
+      trainName: resolvedTrainName,
+      coach: resolvedCoach,
+      seat: resolvedSeat,
       itemType,
       description,
       photoUri: photoUri || null,
@@ -301,19 +345,23 @@ router.post("/complaints", async (req, res) => {
       departureTime: departureTime || "",
       arrivalTime: arrivalTime || "",
       lastSeenLocation: lastSeenLocation || fromLocation || "Unknown",
-      timestamp: timestamp || new Date(),
+      currentTrainLocation: resolvedLocation,
+      currentLat: currentLat != null ? Number(currentLat) : null,
+      currentLng: currentLng != null ? Number(currentLng) : null,
+      timestamp: resolvedComplaintTime,
       journeyId: journeyId || null,
       route: route || `${fromLocation} → ${toLocation}`,
       submitAuthority: submitAuthorityValue,
       complaintId,
       qrCode,
       status: "Submitted",
-      priority,
+      severity: resolvedPriority,
+      priority: resolvedPriority,
       assignedStaff,
       alertPriorityReason:
-        priority === "Critical"
+        resolvedPriority === "Critical"
           ? "Critical lost-item escalation"
-          : priority === "High"
+          : resolvedPriority === "High"
             ? "High priority lost-item report"
             : "Standard lost-item report",
       dispatchMode: assignedStaff.length > 0 ? "On-duty dispatch" : "Unassigned fallback",
@@ -329,23 +377,62 @@ router.post("/complaints", async (req, res) => {
     const routedOfficers = Array.isArray(routingResult?.notifiedOfficers)
       ? routingResult.notifiedOfficers
       : [];
+    const queueNotifications = Array.isArray(routingResult?.queueNotifications)
+      ? routingResult.queueNotifications
+      : [];
 
     savedComplaint.complaintId = savedComplaint.complaintId || complaintId;
     savedComplaint.assignedStaff = routedOfficers;
-    savedComplaint.staffNotified = routedOfficers.length > 0;
+    savedComplaint.staffNotified = routedOfficers.length > 0 || queueNotifications.length > 0;
     savedComplaint.staffId = routedOfficers[0]?.staffId || null;
     savedComplaint.staffName = routedOfficers[0]?.staffName || submitAuthorityValue || null;
     savedComplaint.assignedToUnit = routedOfficers.length > 0 ? (routedOfficers[0]?.dutyUnit || null) : null;
+    savedComplaint.assignedRole = routedOfficers.length > 0 ? (routedOfficers[0]?.dutyUnit === "POLICE" ? "Police" : routedOfficers[0]?.dutyUnit || null) : null;
+    savedComplaint.assignedOfficerId = routedOfficers[0]?.staffId || null;
+    savedComplaint.assignedOfficerName = routedOfficers[0]?.staffName || submitAuthorityValue || null;
     savedComplaint.assignedAt = routedOfficers.length > 0 ? new Date() : null;
     savedComplaint.staffEta = routedOfficers.length > 0 ? "6 mins" : "Pending assignment";
     savedComplaint.status = routedOfficers.length > 0 ? "Staff Notified" : "Submitted";
-    savedComplaint.staffResponseStatus = routedOfficers.length > 0 ? "Pending response" : "Awaiting duty roster";
-    savedComplaint.dispatchMode = routingResult?.escalationLevel || savedComplaint.dispatchMode;
+    savedComplaint.staffResponseStatus = routedOfficers.length > 0
+      ? "Pending response"
+      : queueNotifications.length > 0
+        ? "Awaiting supervisor review"
+        : "Awaiting duty roster";
+    savedComplaint.dispatchMode = routingResult?.assignmentStrategy || routingResult?.escalationLevel || savedComplaint.dispatchMode;
     savedComplaint.alertPriorityReason = routingResult?.routingReason || savedComplaint.alertPriorityReason;
+    savedComplaint.escalationLevel = routingResult?.escalationLevel || savedComplaint.escalationLevel || null;
     
     console.log("💾 Updating complaint status...");
     await savedComplaint.save();
     console.log("✅ Second save successful");
+
+    const complaintSnapshot = savedComplaint.toObject ? savedComplaint.toObject() : savedComplaint;
+    emitSocketEvent("complaint:new", {
+      complaintId: String(savedComplaint._id),
+      complaint: complaintSnapshot,
+      routedOfficers,
+      queueNotifications,
+      assignmentStrategy: routingResult?.assignmentStrategy || null,
+      escalationLevel: routingResult?.escalationLevel || null,
+    });
+
+    if (queueNotifications.length > 0) {
+      emitSocketEvent("complaint:escalation", {
+        complaintId: String(savedComplaint._id),
+        complaint: complaintSnapshot,
+        escalationLevel: "UNASSIGNED_URGENT_QUEUE",
+        routingReason: routingResult?.routingReason || "Queued for supervisor review",
+        queueNotifications,
+      });
+    } else if (routingResult?.escalationLevel && routingResult.escalationLevel !== "TRAIN_LEVEL") {
+      emitSocketEvent("complaint:escalation", {
+        complaintId: String(savedComplaint._id),
+        complaint: complaintSnapshot,
+        escalationLevel: routingResult.escalationLevel,
+        routingReason: routingResult?.routingReason || null,
+        routedOfficers,
+      });
+    }
 
     await logAction({
       action: "COMPLAINT_CREATED_AND_ROUTED",
@@ -513,6 +600,8 @@ router.post("/complaints/:id/staff/respond", requireOfficerRole, async (req, res
       return failure(res, 400, "Reply text required", "VALIDATION_ERROR");
     }
 
+    const previousStatus = complaint.status;
+
     const replyMessage = {
       staffId: currentOfficer.staffId,
       staffName: currentOfficer.staffName,
@@ -541,6 +630,25 @@ router.post("/complaints/:id/staff/respond", requireOfficerRole, async (req, res
       currentOfficer,
       message: text,
       statusUpdate: complaint.status,
+    });
+
+    emitSocketEvent("complaint:reply", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      reply: storedReply ? (storedReply.toObject ? storedReply.toObject() : storedReply) : null,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "staff-response",
+    });
+
+    emitSocketEvent("complaint:status-change", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      previousStatus,
+      newStatus: complaint.status,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "staff-response",
     });
 
     await logAction({
@@ -582,6 +690,7 @@ router.patch("/complaints/:id/staff/acknowledge", requireOfficerRole, async (req
     const action = String(req.body?.action || "Seen").trim();
     const isAcknowledged = /ack/i.test(action);
     const nextStatus = isAcknowledged ? "Acknowledged" : "Seen";
+    const previousStatus = complaint.status;
 
     complaint.status = nextStatus;
     complaint.seenAt = complaint.seenAt || new Date();
@@ -610,6 +719,25 @@ router.patch("/complaints/:id/staff/acknowledge", requireOfficerRole, async (req
     });
 
     await complaint.save();
+
+    emitSocketEvent("complaint:accepted", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      acceptedAt: complaint.acknowledgedAt || new Date(),
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: isAcknowledged ? "staff-acknowledge" : "staff-seen",
+    });
+
+    emitSocketEvent("complaint:status-change", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      previousStatus,
+      newStatus,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: isAcknowledged ? "staff-acknowledge" : "staff-seen",
+    });
 
     const storedReply = await persistComplaintReply({
       complaint,
@@ -659,6 +787,8 @@ router.patch("/complaints/:id/staff/status", requireOfficerRole, async (req, res
       return failure(res, 400, "Status required", "VALIDATION_ERROR");
     }
 
+    const previousStatus = complaint.status;
+
     // Validate status transition
     if (!isValidStatusTransition(complaint.status, newStatus)) {
       const validNextStatuses = getValidNextStatuses(complaint.status);
@@ -692,6 +822,28 @@ router.patch("/complaints/:id/staff/status", requireOfficerRole, async (req, res
       staffTimelineEntry(currentOfficer.staffName, `Status changed to ${newStatus}`, currentOfficer),
     );
     await complaint.save();
+
+    emitSocketEvent("complaint:status-change", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      previousStatus,
+      newStatus,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "staff-status",
+    });
+
+    if (/ready for handover|item found|passenger contacted|closed/i.test(newStatus)) {
+      emitSocketEvent("complaint:escalation", {
+        complaintId: String(complaint._id),
+        passengerId: complaint.passengerId,
+        complaint: complaint.toObject ? complaint.toObject() : complaint,
+        escalationLevel: complaint.escalationLevel || newStatus,
+        routingReason: complaint.staffResponseStatus || `Status updated to ${newStatus}`,
+        actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+        source: "staff-status",
+      });
+    }
 
     const storedReply = await persistComplaintReply({
       complaint,
@@ -741,6 +893,7 @@ router.patch("/complaints/:id/staff/handover", requireOfficerRole, async (req, r
 
     const handoverStation = String(req.body?.handoverStation || req.body?.meetingPoint || complaint.recoveryStation || "").trim();
     const handoverTime = String(req.body?.handoverTime || complaint.meetingTime || "").trim();
+    const previousStatus = complaint.status;
 
     complaint.status = "Ready for Handover";
     complaint.meetingScheduled = true;
@@ -757,6 +910,16 @@ router.patch("/complaints/:id/staff/handover", requireOfficerRole, async (req, r
       staffTimelineEntry(currentOfficer.staffName, `Handover arranged at ${handoverStation || "the next station"}`, currentOfficer),
     );
     await complaint.save();
+
+    emitSocketEvent("complaint:status-change", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      newStatus: complaint.status,
+      previousStatus,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "staff-handover",
+    });
 
     const storedReply = await persistComplaintReply({
       complaint,
@@ -913,6 +1076,23 @@ router.post("/messages/:complaintId", async (req, res) => {
 
     complaint.messages.push(newMessage);
     await complaint.save();
+
+    emitSocketEvent("complaint:location-update", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      location: complaint.sharedLocation,
+      status: complaint.status,
+      source: "passenger-location",
+    });
+
+    emitSocketEvent("complaint:accepted", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      acceptedAt: complaint.acceptedAt || new Date(),
+      source: "passenger-location",
+    });
 
     res.json({
       message: "Message sent successfully",
@@ -1073,8 +1253,15 @@ router.post("/share-location/:complaintId", async (req, res) => {
       timestamp: timestamp ? new Date(timestamp) : new Date(),
       sharedAt: new Date(),
     };
+    complaint.currentLat = numericLat;
+    complaint.currentLng = numericLng;
+    complaint.currentTrainLocation = complaint.currentTrainLocation || complaint.lastSeenLocation || complaint.fromLocation || complaint.boardingStation || null;
     complaint.status = "Accepted";
     complaint.staffNotified = true;
+    complaint.acceptedAt = complaint.acceptedAt || new Date();
+    complaint.assignedRole = complaint.assignedRole || complaint.assignedToUnit || null;
+    complaint.assignedOfficerId = complaint.assignedOfficerId || complaint.staffId || null;
+    complaint.assignedOfficerName = complaint.assignedOfficerName || complaint.staffName || null;
 
     await complaint.save();
 

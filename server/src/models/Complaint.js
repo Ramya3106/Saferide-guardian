@@ -1,5 +1,31 @@
 const mongoose = require("mongoose");
 
+const threadEntrySchema = new mongoose.Schema(
+  {
+    staffId: String,
+    staffName: String,
+    text: String,
+    timestamp: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: false },
+);
+
+const maskPhone = (value) => {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (!digits) {
+    return null;
+  }
+
+  if (digits.length <= 4) {
+    return digits;
+  }
+
+  return `${"*".repeat(Math.max(digits.length - 4, 4))}${digits.slice(-4)}`;
+};
+
 const complaintSchema = new mongoose.Schema(
   {
     complaintId: {
@@ -8,6 +34,26 @@ const complaintSchema = new mongoose.Schema(
       sparse: true,
       default: null,
       index: true,
+    },
+    complaintType: {
+      type: String,
+      default: null,
+    },
+    complaintDescription: {
+      type: String,
+      default: null,
+    },
+    complaintTime: {
+      type: Date,
+      default: null,
+    },
+    passengerPhoneMasked: {
+      type: String,
+      default: null,
+    },
+    pnrMock: {
+      type: String,
+      default: null,
     },
     assignedTo: {
       type: mongoose.Schema.Types.ObjectId,
@@ -41,6 +87,18 @@ const complaintSchema = new mongoose.Schema(
     vehicleNumber: {
       type: String,
       required: true,
+    },
+    trainName: {
+      type: String,
+      default: null,
+    },
+    coach: {
+      type: String,
+      default: null,
+    },
+    seat: {
+      type: String,
+      default: null,
     },
     boardingStation: {
       type: String,
@@ -94,6 +152,18 @@ const complaintSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    currentTrainLocation: {
+      type: String,
+      default: null,
+    },
+    currentLat: {
+      type: Number,
+      default: null,
+    },
+    currentLng: {
+      type: Number,
+      default: null,
+    },
     journeyId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Journey",
@@ -110,6 +180,11 @@ const complaintSchema = new mongoose.Schema(
     timestamp: {
       type: Date,
       required: true,
+    },
+    severity: {
+      type: String,
+      enum: ["Low", "Normal", "High", "Critical"],
+      default: "Normal",
     },
     lossTime: {
       type: Date,
@@ -146,6 +221,28 @@ const complaintSchema = new mongoose.Schema(
       type: String,
       enum: ["Low", "Normal", "High", "Critical"],
       default: "Normal",
+    },
+    assignedRole: {
+      type: String,
+      enum: ["TTR", "TTE", "RPF", "Police", null],
+      default: null,
+      index: true,
+    },
+    assignedOfficerId: {
+      type: String,
+      default: null,
+    },
+    assignedOfficerName: {
+      type: String,
+      default: null,
+    },
+    acceptedAt: {
+      type: Date,
+      default: null,
+    },
+    escalationLevel: {
+      type: String,
+      default: null,
     },
     urgencyLevel: {
       type: String,
@@ -251,16 +348,9 @@ const complaintSchema = new mongoose.Schema(
       default: null,
     },
     messages: [
-      {
-        staffId: String,
-        staffName: String,
-        text: String,
-        timestamp: {
-          type: Date,
-          default: Date.now,
-        },
-      },
+      threadEntrySchema,
     ],
+    messageThread: [threadEntrySchema],
     qrCode: {
       type: String,
       unique: true,
@@ -278,6 +368,18 @@ const complaintSchema = new mongoose.Schema(
       timestamp: Date,
       sharedAt: Date,
     },
+    investigationStartedAt: {
+      type: Date,
+      default: null,
+    },
+    resolvedAt: {
+      type: Date,
+      default: null,
+    },
+    closedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -285,8 +387,40 @@ const complaintSchema = new mongoose.Schema(
 );
 
 complaintSchema.pre("validate", function syncComplaintCanonicalFields(next) {
+  if (!this.complaintType) {
+    this.complaintType = this.itemType || this.lostItemType || this.transportType || null;
+  }
+
+  if (!this.complaintDescription) {
+    this.complaintDescription = this.description || null;
+  }
+
+  if (!this.complaintTime) {
+    this.complaintTime = this.timestamp || this.lossTime || null;
+  }
+
+  if (!this.passengerPhoneMasked) {
+    this.passengerPhoneMasked = maskPhone(this.passengerPhone || this.passengerMobile || this.phone || null);
+  }
+
+  if (!this.pnrMock) {
+    this.pnrMock = this.boardingStation || this.route || this.trainNumber || null;
+  }
+
   if (!this.trainNumber && this.vehicleNumber && this.transportType === "train") {
     this.trainNumber = this.vehicleNumber;
+  }
+
+  if (!this.trainName) {
+    this.trainName = this.vehicleNumber || this.trainNumber || null;
+  }
+
+  if (!this.coach) {
+    this.coach = this.coachNumber || null;
+  }
+
+  if (!this.seat) {
+    this.seat = this.berthNumber || null;
   }
 
   if (!this.boardingStation && this.fromLocation) {
@@ -309,12 +443,64 @@ complaintSchema.pre("validate", function syncComplaintCanonicalFields(next) {
     this.lossTime = this.timestamp;
   }
 
+  if (!this.currentTrainLocation) {
+    this.currentTrainLocation = this.lastSeenLocation || this.fromLocation || this.boardingStation || null;
+  }
+
+  if (this.sharedLocation && this.sharedLocation.latitude != null && this.currentLat == null) {
+    this.currentLat = this.sharedLocation.latitude;
+  }
+
+  if (this.sharedLocation && this.sharedLocation.longitude != null && this.currentLng == null) {
+    this.currentLng = this.sharedLocation.longitude;
+  }
+
+  if (this.gpsLocation && this.gpsLocation.latitude != null && this.currentLat == null) {
+    this.currentLat = this.gpsLocation.latitude;
+  }
+
+  if (this.gpsLocation && this.gpsLocation.longitude != null && this.currentLng == null) {
+    this.currentLng = this.gpsLocation.longitude;
+  }
+
+  if (!this.severity && this.priority) {
+    this.severity = this.priority;
+  }
+
   if (!this.urgencyLevel && this.priority) {
     this.urgencyLevel = this.priority;
   }
 
   if (!this.priority && this.urgencyLevel) {
     this.priority = this.urgencyLevel;
+  }
+
+  if (!this.assignedRole) {
+    this.assignedRole = this.assignedToUnit || (Array.isArray(this.assignedStaff) && this.assignedStaff[0]?.dutyUnit) || null;
+  }
+
+  if (!this.assignedOfficerId) {
+    this.assignedOfficerId = this.staffId || (Array.isArray(this.assignedStaff) && this.assignedStaff[0]?.staffId) || null;
+  }
+
+  if (!this.assignedOfficerName) {
+    this.assignedOfficerName = this.staffName || (Array.isArray(this.assignedStaff) && this.assignedStaff[0]?.staffName) || null;
+  }
+
+  if (!this.acceptedAt && String(this.status || "").toLowerCase() === "accepted") {
+    this.acceptedAt = new Date();
+  }
+
+  if (!this.escalationLevel) {
+    this.escalationLevel = this.dispatchMode || null;
+  }
+
+  if (!Array.isArray(this.messageThread) || this.messageThread.length === 0) {
+    this.messageThread = Array.isArray(this.messages) ? this.messages : [];
+  }
+
+  if (!Array.isArray(this.messages) || this.messages.length === 0) {
+    this.messages = Array.isArray(this.messageThread) ? this.messageThread : [];
   }
 
   next();

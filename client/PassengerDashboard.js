@@ -19,9 +19,11 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
+import { io } from "socket.io-client";
 import { getApiBase } from "./apiConfig";
 
 const API_BASE = getApiBase();
+const SOCKET_BASE = API_BASE.replace(/\/api\/?$/, "");
 const AnimatedIonicon = Animated.createAnimatedComponent(Ionicons);
 
 const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUserRole, onLogout }) => {
@@ -151,6 +153,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
   const [selectedTrackingComplaint, setSelectedTrackingComplaint] =
     useState(null);
   const [trackingData, setTrackingData] = useState(null);
+  const socketRef = useRef(null);
 
   const requestHeaders = (extra = {}) => ({
     ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
@@ -252,6 +255,113 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     fetchComplaintHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!userEmail) {
+      return undefined;
+    }
+
+    const socket = io(SOCKET_BASE, {
+      transports: ["websocket"],
+      reconnection: true,
+      withCredentials: true,
+    });
+
+    socketRef.current = socket;
+
+    const mergeComplaintRecord = (payload) => {
+      const incomingComplaint = payload?.complaint || payload || {};
+      const complaintId =
+        incomingComplaint?._id ||
+        incomingComplaint?.id ||
+        payload?.complaintId ||
+        payload?.reply?.complaintId;
+
+      if (!complaintId) {
+        return;
+      }
+
+      const normalizedPassenger = String(userEmail || "").trim().toLowerCase();
+      const candidatePassenger = String(
+        incomingComplaint?.passengerEmail ||
+          incomingComplaint?.passengerId ||
+          payload?.passengerId ||
+          "",
+      ).trim().toLowerCase();
+
+      if (candidatePassenger && normalizedPassenger && candidatePassenger !== normalizedPassenger) {
+        return;
+      }
+
+      const mergedComplaint = {
+        ...incomingComplaint,
+        _id: incomingComplaint?._id || complaintId,
+        complaintId: incomingComplaint?.complaintId || complaintId,
+        messages: Array.isArray(incomingComplaint?.messages) ? incomingComplaint.messages : [],
+      };
+
+      setComplaints((current) => {
+        const index = current.findIndex(
+          (item) => String(item?._id || item?.id) === String(complaintId),
+        );
+
+        if (index === -1) {
+          return [mergedComplaint, ...current];
+        }
+
+        const next = [...current];
+        next[index] = {
+          ...next[index],
+          ...mergedComplaint,
+        };
+        return next;
+      });
+
+      setCurrentComplaint((current) =>
+        current && String(current?._id || current?.id) === String(complaintId)
+          ? { ...current, ...mergedComplaint }
+          : current,
+      );
+
+      setSelectedTrackingComplaint((current) =>
+        current && String(current?._id || current?.id) === String(complaintId)
+          ? { ...current, ...mergedComplaint }
+          : current,
+      );
+
+      setTrackingData((current) =>
+        current && String(current?.complaintId || current?._id) === String(complaintId)
+          ? {
+              ...current,
+              ...mergedComplaint,
+              status: mergedComplaint.status || current.status,
+            }
+          : current,
+      );
+    };
+
+    socket.on("complaint:new", mergeComplaintRecord);
+    socket.on("complaint:accepted", mergeComplaintRecord);
+    socket.on("complaint:reply", mergeComplaintRecord);
+    socket.on("complaint:status-change", mergeComplaintRecord);
+    socket.on("complaint:location-update", mergeComplaintRecord);
+    socket.on("complaint:escalation", mergeComplaintRecord);
+
+    socket.on("connect", () => {
+      socket.emit("join:passenger", userEmail);
+    });
+
+    return () => {
+      socket.off("complaint:new", mergeComplaintRecord);
+      socket.off("complaint:accepted", mergeComplaintRecord);
+      socket.off("complaint:reply", mergeComplaintRecord);
+      socket.off("complaint:status-change", mergeComplaintRecord);
+      socket.off("complaint:location-update", mergeComplaintRecord);
+      socket.off("complaint:escalation", mergeComplaintRecord);
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [userEmail]);
 
   useEffect(() => {
     const interval = setInterval(() => {

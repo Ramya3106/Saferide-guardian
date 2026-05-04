@@ -1,11 +1,13 @@
 const path = require("path");
 const dotenv = require("dotenv");
 const http = require("http");
+const { Server } = require("socket.io");
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const app = require("./app");
 const connectDb = require("./config/db");
+const { setIo } = require("./utils/socket");
 
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/saferide";
@@ -73,7 +75,38 @@ const startServer = async () => {
 
   console.log(`Server running on port ${PORT}`);
   
-  const server = app.listen(PORT, () => {
+  const server = http.createServer(app);
+  const io = new Server(server, {
+    cors: {
+      origin: true,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+      credentials: true,
+    },
+  });
+
+  setIo(io);
+
+  io.on("connection", (socket) => {
+    socket.on("join:passenger", (passengerId) => {
+      if (passengerId) {
+        socket.join(`passenger:${String(passengerId)}`);
+      }
+    });
+
+    socket.on("join:officer", (officerId) => {
+      if (officerId) {
+        socket.join(`officer:${String(officerId)}`);
+      }
+    });
+
+    socket.on("join:complaint", (complaintId) => {
+      if (complaintId) {
+        socket.join(`complaint:${String(complaintId)}`);
+      }
+    });
+  });
+
+  server.listen(PORT, () => {
     // Server is listening
   });
 

@@ -6,6 +6,7 @@ const User = require("../models/User");
 const { success, failure } = require("../utils/apiResponse");
 const { logAction } = require("../utils/actionLogger");
 const { routeComplaintToActiveOfficers } = require("../services/complaintRoutingService");
+const { emitSocketEvent } = require("../utils/socket");
 const {
   inferDutyUnit,
   normalizeDutyUnit,
@@ -140,6 +141,28 @@ const persistComplaintReply = async ({ complaint, currentOfficer, message, statu
   });
 };
 
+const syncCanonicalComplaintFields = (complaint, currentOfficer, { accepted = false } = {}) => {
+  if (!complaint || !currentOfficer) {
+    return;
+  }
+
+  const assignedRole = normalizeDutyUnit(
+    currentOfficer.dutyUnit || currentOfficer.staffRole || inferDutyUnit(currentOfficer),
+  ) || null;
+
+  complaint.assignedRole = assignedRole || complaint.assignedRole || null;
+  complaint.assignedOfficerId = currentOfficer.staffId || complaint.assignedOfficerId || null;
+  complaint.assignedOfficerName = currentOfficer.staffName || complaint.assignedOfficerName || null;
+
+  if (accepted || String(complaint.status || "").toLowerCase() === "accepted") {
+    complaint.acceptedAt = complaint.acceptedAt || new Date();
+  }
+
+  if (!complaint.escalationLevel) {
+    complaint.escalationLevel = complaint.dispatchMode || null;
+  }
+};
+
 const generateComplaintId = () => `CRN-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
 // POST /api/complaints - Create a new complaint
@@ -245,21 +268,60 @@ router.post("/", async (req, res) => {
     const routedOfficers = Array.isArray(routingResult?.notifiedOfficers)
       ? routingResult.notifiedOfficers
       : [];
+    const queueNotifications = Array.isArray(routingResult?.queueNotifications)
+      ? routingResult.queueNotifications
+      : [];
 
     savedComplaint.complaintId = savedComplaint.complaintId || complaintId;
     savedComplaint.assignedStaff = routedOfficers;
-    savedComplaint.staffNotified = routedOfficers.length > 0;
+    savedComplaint.staffNotified = routedOfficers.length > 0 || queueNotifications.length > 0;
     savedComplaint.staffId = routedOfficers[0]?.staffId || null;
     savedComplaint.staffName = routedOfficers[0]?.staffName || submitAuthority || null;
     savedComplaint.assignedToUnit = routedOfficers.length > 0 ? (routedOfficers[0]?.dutyUnit || null) : null;
+    savedComplaint.assignedRole = routedOfficers.length > 0 ? (routedOfficers[0]?.dutyUnit === "POLICE" ? "Police" : routedOfficers[0]?.dutyUnit || null) : null;
+    savedComplaint.assignedOfficerId = routedOfficers[0]?.staffId || null;
+    savedComplaint.assignedOfficerName = routedOfficers[0]?.staffName || submitAuthorityValue || null;
     savedComplaint.assignedAt = routedOfficers.length > 0 ? new Date() : null;
     savedComplaint.staffEta = routedOfficers.length > 0 ? "6 mins" : "Pending assignment";
     savedComplaint.status = routedOfficers.length > 0 ? "Staff Notified" : "Submitted";
-    savedComplaint.staffResponseStatus = routedOfficers.length > 0 ? "Pending response" : "Awaiting duty roster";
-    savedComplaint.dispatchMode = routingResult?.escalationLevel || savedComplaint.dispatchMode;
+    savedComplaint.staffResponseStatus = routedOfficers.length > 0
+      ? "Pending response"
+      : queueNotifications.length > 0
+        ? "Awaiting supervisor review"
+        : "Awaiting duty roster";
+    savedComplaint.dispatchMode = routingResult?.assignmentStrategy || routingResult?.escalationLevel || savedComplaint.dispatchMode;
     savedComplaint.alertPriorityReason = routingResult?.routingReason || savedComplaint.alertPriorityReason;
+    savedComplaint.escalationLevel = routingResult?.escalationLevel || savedComplaint.escalationLevel || null;
 
     await savedComplaint.save();
+
+    const complaintSnapshot = savedComplaint.toObject ? savedComplaint.toObject() : savedComplaint;
+    emitSocketEvent("complaint:new", {
+      complaintId: String(savedComplaint._id),
+      complaint: complaintSnapshot,
+      routedOfficers,
+      queueNotifications,
+      assignmentStrategy: routingResult?.assignmentStrategy || null,
+      escalationLevel: routingResult?.escalationLevel || null,
+    });
+
+    if (queueNotifications.length > 0) {
+      emitSocketEvent("complaint:escalation", {
+        complaintId: String(savedComplaint._id),
+        complaint: complaintSnapshot,
+        escalationLevel: "UNASSIGNED_URGENT_QUEUE",
+        routingReason: routingResult?.routingReason || "Queued for supervisor review",
+        queueNotifications,
+      });
+    } else if (routingResult?.escalationLevel && routingResult.escalationLevel !== "TRAIN_LEVEL") {
+      emitSocketEvent("complaint:escalation", {
+        complaintId: String(savedComplaint._id),
+        complaint: complaintSnapshot,
+        escalationLevel: routingResult.escalationLevel,
+        routingReason: routingResult?.routingReason || null,
+        routedOfficers,
+      });
+    }
 
     await logAction({
       action: "COMPLAINT_CREATED_AND_ROUTED",
@@ -367,6 +429,8 @@ router.post("/:id/staff/respond", requireOfficerRole, async (req, res) => {
       return failure(res, 400, "Reply text required", "VALIDATION_ERROR");
     }
 
+    const previousStatus = complaint.status;
+
     const replyMessage = {
       staffId: currentOfficer.staffId,
       staffName: currentOfficer.staffName,
@@ -385,6 +449,7 @@ router.post("/:id/staff/respond", requireOfficerRole, async (req, res) => {
     complaint.staffId = currentOfficer.staffId;
     complaint.staffName = currentOfficer.staffName;
     complaint.staffEta = req.body?.staffEta || complaint.staffEta || "8 mins";
+    syncCanonicalComplaintFields(complaint, currentOfficer);
     await complaint.save();
 
     const storedReply = await persistComplaintReply({
@@ -392,6 +457,25 @@ router.post("/:id/staff/respond", requireOfficerRole, async (req, res) => {
       currentOfficer,
       message: text,
       statusUpdate: complaint.status,
+    });
+
+    emitSocketEvent("complaint:reply", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      reply: storedReply ? (storedReply.toObject ? storedReply.toObject() : storedReply) : null,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "officer-response",
+    });
+
+    emitSocketEvent("complaint:status-change", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      previousStatus,
+      newStatus: complaint.status,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "officer-response",
     });
 
     await logAction({
@@ -434,6 +518,7 @@ router.patch("/:id/staff/acknowledge", requireOfficerRole, async (req, res) => {
     const action = String(req.body?.action || "Seen").trim();
     const isAcknowledged = /ack/i.test(action);
     const nextStatus = isAcknowledged ? "Acknowledged" : "Seen";
+    const previousStatus = complaint.status;
 
     complaint.status = nextStatus;
     complaint.seenAt = complaint.seenAt || new Date();
@@ -458,7 +543,28 @@ router.patch("/:id/staff/acknowledge", requireOfficerRole, async (req, res) => {
       return entry;
     });
 
+    syncCanonicalComplaintFields(complaint, currentOfficer, { accepted: isAcknowledged });
+
     await complaint.save();
+
+    emitSocketEvent("complaint:accepted", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      acceptedAt: complaint.acknowledgedAt || new Date(),
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: isAcknowledged ? "officer-acknowledge" : "officer-seen",
+    });
+
+    emitSocketEvent("complaint:status-change", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      previousStatus,
+      newStatus,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: isAcknowledged ? "officer-acknowledge" : "officer-seen",
+    });
 
     const storedReply = await persistComplaintReply({
       complaint,
@@ -509,6 +615,8 @@ router.patch("/:id/staff/status", requireOfficerRole, async (req, res) => {
       return failure(res, 400, "Status required", "VALIDATION_ERROR");
     }
 
+    const previousStatus = complaint.status;
+
     // Validate status transition
     if (!isValidStatusTransition(complaint.status, newStatus)) {
       const validNextStatuses = getValidNextStatuses(complaint.status);
@@ -538,7 +646,30 @@ router.patch("/:id/staff/status", requireOfficerRole, async (req, res) => {
     complaint.messages.push(
       staffTimelineEntry(currentOfficer.staffName, `Status changed to ${newStatus}`, currentOfficer),
     );
+    syncCanonicalComplaintFields(complaint, currentOfficer, { accepted: newStatus === "Accepted" });
     await complaint.save();
+
+    emitSocketEvent("complaint:status-change", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      newStatus,
+      previousStatus,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "officer-status",
+    });
+
+    if (/ready for handover|item found|passenger contacted|closed/i.test(newStatus)) {
+      emitSocketEvent("complaint:escalation", {
+        complaintId: String(complaint._id),
+        passengerId: complaint.passengerId,
+        complaint: complaint.toObject ? complaint.toObject() : complaint,
+        escalationLevel: complaint.escalationLevel || newStatus,
+        routingReason: complaint.staffResponseStatus || `Status updated to ${newStatus}`,
+        actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+        source: "officer-status",
+      });
+    }
 
     const storedReply = await persistComplaintReply({
       complaint,
@@ -589,6 +720,7 @@ router.patch("/:id/staff/handover", requireOfficerRole, async (req, res) => {
 
     const handoverStation = String(req.body?.handoverStation || req.body?.meetingPoint || complaint.recoveryStation || "").trim();
     const handoverTime = String(req.body?.handoverTime || complaint.meetingTime || "").trim();
+    const previousStatus = complaint.status;
 
     complaint.status = "Ready for Handover";
     complaint.meetingScheduled = true;
@@ -601,7 +733,18 @@ router.patch("/:id/staff/handover", requireOfficerRole, async (req, res) => {
     complaint.messages.push(
       staffTimelineEntry(currentOfficer.staffName, `Handover arranged at ${handoverStation || "the next station"}`, currentOfficer),
     );
+    syncCanonicalComplaintFields(complaint, currentOfficer);
     await complaint.save();
+
+    emitSocketEvent("complaint:status-change", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      newStatus: complaint.status,
+      previousStatus,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "officer-handover",
+    });
 
     const storedReply = await persistComplaintReply({
       complaint,
@@ -632,6 +775,585 @@ router.patch("/:id/staff/handover", requireOfficerRole, async (req, res) => {
   } catch (error) {
     console.error("Staff handover error:", error.message);
     return failure(res, 500, "Unable to coordinate handover.", "INTERNAL_ERROR", error.message);
+  }
+});
+
+// PATCH /api/complaints/:id/staff/accept - Officer accepts complaint
+router.patch("/:id/staff/accept", requireOfficerRole, async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return failure(res, 404, "Complaint not found", "NOT_FOUND");
+    }
+
+    const currentOfficer = await resolveCurrentOfficer(req);
+    if (!currentOfficer || !currentOfficer.onDutyStatus || !complaintMatchesOfficer(complaint, currentOfficer)) {
+      return failure(res, 403, "On-duty officer access required.", "OFFICER_OFF_DUTY");
+    }
+
+    const previousStatus = complaint.status;
+    complaint.status = "Accepted";
+    complaint.acceptedAt = complaint.acceptedAt || new Date();
+    complaint.staffResponseStatus = "Complaint accepted by officer";
+    complaint.messages = complaint.messages || [];
+    complaint.messages.push(
+      staffTimelineEntry(currentOfficer.staffName, "Complaint accepted", currentOfficer),
+    );
+    syncCanonicalComplaintFields(complaint, currentOfficer, { accepted: true });
+    await complaint.save();
+
+    const storedReply = await persistComplaintReply({
+      complaint,
+      currentOfficer,
+      message: "Complaint accepted",
+      statusUpdate: "Accepted",
+    });
+
+    emitSocketEvent("complaint:accepted", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      acceptedAt: complaint.acceptedAt,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "officer-accept",
+    });
+
+    emitSocketEvent("complaint:status-change", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      previousStatus,
+      newStatus: "Accepted",
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "officer-accept",
+    });
+
+    await logAction({
+      action: "OFFICER_ACCEPTED_COMPLAINT",
+      actorType: "OFFICER",
+      actorId: currentOfficer.staffId || currentOfficer.staffEmail,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      entityType: "Complaint",
+      entityId: String(complaint._id),
+      complaintId: complaint.complaintId || String(complaint._id),
+      metadata: {
+        replyId: storedReply?._id?.toString?.() || null,
+        acceptedAt: complaint.acceptedAt,
+      },
+    });
+
+    return success(res, 200, "Complaint accepted successfully", {
+      complaint,
+      reply: storedReply,
+    });
+  } catch (error) {
+    console.error("Staff accept error:", error.message);
+    return failure(res, 500, "Unable to accept complaint.", "INTERNAL_ERROR", error.message);
+  }
+});
+
+// PATCH /api/complaints/:id/staff/start-investigation - Officer starts investigation
+router.patch("/:id/staff/start-investigation", requireOfficerRole, async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return failure(res, 404, "Complaint not found", "NOT_FOUND");
+    }
+
+    const currentOfficer = await resolveCurrentOfficer(req);
+    if (!currentOfficer || !currentOfficer.onDutyStatus || !complaintMatchesOfficer(complaint, currentOfficer)) {
+      return failure(res, 403, "On-duty officer access required.", "OFFICER_OFF_DUTY");
+    }
+
+    const previousStatus = complaint.status;
+    complaint.status = "Item Being Checked";
+    complaint.staffResponseStatus = "Investigation in progress";
+    complaint.investigationStartedAt = complaint.investigationStartedAt || new Date();
+    complaint.messages = complaint.messages || [];
+    complaint.messages.push(
+      staffTimelineEntry(currentOfficer.staffName, "Investigation started", currentOfficer),
+    );
+    syncCanonicalComplaintFields(complaint, currentOfficer);
+    await complaint.save();
+
+    const storedReply = await persistComplaintReply({
+      complaint,
+      currentOfficer,
+      message: "Investigation started - Item being checked",
+      statusUpdate: "Item Being Checked",
+    });
+
+    emitSocketEvent("complaint:status-change", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      previousStatus,
+      newStatus: "Item Being Checked",
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "officer-start-investigation",
+    });
+
+    await logAction({
+      action: "OFFICER_STARTED_INVESTIGATION",
+      actorType: "OFFICER",
+      actorId: currentOfficer.staffId || currentOfficer.staffEmail,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      entityType: "Complaint",
+      entityId: String(complaint._id),
+      complaintId: complaint.complaintId || String(complaint._id),
+      metadata: {
+        replyId: storedReply?._id?.toString?.() || null,
+        investigationStartedAt: complaint.investigationStartedAt,
+      },
+    });
+
+    return success(res, 200, "Investigation started successfully", {
+      complaint,
+      reply: storedReply,
+    });
+  } catch (error) {
+    console.error("Staff start investigation error:", error.message);
+    return failure(res, 500, "Unable to start investigation.", "INTERNAL_ERROR", error.message);
+  }
+});
+
+// POST /api/complaints/:id/staff/note - Officer adds internal note
+router.post("/:id/staff/note", requireOfficerRole, async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return failure(res, 404, "Complaint not found", "NOT_FOUND");
+    }
+
+    const currentOfficer = await resolveCurrentOfficer(req);
+    if (!currentOfficer || !currentOfficer.onDutyStatus || !complaintMatchesOfficer(complaint, currentOfficer)) {
+      return failure(res, 403, "On-duty officer access required.", "OFFICER_OFF_DUTY");
+    }
+
+    const noteText = String(req.body?.note || "").trim();
+    if (!noteText) {
+      return failure(res, 400, "Note text required", "VALIDATION_ERROR");
+    }
+
+    complaint.messages = complaint.messages || [];
+    complaint.messages.push({
+      staffId: currentOfficer.staffId,
+      staffName: currentOfficer.staffName,
+      text: `[INTERNAL NOTE] ${noteText}`,
+      timestamp: new Date(),
+      isInternalNote: true,
+    });
+
+    complaint.officerNotes = complaint.officerNotes ? `${complaint.officerNotes}\n\n[${new Date().toISOString()}] ${currentOfficer.staffName}: ${noteText}` : `[${new Date().toISOString()}] ${currentOfficer.staffName}: ${noteText}`;
+    await complaint.save();
+
+    emitSocketEvent("complaint:note-added", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      note: noteText,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "officer-note",
+    });
+
+    await logAction({
+      action: "OFFICER_ADDED_INTERNAL_NOTE",
+      actorType: "OFFICER",
+      actorId: currentOfficer.staffId || currentOfficer.staffEmail,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      entityType: "Complaint",
+      entityId: String(complaint._id),
+      complaintId: complaint.complaintId || String(complaint._id),
+      metadata: {
+        note: noteText,
+      },
+    });
+
+    return success(res, 200, "Internal note added successfully", {
+      complaint,
+    });
+  } catch (error) {
+    console.error("Staff note error:", error.message);
+    return failure(res, 500, "Unable to add note.", "INTERNAL_ERROR", error.message);
+  }
+});
+
+// PATCH /api/complaints/:id/staff/escalate-rpf - Officer escalates to RPF
+router.patch("/:id/staff/escalate-rpf", requireOfficerRole, async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return failure(res, 404, "Complaint not found", "NOT_FOUND");
+    }
+
+    const currentOfficer = await resolveCurrentOfficer(req);
+    if (!currentOfficer || !currentOfficer.onDutyStatus || !complaintMatchesOfficer(complaint, currentOfficer)) {
+      return failure(res, 403, "On-duty officer access required.", "OFFICER_OFF_DUTY");
+    }
+
+    const previousStatus = complaint.status;
+    complaint.status = "Item Being Checked";
+    complaint.escalationLevel = "RPF";
+    complaint.assignedRole = "RPF";
+    complaint.staffResponseStatus = "Escalated to RPF for further investigation";
+    complaint.messages = complaint.messages || [];
+    complaint.messages.push(
+      staffTimelineEntry(currentOfficer.staffName, "Escalated to Railway Police Force (RPF)", currentOfficer),
+    );
+    syncCanonicalComplaintFields(complaint, currentOfficer);
+    await complaint.save();
+
+    const storedReply = await persistComplaintReply({
+      complaint,
+      currentOfficer,
+      message: "Case escalated to Railway Police Force (RPF)",
+      statusUpdate: complaint.status,
+    });
+
+    emitSocketEvent("complaint:escalation", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      escalationLevel: "RPF",
+      escalatedBy: currentOfficer.staffName,
+      escalatedAt: new Date(),
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "officer-escalate-rpf",
+    });
+
+    emitSocketEvent("complaint:status-change", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      previousStatus,
+      newStatus: complaint.status,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "officer-escalate-rpf",
+    });
+
+    await logAction({
+      action: "OFFICER_ESCALATED_TO_RPF",
+      actorType: "OFFICER",
+      actorId: currentOfficer.staffId || currentOfficer.staffEmail,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      entityType: "Complaint",
+      entityId: String(complaint._id),
+      complaintId: complaint.complaintId || String(complaint._id),
+      metadata: {
+        replyId: storedReply?._id?.toString?.() || null,
+        escalationLevel: "RPF",
+        reason: req.body?.reason || null,
+      },
+    });
+
+    return success(res, 200, "Complaint escalated to RPF successfully", {
+      complaint,
+      reply: storedReply,
+    });
+  } catch (error) {
+    console.error("Staff escalate to RPF error:", error.message);
+    return failure(res, 500, "Unable to escalate to RPF.", "INTERNAL_ERROR", error.message);
+  }
+});
+
+// PATCH /api/complaints/:id/staff/escalate-police - Officer escalates to Police
+router.patch("/:id/staff/escalate-police", requireOfficerRole, async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return failure(res, 404, "Complaint not found", "NOT_FOUND");
+    }
+
+    const currentOfficer = await resolveCurrentOfficer(req);
+    if (!currentOfficer || !currentOfficer.onDutyStatus || !complaintMatchesOfficer(complaint, currentOfficer)) {
+      return failure(res, 403, "On-duty officer access required.", "OFFICER_OFF_DUTY");
+    }
+
+    const previousStatus = complaint.status;
+    complaint.status = "Item Being Checked";
+    complaint.escalationLevel = "Police";
+    complaint.assignedRole = "Police";
+    complaint.staffResponseStatus = "Escalated to Police for investigation";
+    complaint.messages = complaint.messages || [];
+    complaint.messages.push(
+      staffTimelineEntry(currentOfficer.staffName, "Escalated to Police", currentOfficer),
+    );
+    syncCanonicalComplaintFields(complaint, currentOfficer);
+    await complaint.save();
+
+    const storedReply = await persistComplaintReply({
+      complaint,
+      currentOfficer,
+      message: "Case escalated to Police",
+      statusUpdate: complaint.status,
+    });
+
+    emitSocketEvent("complaint:escalation", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      escalationLevel: "Police",
+      escalatedBy: currentOfficer.staffName,
+      escalatedAt: new Date(),
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "officer-escalate-police",
+    });
+
+    emitSocketEvent("complaint:status-change", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      previousStatus,
+      newStatus: complaint.status,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "officer-escalate-police",
+    });
+
+    await logAction({
+      action: "OFFICER_ESCALATED_TO_POLICE",
+      actorType: "OFFICER",
+      actorId: currentOfficer.staffId || currentOfficer.staffEmail,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      entityType: "Complaint",
+      entityId: String(complaint._id),
+      complaintId: complaint.complaintId || String(complaint._id),
+      metadata: {
+        replyId: storedReply?._id?.toString?.() || null,
+        escalationLevel: "Police",
+        reason: req.body?.reason || null,
+      },
+    });
+
+    return success(res, 200, "Complaint escalated to Police successfully", {
+      complaint,
+      reply: storedReply,
+    });
+  } catch (error) {
+    console.error("Staff escalate to Police error:", error.message);
+    return failure(res, 500, "Unable to escalate to Police.", "INTERNAL_ERROR", error.message);
+  }
+});
+
+// PATCH /api/complaints/:id/staff/reassign - Officer reassigns complaint
+router.patch("/:id/staff/reassign", requireOfficerRole, async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return failure(res, 404, "Complaint not found", "NOT_FOUND");
+    }
+
+    const currentOfficer = await resolveCurrentOfficer(req);
+    if (!currentOfficer || !currentOfficer.onDutyStatus || !complaintMatchesOfficer(complaint, currentOfficer)) {
+      return failure(res, 403, "On-duty officer access required.", "OFFICER_OFF_DUTY");
+    }
+
+    const assignToUnit = String(req.body?.assignToUnit || "").trim().toUpperCase();
+    const reason = String(req.body?.reason || "Reassigned").trim();
+
+    if (!["TTR", "TTE", "RPF", "POLICE"].includes(assignToUnit)) {
+      return failure(res, 400, "Invalid unit for reassignment", "VALIDATION_ERROR");
+    }
+
+    complaint.messages = complaint.messages || [];
+    complaint.messages.push(
+      staffTimelineEntry(currentOfficer.staffName, `Reassigned from ${currentOfficer.dutyUnit || "current unit"} to ${assignToUnit}. Reason: ${reason}`, currentOfficer),
+    );
+    complaint.staffResponseStatus = `Reassigned to ${assignToUnit}`;
+    complaint.assignedRole = assignToUnit;
+    await complaint.save();
+
+    emitSocketEvent("complaint:reassigned", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      reassignedFrom: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      reassignedTo: assignToUnit,
+      reason,
+      reassignedBy: currentOfficer.staffName,
+      reassignedAt: new Date(),
+      source: "officer-reassign",
+    });
+
+    await logAction({
+      action: "OFFICER_REASSIGNED_COMPLAINT",
+      actorType: "OFFICER",
+      actorId: currentOfficer.staffId || currentOfficer.staffEmail,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      entityType: "Complaint",
+      entityId: String(complaint._id),
+      complaintId: complaint.complaintId || String(complaint._id),
+      metadata: {
+        reassignedFrom: currentOfficer.dutyUnit,
+        reassignedTo: assignToUnit,
+        reason,
+      },
+    });
+
+    return success(res, 200, "Complaint reassigned successfully", {
+      complaint,
+    });
+  } catch (error) {
+    console.error("Staff reassign error:", error.message);
+    return failure(res, 500, "Unable to reassign complaint.", "INTERNAL_ERROR", error.message);
+  }
+});
+
+// PATCH /api/complaints/:id/staff/resolve - Officer resolves complaint
+router.patch("/:id/staff/resolve", requireOfficerRole, async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return failure(res, 404, "Complaint not found", "NOT_FOUND");
+    }
+
+    const currentOfficer = await resolveCurrentOfficer(req);
+    if (!currentOfficer || !currentOfficer.onDutyStatus || !complaintMatchesOfficer(complaint, currentOfficer)) {
+      return failure(res, 403, "On-duty officer access required.", "OFFICER_OFF_DUTY");
+    }
+
+    const previousStatus = complaint.status;
+    const resolutionDetails = String(req.body?.resolutionDetails || "").trim();
+
+    complaint.status = "Recovered";
+    complaint.itemFound = true;
+    complaint.resolvedAt = complaint.resolvedAt || new Date();
+    complaint.staffResponseStatus = resolutionDetails || "Complaint resolved - Item found";
+    complaint.messages = complaint.messages || [];
+    complaint.messages.push(
+      staffTimelineEntry(currentOfficer.staffName, `Resolved: ${resolutionDetails || "Item found and recovered"}`, currentOfficer),
+    );
+    syncCanonicalComplaintFields(complaint, currentOfficer);
+    await complaint.save();
+
+    const storedReply = await persistComplaintReply({
+      complaint,
+      currentOfficer,
+      message: resolutionDetails || "Complaint resolved - Item recovered",
+      statusUpdate: "Recovered",
+    });
+
+    emitSocketEvent("complaint:resolved", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      resolutionDetails: resolutionDetails || "Item found and recovered",
+      resolvedBy: currentOfficer.staffName,
+      resolvedAt: complaint.resolvedAt,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "officer-resolve",
+    });
+
+    emitSocketEvent("complaint:status-change", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      previousStatus,
+      newStatus: "Recovered",
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "officer-resolve",
+    });
+
+    await logAction({
+      action: "OFFICER_RESOLVED_COMPLAINT",
+      actorType: "OFFICER",
+      actorId: currentOfficer.staffId || currentOfficer.staffEmail,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      entityType: "Complaint",
+      entityId: String(complaint._id),
+      complaintId: complaint.complaintId || String(complaint._id),
+      metadata: {
+        replyId: storedReply?._id?.toString?.() || null,
+        resolutionDetails,
+        resolvedAt: complaint.resolvedAt,
+      },
+    });
+
+    return success(res, 200, "Complaint resolved successfully", {
+      complaint,
+      reply: storedReply,
+    });
+  } catch (error) {
+    console.error("Staff resolve error:", error.message);
+    return failure(res, 500, "Unable to resolve complaint.", "INTERNAL_ERROR", error.message);
+  }
+});
+
+// PATCH /api/complaints/:id/staff/close - Officer closes complaint
+router.patch("/:id/staff/close", requireOfficerRole, async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return failure(res, 404, "Complaint not found", "NOT_FOUND");
+    }
+
+    const currentOfficer = await resolveCurrentOfficer(req);
+    if (!currentOfficer || !currentOfficer.onDutyStatus || !complaintMatchesOfficer(complaint, currentOfficer)) {
+      return failure(res, 403, "On-duty officer access required.", "OFFICER_OFF_DUTY");
+    }
+
+    const previousStatus = complaint.status;
+    const closureReason = String(req.body?.closureReason || "").trim();
+
+    complaint.status = "Closed";
+    complaint.closedAt = complaint.closedAt || new Date();
+    complaint.staffResponseStatus = closureReason || "Complaint closed";
+    complaint.messages = complaint.messages || [];
+    complaint.messages.push(
+      staffTimelineEntry(currentOfficer.staffName, `Closed: ${closureReason || "Complaint closure completed"}`, currentOfficer),
+    );
+    syncCanonicalComplaintFields(complaint, currentOfficer);
+    await complaint.save();
+
+    const storedReply = await persistComplaintReply({
+      complaint,
+      currentOfficer,
+      message: closureReason || "Complaint closed",
+      statusUpdate: "Closed",
+    });
+
+    emitSocketEvent("complaint:closed", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      closureReason: closureReason || "Complaint closure completed",
+      closedBy: currentOfficer.staffName,
+      closedAt: complaint.closedAt,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "officer-close",
+    });
+
+    emitSocketEvent("complaint:status-change", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      previousStatus,
+      newStatus: "Closed",
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      source: "officer-close",
+    });
+
+    await logAction({
+      action: "OFFICER_CLOSED_COMPLAINT",
+      actorType: "OFFICER",
+      actorId: currentOfficer.staffId || currentOfficer.staffEmail,
+      actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      entityType: "Complaint",
+      entityId: String(complaint._id),
+      complaintId: complaint.complaintId || String(complaint._id),
+      metadata: {
+        replyId: storedReply?._id?.toString?.() || null,
+        closureReason,
+        closedAt: complaint.closedAt,
+      },
+    });
+
+    return success(res, 200, "Complaint closed successfully", {
+      complaint,
+      reply: storedReply,
+    });
+  } catch (error) {
+    console.error("Staff close error:", error.message);
+    return failure(res, 500, "Unable to close complaint.", "INTERNAL_ERROR", error.message);
   }
 });
 

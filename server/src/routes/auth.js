@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const router = express.Router();
 const User = require("../models/User");
 const DutyAttendance = require("../models/DutyAttendance");
+const { requireAuth, requireRoles } = require("../middleware/authGuard");
 const {
   buildDutyRoster,
   inferDutyUnit,
@@ -11,6 +12,13 @@ const {
   normalizeDutyUnit,
   toDutyOfficer,
 } = require("../utils/dutyRoster");
+const {
+  OFFICER_GROUP_ROLE,
+  getDemoOfficerAccount,
+  normalizeLoginIdentifier,
+  resolveOfficerSpecificRole,
+} = require("../utils/officerAuth");
+const { emitSocketEvent } = require("../utils/socket");
 
 const VERIFY_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const RESET_CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -143,6 +151,82 @@ const isValidProfessionalId = (role, idValue) => {
 
 const normalizeProfessionalId = (value) => (value || "").trim().toUpperCase();
 
+const canLookupUserById = (value) => mongoose.Types.ObjectId.isValid(String(value || ""));
+
+const buildSyntheticOfficer = (profile = {}) => ({
+  staffId: profile.staffId || profile.email || profile.professionalId || profile.username || "demo-officer",
+  userId: profile.userId || profile.email || null,
+  staffName: profile.staffName || profile.name || "Duty Officer",
+  staffEmail: normalizeEmail(profile.staffEmail || profile.email),
+  staffRole: profile.staffRole || profile.role || OFFICER_GROUP_ROLE,
+  dutyUnit: profile.dutyUnit || profile.specificRole || inferDutyUnitFromProfessionalId(profile.professionalId) || "TTR",
+  dutyStation: profile.dutyStation || null,
+  dutyDesk: profile.dutyDesk || null,
+  jurisdiction: profile.jurisdiction || null,
+  dutyNote: profile.dutyNote || null,
+  onDutyStatus: Boolean(profile.onDutyStatus),
+  dutyCheckInAt: profile.dutyCheckInAt || null,
+  dutyCheckOutAt: profile.dutyCheckOutAt || null,
+  professionalId: profile.professionalId || null,
+  isDemo: Boolean(profile.isDemo),
+});
+
+const resolveOfficerFromAuth = async (req) => {
+  const authPayload = req.auth || {};
+  const identifier = normalizeLoginIdentifier(
+    authPayload.email || authPayload.username || req.body?.email || req.body?.professionalId || req.headers["x-user-email"] || req.headers["x-professional-id"],
+  );
+  const professionalId = normalizeProfessionalId(
+    authPayload.professionalId || req.body?.professionalId || req.headers["x-professional-id"],
+  );
+  const specificRole = resolveOfficerSpecificRole({
+    role: authPayload.role,
+    specificRole: authPayload.specificRole,
+    professionalId,
+    email: authPayload.email || req.body?.email || req.headers["x-user-email"],
+    identifier,
+  });
+
+  if (authPayload.authType === "demo") {
+    const demoProfile = getDemoOfficerAccount(identifier) || {
+      username: identifier,
+      role: OFFICER_GROUP_ROLE,
+      specificRole: specificRole || "TTR",
+      name: authPayload.name || "Duty Officer",
+      email: authPayload.email || `${specificRole || "officer"}@demo.saferide.local`,
+      professionalId: professionalId || authPayload.professionalId || `${specificRole || "OFFICER"}-DEMO-0001`,
+      dutyStation: authPayload.dutyStation || null,
+      dutyDesk: authPayload.dutyDesk || null,
+      jurisdiction: authPayload.jurisdiction || null,
+      isDemo: true,
+    };
+
+    return buildSyntheticOfficer(demoProfile);
+  }
+
+  let user = null;
+  if (identifier && identifier.includes("@")) {
+    user = await User.findOne({
+      email: identifier,
+      role: { $in: [OFFICER_GROUP_ROLE, ...OFFICER_ROLES] },
+    });
+  }
+
+  if (!user && professionalId) {
+    user = await findOfficialByProfessionalId(OFFICER_GROUP_ROLE, professionalId);
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const safeUser = user.toSafeObject ? user.toSafeObject() : user;
+  return toDutyOfficer({
+    ...safeUser,
+    dutyUnit: specificRole || safeUser.dutyUnit || resolveOfficerSpecificRole({ professionalId, email: safeUser.email, role: safeUser.role }),
+  });
+};
+
 const isStrongPassword = (passwordValue) => {
   const password = String(passwordValue || "");
   return password.length >= PASSWORD_MIN_LENGTH;
@@ -150,7 +234,7 @@ const isStrongPassword = (passwordValue) => {
 
 const findOfficialByProfessionalId = async (role, professionalId) => {
   const normalized = normalizeProfessionalId(professionalId);
-  const candidates = await User.find({ role }).select("+password");
+  const candidates = await User.find({ role: { $in: [role, ...OFFICER_ROLES] } }).select("+password");
   return (
     candidates.find(
       (candidate) =>
@@ -222,6 +306,8 @@ const normalizeAttendance = (session) => {
     assignedRoute: session.assignedRoute || null,
     assignedStation: session.assignedStation || null,
     assignedShift: session.assignedShift || null,
+    station: session.station || session.assignedStation || null,
+    liveLocationSnapshot: session.liveLocationSnapshot || null,
     checkInTime: session.checkInTime || null,
     checkOutTime: session.checkOutTime || null,
     status: session.status || "INACTIVE",
@@ -238,7 +324,7 @@ const getAttendancePayload = (req, officer) => ({
   officerEmail: normalizeEmail(officer.staffEmail || officer.email),
   professionalId: normalizeProfessionalId(officer.professionalId),
   officerName: officer.staffName || officer.name || "Duty Officer",
-  role: officer.staffRole || officer.role || "TTR/RPF/Police",
+  role: officer.dutyUnit || officer.staffRole || officer.role || "TTR/RPF/Police",
   dutyUnit: getDutyUnitFromRequest(req) || officer.dutyUnit || "TTR",
   assignedTrain: String(req.body?.assignedTrain || req.body?.dutyTrain || "").trim() || null,
   assignedRoute: String(req.body?.assignedRoute || req.body?.dutyRoute || "").trim() || null,
@@ -247,6 +333,8 @@ const getAttendancePayload = (req, officer) => ({
     officer.dutyStation ||
     null,
   assignedShift: String(req.body?.assignedShift || req.body?.shift || "").trim() || null,
+  station: String(req.body?.station || req.body?.assignedStation || req.body?.dutyStation || "").trim() || officer.dutyStation || null,
+  liveLocationSnapshot: req.body?.liveLocationSnapshot || req.body?.locationSnapshot || req.body?.liveLocation || null,
   notes: String(req.body?.dutyNote || "").trim() || null,
 });
 
@@ -724,40 +812,33 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.get("/duty/status", async (req, res) => {
+const OFFICER_ROLES = ["TTR", "TTE", "RPF", "Police"];
+
+router.get("/duty/status", requireAuth, requireRoles(OFFICER_ROLES), async (req, res) => {
   try {
-    const email = normalizeEmail(req.query?.email || req.headers["x-user-email"]);
-    const professionalId = normalizeProfessionalId(
-      req.query?.professionalId || req.headers["x-professional-id"],
-    );
+    const officer = await resolveOfficerFromAuth(req);
 
-    let user = null;
-    if (email) {
-      user = await findUserByEmail(email, { role: "TTR/RPF/Police" });
+    if (!officer) {
+      return res.status(404).json({ message: "Duty officer not found." });
     }
 
-    if (!user && professionalId) {
-      user = await findOfficialByProfessionalId("TTR/RPF/Police", professionalId);
-    }
-
-    if (user) {
-      const officer = toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
-      const attendance = await getLatestAttendance(buildOfficerKey(officer));
-      return res.json({
-        ...toDutyResponse(officer),
-        attendance: normalizeAttendance(attendance),
-        message: "Duty status retrieved successfully",
-      });
-    }
-
-    return res.status(404).json({ message: "Duty officer not found." });
+    const attendance = await getLatestAttendance(buildOfficerKey(officer));
+    return res.json({
+      ...toDutyResponse(officer),
+      attendance: normalizeAttendance(attendance),
+      assignedTrain: attendance?.assignedTrain || officer.assignedTrain || null,
+      assignedRoute: attendance?.assignedRoute || officer.assignedRoute || null,
+      assignedStation: attendance?.assignedStation || officer.assignedStation || officer.dutyStation || null,
+      assignedShift: attendance?.assignedShift || officer.assignedShift || null,
+      message: "Duty status retrieved successfully",
+    });
   } catch (error) {
     console.error("Duty status error:", error.message);
     return res.status(500).json({ message: "Unable to retrieve duty status." });
   }
 });
 
-router.get("/duty/roster", async (req, res) => {
+router.get("/duty/roster", requireAuth, requireRoles(OFFICER_ROLES), async (req, res) => {
   try {
     const officers = await User.find({
       role: "TTR/RPF/Police",
@@ -777,25 +858,33 @@ router.get("/duty/roster", async (req, res) => {
   }
 });
 
-router.post("/duty/check-in", async (req, res) => {
+router.get("/duty/on-duty", requireAuth, requireRoles(OFFICER_ROLES), async (req, res) => {
   try {
-    const email = normalizeEmail(req.body?.email || req.headers["x-user-email"]);
-    const professionalId = normalizeProfessionalId(req.body?.professionalId || req.headers["x-professional-id"]);
-    const dutyUnit = getDutyUnitFromRequest(req) || "TTR";
+    const activeSessions = await DutyAttendance.find({
+      $or: [{ status: "ACTIVE" }, { dutyStatus: "ACTIVE" }],
+    }).sort({ checkInTime: -1 });
 
-    let user = null;
-    if (email) {
-      user = await findUserByEmail(email, { role: "TTR/RPF/Police" });
-    }
-    if (!user && professionalId) {
-      user = await findOfficialByProfessionalId("TTR/RPF/Police", professionalId);
-    }
+    const onDutyOfficers = activeSessions.map((session) => normalizeAttendance(session)).filter(Boolean);
 
-    if (!user) {
+    return res.json({
+      officers: onDutyOfficers,
+      total: onDutyOfficers.length,
+      message: "On-duty officers retrieved successfully",
+    });
+  } catch (error) {
+    console.error("On-duty officers error:", error.message);
+    return res.status(500).json({ message: "Unable to retrieve on-duty officers." });
+  }
+});
+
+router.post("/duty/check-in", requireAuth, requireRoles(OFFICER_ROLES), async (req, res) => {
+  try {
+    const officer = await resolveOfficerFromAuth(req);
+
+    if (!officer) {
       return res.status(404).json({ message: "Duty officer not found." });
     }
 
-    const officer = toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
     const officerKey = buildOfficerKey(officer);
     const activeAttendance = await getActiveAttendance(officerKey);
     if (activeAttendance) {
@@ -808,20 +897,25 @@ router.post("/duty/check-in", async (req, res) => {
       checkInTime: new Date(),
       checkOutTime: null,
       status: "ACTIVE",
-      source: "db",
+      source: officer.isDemo ? "demo" : "db",
     });
 
-    user.onDutyStatus = true;
-    user.dutyCheckInAt = attendance.checkInTime;
-    user.dutyCheckOutAt = null;
-    user.dutyStation = attendance.assignedStation || req.body?.dutyStation || user.dutyStation || null;
-    user.dutyDesk = req.body?.dutyDesk || user.dutyDesk || null;
-    user.dutyUnit = attendance.dutyUnit || dutyUnit || user.dutyUnit || null;
-    user.dutyNote = attendance.notes || req.body?.dutyNote || user.dutyNote || null;
-    await user.save();
+    if (canLookupUserById(officer.userId)) {
+      const user = await User.findById(officer.userId);
+      if (user) {
+        user.onDutyStatus = true;
+        user.dutyCheckInAt = attendance.checkInTime;
+        user.dutyCheckOutAt = null;
+        user.dutyStation = attendance.assignedStation || req.body?.dutyStation || user.dutyStation || null;
+        user.dutyDesk = req.body?.dutyDesk || user.dutyDesk || null;
+        user.dutyUnit = attendance.dutyUnit || user.dutyUnit || null;
+        user.dutyNote = attendance.notes || req.body?.dutyNote || user.dutyNote || null;
+        await user.save();
+      }
+    }
 
     return res.json({
-      officer: toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user),
+      officer,
       attendance: normalizeAttendance(attendance),
       message: "Checked in successfully.",
     });
@@ -831,25 +925,14 @@ router.post("/duty/check-in", async (req, res) => {
   }
 });
 
-router.post("/duty/check-out", async (req, res) => {
+router.post("/duty/check-out", requireAuth, requireRoles(OFFICER_ROLES), async (req, res) => {
   try {
-    const email = normalizeEmail(req.body?.email || req.headers["x-user-email"]);
-    const professionalId = normalizeProfessionalId(req.body?.professionalId || req.headers["x-professional-id"]);
-    const dutyUnit = getDutyUnitFromRequest(req) || "TTR";
+    const officer = await resolveOfficerFromAuth(req);
 
-    let user = null;
-    if (email) {
-      user = await findUserByEmail(email, { role: "TTR/RPF/Police" });
-    }
-    if (!user && professionalId) {
-      user = await findOfficialByProfessionalId("TTR/RPF/Police", professionalId);
-    }
-
-    if (!user) {
+    if (!officer) {
       return res.status(404).json({ message: "Duty officer not found." });
     }
 
-    const officer = toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
     const officerKey = buildOfficerKey(officer);
     const activeAttendance = await getActiveAttendance(officerKey);
     if (!activeAttendance) {
@@ -861,19 +944,99 @@ router.post("/duty/check-out", async (req, res) => {
     activeAttendance.notes = String(req.body?.dutyNote || activeAttendance.notes || "").trim() || null;
     await activeAttendance.save();
 
-    user.onDutyStatus = false;
-    user.dutyCheckOutAt = activeAttendance.checkOutTime;
-    user.dutyNote = activeAttendance.notes || req.body?.dutyNote || user.dutyNote || null;
-    await user.save();
+    if (canLookupUserById(officer.userId)) {
+      const user = await User.findById(officer.userId);
+      if (user) {
+        user.onDutyStatus = false;
+        user.dutyCheckOutAt = activeAttendance.checkOutTime;
+        user.dutyNote = activeAttendance.notes || req.body?.dutyNote || user.dutyNote || null;
+        await user.save();
+      }
+    }
 
     return res.json({
-      officer: toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user),
+      officer,
       attendance: normalizeAttendance(activeAttendance),
       message: "Checked out successfully.",
     });
   } catch (error) {
     console.error("Check-out error:", error.message);
     return res.status(500).json({ message: "Unable to check out." });
+  }
+});
+
+router.post("/duty/location", requireAuth, requireRoles(OFFICER_ROLES), async (req, res) => {
+  try {
+    const officer = await resolveOfficerFromAuth(req);
+
+    if (!officer) {
+      return res.status(404).json({ message: "Duty officer not found." });
+    }
+
+    const officerKey = buildOfficerKey(officer);
+    const activeAttendance = await getActiveAttendance(officerKey);
+
+    if (!activeAttendance) {
+      return res.status(409).json({ message: "No active duty session found." });
+    }
+
+    const latitude = Number(req.body?.latitude);
+    const longitude = Number(req.body?.longitude);
+    const routeCheckpoint = String(req.body?.routeCheckpoint || req.body?.checkpoint || "").trim() || null;
+    const mappedTrainPosition = String(req.body?.mappedTrainPosition || req.body?.mappedPosition || req.body?.trainPosition || "").trim() || null;
+    const locationMode = String(req.body?.locationMode || req.body?.mode || "gps").trim().toLowerCase() || "gps";
+
+    const locationSnapshot = {
+      latitude: Number.isFinite(latitude) ? latitude : null,
+      longitude: Number.isFinite(longitude) ? longitude : null,
+      accuracy: Number.isFinite(Number(req.body?.accuracy)) ? Number(req.body.accuracy) : null,
+      speed: Number.isFinite(Number(req.body?.speed)) ? Number(req.body.speed) : null,
+      heading: Number.isFinite(Number(req.body?.heading)) ? Number(req.body.heading) : null,
+      routeCheckpoint,
+      mappedTrainPosition,
+      locationMode,
+      updatedAt: new Date(),
+    };
+
+    activeAttendance.liveLocationSnapshot = locationSnapshot;
+    activeAttendance.station = routeCheckpoint || activeAttendance.station || req.body?.station || null;
+    if (req.body?.assignedRoute) {
+      activeAttendance.assignedRoute = String(req.body.assignedRoute).trim() || activeAttendance.assignedRoute || null;
+    }
+    if (req.body?.assignedTrain) {
+      activeAttendance.assignedTrain = String(req.body.assignedTrain).trim() || activeAttendance.assignedTrain || null;
+    }
+    await activeAttendance.save();
+
+    if (canLookupUserById(officer.userId)) {
+      const user = await User.findById(officer.userId);
+      if (user) {
+        user.dutyStation = routeCheckpoint || user.dutyStation || null;
+        user.dutyNote = req.body?.dutyNote || user.dutyNote || null;
+        await user.save();
+      }
+    }
+
+    const payload = {
+      officer,
+      attendance: normalizeAttendance(activeAttendance),
+      location: locationSnapshot,
+      message: "Live location updated successfully.",
+    };
+
+    emitSocketEvent("officer:location-update", {
+      officerId: officer.staffId || officer.userId || officer.email || null,
+      complaintId: null,
+      officer,
+      attendance: normalizeAttendance(activeAttendance),
+      location: locationSnapshot,
+      source: locationMode,
+    });
+
+    return res.json(payload);
+  } catch (error) {
+    console.error("Live location update error:", error.message);
+    return res.status(500).json({ message: "Unable to update live location." });
   }
 });
 

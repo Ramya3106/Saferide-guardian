@@ -3,12 +3,14 @@ const mongoose = require("mongoose");
 
 const User = require("../models/User");
 const DutyAttendance = require("../models/DutyAttendance");
+const { requireAuth, requireRoles } = require("../middleware/authGuard");
 
 const router = express.Router();
+const OFFICER_ROLES = ["TTR", "TTE", "RPF", "Police"];
 
 const isObjectId = (value) => mongoose.Types.ObjectId.isValid(String(value || ""));
 
-router.post("/checkin", async (req, res) => {
+router.post("/checkin", requireAuth, requireRoles(OFFICER_ROLES), async (req, res) => {
   try {
     const {
       userId,
@@ -75,7 +77,7 @@ router.post("/checkin", async (req, res) => {
   }
 });
 
-router.post("/checkout", async (req, res) => {
+router.post("/checkout", requireAuth, requireRoles(OFFICER_ROLES), async (req, res) => {
   try {
     const { userId } = req.body || {};
 
@@ -114,7 +116,7 @@ router.post("/checkout", async (req, res) => {
   }
 });
 
-router.get("/status/:userId", async (req, res) => {
+router.get("/status/:userId", requireAuth, requireRoles(OFFICER_ROLES), async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -143,7 +145,7 @@ router.get("/status/:userId", async (req, res) => {
   }
 });
 
-router.get("/history/:userId", async (req, res) => {
+router.get("/history/:userId", requireAuth, requireRoles(OFFICER_ROLES), async (req, res) => {
   try {
     const { userId } = req.params;
 

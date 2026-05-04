@@ -1,5 +1,16 @@
 const { verifyToken } = require("../utils/authToken");
 
+const getRoleCandidates = (authPayload = {}) => {
+  const candidates = new Set();
+
+  [authPayload.role, authPayload.specificRole, authPayload.roleGroup, authPayload.baseRole]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .forEach((value) => candidates.add(value));
+
+  return Array.from(candidates);
+};
+
 const parseBearerToken = (authorizationHeader) => {
   const raw = String(authorizationHeader || "").trim();
   if (!raw.toLowerCase().startsWith("bearer ")) {
@@ -24,8 +35,10 @@ const requireAuth = (req, res, next) => {
 };
 
 const requireRoles = (allowedRoles = []) => (req, res, next) => {
-  const role = String(req.auth?.role || "");
-  if (!allowedRoles.includes(role)) {
+  const roleCandidates = getRoleCandidates(req.auth);
+  const isAllowed = allowedRoles.some((allowedRole) => roleCandidates.includes(String(allowedRole || "").trim()));
+
+  if (!isAllowed) {
     return res.status(403).json({ ok: false, message: "Insufficient role privileges", error: "FORBIDDEN" });
   }
   return next();

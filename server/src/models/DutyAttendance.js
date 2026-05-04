@@ -53,6 +53,14 @@ const dutyAttendanceSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    liveLocationSnapshot: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    station: {
+      type: String,
+      default: null,
+    },
     dutyStatus: {
       type: String,
       enum: ["ACTIVE", "INACTIVE"],
