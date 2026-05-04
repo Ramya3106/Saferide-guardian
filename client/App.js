@@ -30,6 +30,28 @@ import PasswordVerification from "./PasswordVerification";
 import OfficerDashboardScreen from "./src/screens/officer/OfficerDashboardScreen";
 
 const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
+const OFFICER_ROLES = [
+  {
+    key: "TTR",
+    title: "TTR",
+    description: "Ticketing and train recovery duty",
+  },
+  {
+    key: "TTE",
+    title: "TTE",
+    description: "Train escort and passenger assistance",
+  },
+  {
+    key: "RPF",
+    title: "RPF",
+    description: "Railway protection and escalation handling",
+  },
+  {
+    key: "Police",
+    title: "Police",
+    description: "Security response and incident coordination",
+  },
+];
 const OFFICIAL_DOMAINS = {
   "TTR/RPF/Police": ["railnet.gov.in", "tnpolice.gov.in"],
 };
@@ -2333,23 +2355,68 @@ const AppContent = () => {
   };
 
   const renderRoleSelector = () => (
-    <View style={styles.roleRow}>
-      {ROLES.map((item) => (
-        <TouchableOpacity
-          key={item}
-          style={[styles.roleChip, role === item && styles.roleChipActive]}
-          onPress={() => handleRoleChange(item)}
-        >
-          <Text
-            style={[
-              styles.roleChipText,
-              role === item && styles.roleChipTextActive,
-            ]}
-          >
-            {item}
-          </Text>
-        </TouchableOpacity>
-      ))}
+    <View style={styles.roleSelectorBlock}>
+      {isOfficialRole ? (
+        <View style={styles.officerRoleGrid}>
+          {OFFICER_ROLES.map((item) => {
+            const selected = specificRole === item.key;
+
+            return (
+              <TouchableOpacity
+                key={item.key}
+                style={[
+                  styles.officerRoleCard,
+                  selected && styles.officerRoleCardActive,
+                ]}
+                onPress={() => setSpecificRole(item.key)}
+                activeOpacity={0.9}
+              >
+                <Text style={styles.officerRoleKey}>{item.key}</Text>
+                <Text
+                  style={[
+                    styles.officerRoleTitle,
+                    selected && styles.officerRoleTitleActive,
+                  ]}
+                >
+                  {item.title}
+                </Text>
+                <Text
+                  style={[
+                    styles.officerRoleDescription,
+                    selected && styles.officerRoleDescriptionActive,
+                  ]}
+                >
+                  {item.description}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      ) : (
+        <View style={styles.roleRow}>
+          {ROLES.map((item) => (
+            <TouchableOpacity
+              key={item}
+              style={[styles.roleChip, role === item && styles.roleChipActive]}
+              onPress={() => handleRoleChange(item)}
+            >
+              <Text
+                style={[
+                  styles.roleChipText,
+                  role === item && styles.roleChipTextActive,
+                ]}
+              >
+                {item}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+      {isOfficialRole && (
+        <Text style={styles.officerRoleHint}>
+          Select your officer unit before signing in.
+        </Text>
+      )}
     </View>
   );
 
@@ -3765,9 +3832,20 @@ const AppContent = () => {
                             ? "Create your account"
                             : "Sign in to continue"}
                         </Text>
+                        {isOfficialRole && !isRegister ? (
+                          <View style={styles.officerLoginBanner}>
+                            <Text style={styles.officerLoginBannerTag}>Officer access</Text>
+                            <Text style={styles.officerLoginBannerTitle}>Railway staff sign-in</Text>
+                            <Text style={styles.officerLoginBannerText}>
+                              Use your officer role, username, and password to open the duty dashboard.
+                            </Text>
+                          </View>
+                        ) : null}
 
                         <View style={styles.inputGroup}>
-                          <Text style={styles.label}>{requiredLabel("Select role")}</Text>
+                          <Text style={styles.label}>
+                            {requiredLabel(isOfficialRole ? "Officer role" : "Select role")}
+                          </Text>
                           {renderRoleSelector()}
                         </View>
 
@@ -3802,7 +3880,7 @@ const AppContent = () => {
                         {(!isOfficialRole || !isRegister) && (
                           <View style={styles.inputGroup}>
                             <AnimatedLabel
-                              text={requiredLabel(isOfficialRole ? "Email / username" : "Email address")}
+                              text={requiredLabel(isOfficialRole ? "Username" : "Email address")}
                               iconName="mail"
                             />
                             <TextInput
@@ -3812,7 +3890,7 @@ const AppContent = () => {
                                   isVerified &&
                                   styles.inputDisabled,
                               ]}
-                              placeholder={isOfficialRole ? "ttr_demo / you@example.com" : "you@example.com"}
+                              placeholder={isOfficialRole ? "officer.username / officer.email" : "you@example.com"}
                               placeholderTextColor="#94A3B8"
                               value={email}
                               onChangeText={setEmail}
@@ -3825,7 +3903,7 @@ const AppContent = () => {
 
                         {isOfficialRole && !forgotPasswordMode && (
                           <View style={styles.inputGroup}>
-                            <Text style={styles.label}>{requiredLabel("Professional ID / optional badge")}</Text>
+                            <Text style={styles.label}>{requiredLabel("Professional ID / badge")}</Text>
                             <TextInput
                               style={styles.input}
                               placeholder={
@@ -5701,6 +5779,86 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     marginHorizontal: -4,
+  },
+  roleSelectorBlock: {
+    gap: 10,
+  },
+  officerRoleGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  officerRoleCard: {
+    flexBasis: "48%",
+    minHeight: 108,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    backgroundColor: "#F8FAFC",
+    justifyContent: "space-between",
+  },
+  officerRoleCardActive: {
+    borderColor: "#2563EB",
+    backgroundColor: "#EFF6FF",
+    shadowColor: "#2563EB",
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 2,
+  },
+  officerRoleKey: {
+    color: "#64748B",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1.2,
+  },
+  officerRoleTitle: {
+    color: "#0F172A",
+    fontSize: 20,
+    fontWeight: "900",
+    marginTop: 6,
+  },
+  officerRoleTitleActive: {
+    color: "#1D4ED8",
+  },
+  officerRoleDescription: {
+    color: "#475569",
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 4,
+  },
+  officerRoleDescriptionActive: {
+    color: "#1E3A8A",
+  },
+  officerRoleHint: {
+    color: "#64748B",
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  officerLoginBanner: {
+    backgroundColor: "#0F172A",
+    borderRadius: 18,
+    padding: 16,
+    gap: 6,
+    marginBottom: 6,
+  },
+  officerLoginBannerTag: {
+    color: "#93C5FD",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+  },
+  officerLoginBannerTitle: {
+    color: "#F8FAFC",
+    fontSize: 20,
+    fontWeight: "900",
+  },
+  officerLoginBannerText: {
+    color: "#CBD5E1",
+    fontSize: 12,
+    lineHeight: 18,
   },
   roleChip: {
     borderWidth: 1,
