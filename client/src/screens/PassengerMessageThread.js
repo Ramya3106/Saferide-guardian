@@ -6,7 +6,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   UIManager,
@@ -157,96 +156,91 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.screen }]}
+      className="flex-1"
+      style={{ backgroundColor: theme.screen }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={80}
     >
-      <View style={[styles.header, { backgroundColor: theme.card, borderColor: theme.border }]}>
-        <View style={styles.headerTopRow}>
-          <View style={[styles.headerIcon, { backgroundColor: theme.accentSoft }]}>
+      <View className="mx-3 mt-3 rounded-[18px] border p-3.5 gap-3" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
+        <View className="flex-row items-center gap-2.5">
+          <View className="w-10 h-10 rounded-2xl justify-center items-center" style={{ backgroundColor: theme.accentSoft }}>
             <Ionicons name="chatbubbles" size={18} color={theme.accent} />
           </View>
-          <View style={styles.headerCopy}>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>Chat with Support</Text>
-            <Text style={[styles.headerSubtitle, { color: theme.subtext }]}>
+          <View className="flex-1 gap-0.5">
+            <Text className="text-[17px] font-extrabold" style={{ color: theme.text }}>Chat with Support</Text>
+            <Text className="text-xs" style={{ color: theme.subtext }}>
               {complaint?.staffName ? `Officer: ${complaint.staffName}` : "Waiting for officer assignment..."}
             </Text>
           </View>
-          <View style={[styles.statusPill, { backgroundColor: theme.chip, borderColor: theme.chipBorder }]}>
+          <View className="flex-row items-center gap-1.5 rounded-full border px-2.5 py-1.5" style={{ backgroundColor: theme.chip, borderColor: theme.chipBorder }}>
             <Ionicons name="shield-checkmark" size={12} color={theme.accent} />
-            <Text style={[styles.statusPillText, { color: theme.text }]}>Rail desk</Text>
+            <Text className="text-[11px] font-extrabold" style={{ color: theme.text }}>Rail desk</Text>
           </View>
         </View>
 
-        <View style={[styles.routePanel, { backgroundColor: theme.isDark ? "#0B1220" : "#10233F" }]}>
-          <View style={styles.routePanelTop}>
-            <Text style={styles.routePanelTitle}>{trainName}</Text>
-            <Text style={styles.routePanelMeta}>Coach {coachLabel} / Seat {seatLabel}</Text>
+        <View className="rounded-2xl p-3.5 gap-2" style={{ backgroundColor: theme.isDark ? "#0B1220" : "#10233F" }}>
+          <View className="gap-0.5">
+            <Text className="text-[#F8FAFC] text-[15px] font-extrabold">{trainName}</Text>
+            <Text className="text-[#DBEAFE] text-xs">Coach {coachLabel} / Seat {seatLabel}</Text>
           </View>
-          <Text style={styles.routePanelRoute}>{routeText}</Text>
+          <Text className="text-[#CBD5E1] text-xs leading-snug">{routeText}</Text>
           <PriorityBadgeList complaint={complaint} />
         </View>
       </View>
 
       <ScrollView
         ref={scrollViewRef}
-        style={styles.messagesContainer}
-        contentContainerStyle={messages.length === 0 ? styles.messagesEmptyContent : styles.messagesContent}
+        className="flex-1 px-3 pt-3"
+        contentContainerStyle={messages.length === 0 ? { flexGrow: 1, justifyContent: "center", paddingBottom: 18 } : { paddingBottom: 12 }}
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: false })}
       >
         {isLoading ? (
-          <ActivityIndicator size="large" color={theme.accent} style={styles.loader} />
+          <ActivityIndicator size="large" color={theme.accent} className="mt-8" />
         ) : messages.length === 0 ? (
-          <View style={[styles.emptyState, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <View className="rounded-[18px] border py-8 px-4.5 justify-center items-center gap-2.5" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
             <Ionicons name="chatbubbles-outline" size={48} color={theme.subtext} />
-            <Text style={[styles.emptyText, { color: theme.text }]}>No messages yet</Text>
-            <Text style={[styles.emptySubtext, { color: theme.subtext }]}>Officer will respond to your complaint shortly</Text>
+            <Text className="text-base font-extrabold" style={{ color: theme.text }}>No messages yet</Text>
+            <Text className="text-xs text-center leading-relaxed max-w-[260px]" style={{ color: theme.subtext }}>Officer will respond to your complaint shortly</Text>
           </View>
         ) : (
           messages.map((message) => (
             <View
               key={message.id}
-              style={[
-                styles.messageWrapper,
-                message.isOfficer ? styles.officerMessageWrapper : styles.passengerMessageWrapper,
-              ]}
+              className={`flex-row my-2 items-end gap-2 ${message.isOfficer ? 'justify-start' : 'justify-end'}`}
             >
               {message.isOfficer ? (
-                <View style={[styles.officerAvatar, { backgroundColor: theme.accent }]}>
+                <View className="w-8 h-8 rounded-2xl justify-center items-center" style={{ backgroundColor: theme.accent }}>
                   <Ionicons name="shield-checkmark" size={18} color="#FFFFFF" />
                 </View>
               ) : null}
 
               <View
-                style={[
-                  styles.messageBubble,
-                  {
-                    backgroundColor: message.isOfficer ? theme.officerBubble : theme.passengerBubble,
-                    borderColor: message.isOfficer ? theme.officerBorder : theme.passengerBubble,
-                  },
-                  message.isOfficer ? styles.officerBubbleAlign : styles.passengerBubbleAlign,
-                ]}
+                className={`max-w-[78%] px-3 py-2.5 rounded-2xl border gap-0.5 ${message.isOfficer ? 'rounded-tl-sm' : 'rounded-tr-sm'}`}
+                style={{
+                  backgroundColor: message.isOfficer ? theme.officerBubble : theme.passengerBubble,
+                  borderColor: message.isOfficer ? theme.officerBorder : theme.passengerBubble,
+                }}
               >
-                <Text style={[styles.senderName, message.isOfficer ? styles.officerName : styles.passengerName]}>
+                <Text className={`text-xs font-extrabold ${message.isOfficer ? 'text-blue-700' : 'text-white'}`}>
                   {message.sender}
                 </Text>
 
                 {message.senderRole && message.isOfficer ? (
-                  <Text style={styles.senderRole}>{message.senderRole}</Text>
+                  <Text className="text-[10px] text-slate-500 font-semibold">{message.senderRole}</Text>
                 ) : null}
 
-                <Text style={[styles.messageText, message.isOfficer ? styles.officerText : styles.passengerText]}>
+                <Text className={`text-[13px] leading-snug ${message.isOfficer ? 'text-slate-900' : 'text-white'}`}>
                   {message.text}
                 </Text>
 
-                <Text style={[styles.timestamp, message.isOfficer ? styles.officerTimestamp : styles.passengerTimestamp]}>
+                <Text className={`text-[10px] mt-1 ${message.isOfficer ? 'text-slate-400' : 'text-blue-100'}`}>
                   {formatTime(message.timestamp)}
                 </Text>
               </View>
 
               {!message.isOfficer ? (
-                <View style={[styles.passengerAvatar, { backgroundColor: theme.subtext }]}>
+                <View className="w-8 h-8 rounded-2xl justify-center items-center" style={{ backgroundColor: theme.subtext }}>
                   <Ionicons name="person" size={18} color="#FFFFFF" />
                 </View>
               ) : null}
@@ -256,9 +250,10 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
       </ScrollView>
 
       {complaint?.status !== "Closed" ? (
-        <View style={[styles.inputContainer, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <View className="flex-row border-t px-3 py-2.5 gap-2 items-end" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
           <TextInput
-            style={[styles.input, { backgroundColor: theme.input, borderColor: theme.inputBorder, color: theme.text }]}
+            className="flex-1 border rounded-[14px] px-3 py-2.5 max-h-[110px] text-[13px]"
+            style={{ backgroundColor: theme.input, borderColor: theme.inputBorder, color: theme.text }}
             placeholder="Type your message..."
             placeholderTextColor={theme.subtext}
             value={inputText}
@@ -269,7 +264,8 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
           />
 
           <Pressable
-            style={[styles.sendButton, { backgroundColor: theme.accent }, isSending && styles.sendButtonDisabled]}
+            className={`w-[42px] h-[42px] rounded-[14px] justify-center items-center ${isSending ? 'opacity-55' : ''}`}
+            style={{ backgroundColor: theme.accent }}
             onPress={handleSendMessage}
             disabled={isSending || !inputText.trim()}
           >
@@ -277,237 +273,13 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
           </Pressable>
         </View>
       ) : (
-        <View style={styles.closedNotice}>
+        <View className="flex-row border-t px-4 py-3 justify-center items-center gap-2 bg-red-100 border-red-200">
           <Ionicons name="lock-closed" size={16} color={theme.danger} />
-          <Text style={[styles.closedText, { color: theme.danger }]}>This complaint has been closed</Text>
+          <Text className="text-xs font-bold" style={{ color: theme.danger }}>This complaint has been closed</Text>
         </View>
       )}
     </KeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    marginHorizontal: 12,
-    marginTop: 12,
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 14,
-    gap: 12,
-  },
-  headerTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  headerIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: "800",
-  },
-  headerSubtitle: {
-    fontSize: 12,
-  },
-  statusPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  statusPillText: {
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  routePanel: {
-    borderRadius: 16,
-    padding: 14,
-    gap: 8,
-  },
-  routePanelTop: {
-    gap: 2,
-  },
-  routePanelTitle: {
-    color: "#F8FAFC",
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  routePanelMeta: {
-    color: "#DBEAFE",
-    fontSize: 12,
-  },
-  routePanelRoute: {
-    color: "#CBD5E1",
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  messagesContainer: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingTop: 12,
-  },
-  messagesContent: {
-    paddingBottom: 12,
-  },
-  messagesEmptyContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingBottom: 18,
-  },
-  loader: {
-    marginTop: 32,
-  },
-  emptyState: {
-    borderRadius: 18,
-    borderWidth: 1,
-    paddingVertical: 34,
-    paddingHorizontal: 18,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 10,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  emptySubtext: {
-    fontSize: 12,
-    textAlign: "center",
-    lineHeight: 18,
-    maxWidth: 260,
-  },
-  messageWrapper: {
-    flexDirection: "row",
-    marginVertical: 8,
-    alignItems: "flex-end",
-    gap: 8,
-  },
-  officerMessageWrapper: {
-    justifyContent: "flex-start",
-  },
-  passengerMessageWrapper: {
-    justifyContent: "flex-end",
-  },
-  officerAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  passengerAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  messageBubble: {
-    maxWidth: "78%",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 2,
-  },
-  officerBubbleAlign: {
-    borderTopLeftRadius: 4,
-  },
-  passengerBubbleAlign: {
-    borderTopRightRadius: 4,
-  },
-  senderName: {
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  officerName: {
-    color: "#1D4ED8",
-  },
-  passengerName: {
-    color: "#FFFFFF",
-  },
-  senderRole: {
-    fontSize: 10,
-    color: "#64748B",
-    fontWeight: "600",
-  },
-  messageText: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  officerText: {
-    color: "#0F172A",
-  },
-  passengerText: {
-    color: "#FFFFFF",
-  },
-  timestamp: {
-    fontSize: 10,
-    marginTop: 4,
-  },
-  officerTimestamp: {
-    color: "#94A3B8",
-  },
-  passengerTimestamp: {
-    color: "#E0F2FE",
-  },
-  inputContainer: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-    alignItems: "flex-end",
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    maxHeight: 110,
-    fontSize: 13,
-  },
-  sendButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  sendButtonDisabled: {
-    opacity: 0.55,
-  },
-  closedNotice: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    borderTopColor: "#FECACA",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#FEE2E2",
-  },
-  closedText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-});
 
 export default PassengerMessageThread;

@@ -1,45 +1,35 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Animated,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  useColorScheme,
-  View,
-} from "react-native";
+import { Animated, Modal, Pressable, ScrollView, Text, TextInput, useColorScheme, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { PriorityBadgeList, PriorityHeader, PrioritySummary } from "../../components/PriorityBadge";
 import { updateComplaintAction } from "../../services/complaintService";
 
 const DetailPill = ({ icon, label, value, theme }) => (
-  <View style={[styles.detailPill, { backgroundColor: theme.chip, borderColor: theme.chipBorder }]}>
-    <View style={[styles.detailPillIcon, { backgroundColor: theme.accentSoft }]}>
+  <View className="flex-1 min-w-[48%] border rounded-2xl p-2.5 gap-1" style={{ backgroundColor: theme.chip, borderColor: theme.chipBorder }}>
+    <View className="w-5 h-5 rounded-full justify-center items-center" style={{ backgroundColor: theme.accentSoft }}>
       <Ionicons name={icon} size={12} color={theme.accent} />
     </View>
-    <Text style={[styles.detailPillLabel, { color: theme.subtext }]}>{label}</Text>
-    <Text style={[styles.detailPillValue, { color: theme.text }]} numberOfLines={2}>
+    <Text className="text-[11px] font-bold uppercase tracking-wider" style={{ color: theme.subtext }}>{label}</Text>
+    <Text className="text-[13px] font-bold leading-snug" style={{ color: theme.text }} numberOfLines={2}>
       {value}
     </Text>
   </View>
 );
 
 const DetailLine = ({ label, value, theme, emphasize = false }) => (
-  <View style={styles.detailLineRow}>
-    <Text style={[styles.label, { color: theme.subtext }]}>{label}</Text>
-    <Text style={[styles.detailLineValue, { color: theme.text, fontWeight: emphasize ? "800" : "600" }]}>
+  <View className="flex-row justify-between gap-4">
+    <Text className="font-bold" style={{ color: theme.subtext }}>{label}</Text>
+    <Text className={`flex-1 text-right text-[13px] leading-snug ${emphasize ? 'font-extrabold' : 'font-semibold'}`} style={{ color: theme.text }}>
       {value}
     </Text>
   </View>
 );
 
 const ActionButton = ({ label, subtext, icon, color, onPress }) => (
-  <Pressable style={[styles.actionButton, { backgroundColor: color }]} onPress={onPress}>
+  <Pressable className="flex-1 min-w-[31%] rounded-xl py-2.5 px-2.5 items-center justify-center gap-1" style={{ backgroundColor: color }} onPress={onPress}>
     <Ionicons name={icon} size={16} color="#FFFFFF" />
-    <Text style={styles.actionButtonText}>{label}</Text>
-    <Text style={styles.actionButtonSubtext}>{subtext}</Text>
+    <Text className="text-white font-extrabold text-xs">{label}</Text>
+    <Text className="text-white/90 text-[10px] text-center">{subtext}</Text>
   </Pressable>
 );
 
@@ -102,11 +92,11 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
 
   if (!complaint) {
     return (
-      <View style={[styles.emptyShell, { backgroundColor: theme.screen }]}>
-        <View style={[styles.emptyCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <View className="flex-1 p-3 justify-center" style={{ backgroundColor: theme.screen }}>
+        <View className="rounded-[18px] border p-[18px] items-center gap-2" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
           <Ionicons name="train" size={28} color={theme.accent} />
-          <Text style={[styles.title, { color: theme.text }]}>Complaint Detail View</Text>
-          <Text style={[styles.empty, { color: theme.subtext }]}>Select an alert to view complete details.</Text>
+          <Text className="text-xl font-extrabold" style={{ color: theme.text }}>Complaint Detail View</Text>
+          <Text style={{ color: theme.subtext }}>Select an alert to view complete details.</Text>
         </View>
       </View>
     );
@@ -201,21 +191,21 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.screen }]} contentContainerStyle={styles.scrollContent}>
+    <ScrollView className="flex-1" style={{ backgroundColor: theme.screen }} contentContainerStyle={{ paddingBottom: 24 }}>
       <Animated.View
+        className="rounded-[18px] border p-3.5 gap-3 m-3 shadow-md elevation-2"
         style={[
-          styles.card,
           { backgroundColor: theme.card, borderColor: theme.border, opacity: pulseOpacity },
         ]}
       >
-        <View style={styles.heroRow}>
-          <View style={[styles.heroIcon, { backgroundColor: theme.accentSoft }]}>
+        <View className="flex-row items-center gap-3">
+          <View className="w-11 h-11 rounded-[14px] justify-center items-center" style={{ backgroundColor: theme.accentSoft }}>
             <Ionicons name="train" size={20} color={theme.accent} />
           </View>
-          <View style={styles.heroCopy}>
-            <Text style={[styles.overline, { color: theme.subtext }]}>Rail operations console</Text>
-            <Text style={[styles.title, { color: theme.text }]}>Complaint Detail View</Text>
-            <Text style={[styles.heroMeta, { color: theme.subtext }]} numberOfLines={2}>
+          <View className="flex-1 gap-0.5">
+            <Text className="text-[11px] font-extrabold tracking-widest uppercase" style={{ color: theme.subtext }}>Rail operations console</Text>
+            <Text className="text-xl font-extrabold" style={{ color: theme.text }}>Complaint Detail View</Text>
+            <Text className="text-xs leading-snug" style={{ color: theme.subtext }} numberOfLines={2}>
               {`${complaint.complaintId || complaint._id} • ${trainName} • ${boardingStation} to ${destinationStation}`}
             </Text>
           </View>
@@ -224,7 +214,7 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
         <PriorityHeader complaint={complaint} />
         <PriorityBadgeList complaint={complaint} />
 
-        <View style={[styles.infoGrid, { backgroundColor: theme.elevated, borderColor: theme.border }]}>
+        <View className="border rounded-2xl p-2.5 flex-row flex-wrap gap-2" style={{ backgroundColor: theme.elevated, borderColor: theme.border }}>
           <DetailPill icon="person" label="Passenger" value={complaint.passengerName || "Passenger record"} theme={theme} />
           <DetailPill icon="train" label="Train" value={trainName} theme={theme} />
           <DetailPill icon="layers" label="Coach / Seat" value={`${coachLabel} / ${seatLabel}`} theme={theme} />
@@ -235,14 +225,14 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
           <DetailPill icon="shield-checkmark" label="Officer ID" value={officerId} theme={theme} />
         </View>
 
-        <View style={styles.sectionBlock}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Operations snapshot</Text>
-          <Text style={[styles.sectionBody, { color: theme.subtext }]}>
+        <View className="gap-1.5">
+          <Text className="text-[15px] font-extrabold" style={{ color: theme.text }}>Operations snapshot</Text>
+          <Text className="text-[13px] leading-relaxed" style={{ color: theme.subtext }}>
             Officer {officerName} is handling this case through the railway security workflow. The card layout keeps priority cues, station context, and duty identifiers visible for a polished final-year demo.
           </Text>
         </View>
 
-        <View style={[styles.detailStack, { backgroundColor: theme.elevated, borderColor: theme.border }]}>
+        <View className="border rounded-2xl p-3 gap-2" style={{ backgroundColor: theme.elevated, borderColor: theme.border }}>
           <DetailLine label="Complaint" value={complaint.complaintId || complaint._id} theme={theme} />
           <DetailLine label="Passenger" value={complaint.passengerName || "--"} theme={theme} />
           <DetailLine label="Train" value={trainName} theme={theme} />
@@ -259,41 +249,41 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
 
         <PrioritySummary complaint={complaint} />
 
-        <View style={[styles.mapCard, { backgroundColor: theme.isDark ? "#0B1220" : "#10233F" }]}>
-          <View style={styles.mapHeaderRow}>
-            <View style={styles.mapHeaderCopy}>
-              <Text style={styles.mapTitle}>Live operations panel</Text>
-              <Text style={styles.mapText}>
+        <View className="mt-0.5 rounded-2xl p-3.5 gap-1.5" style={{ backgroundColor: theme.isDark ? "#0B1220" : "#10233F" }}>
+          <View className="flex-row justify-between items-start gap-3">
+            <View className="flex-1 gap-1">
+              <Text className="text-[#F8FAFC] font-extrabold text-sm">Live operations panel</Text>
+              <Text className="text-[#DBEAFE] text-[13px] leading-snug">
                 {complaint.currentTrainLocation || complaint.nextStation || complaint.route || "Train route not resolved yet"}
               </Text>
             </View>
-            <View style={styles.livePill}>
-              <View style={styles.liveDot} />
-              <Text style={styles.livePillText}>LIVE</Text>
+            <View className="flex-row items-center gap-1.5 bg-red-500/15 border border-red-500/35 px-2.5 py-1.5 rounded-full">
+              <View className="w-2 h-2 rounded-full bg-red-500" />
+              <Text className="text-red-100 text-[11px] font-extrabold tracking-wider">LIVE</Text>
             </View>
           </View>
-          <Text style={styles.mapMeta}>
+          <Text className="text-slate-300 text-xs leading-snug">
             Position: {typeof complaint.currentLat === "number" && typeof complaint.currentLng === "number"
               ? `${complaint.currentLat.toFixed(4)}, ${complaint.currentLng.toFixed(4)}`
               : "Mock checkpoint only"}
           </Text>
-          <Text style={styles.mapMeta}>
+          <Text className="text-slate-300 text-xs leading-snug">
             Route context: {boardingStation} -> {destinationStation}
           </Text>
-          <View style={styles.routeTrack}>
-            <View style={styles.routeDotActive} />
-            <View style={styles.routeLine} />
-            <View style={styles.routeDot} />
-            <View style={styles.routeLine} />
-            <View style={styles.routeDot} />
+          <View className="flex-row items-center gap-1.5 mt-1.5 mb-0.5">
+            <View className="w-3 h-3 rounded-full bg-green-500 shadow-sm shadow-green-500" />
+            <View className="flex-1 h-0.5 bg-slate-700" />
+            <View className="w-2.5 h-2.5 rounded-full bg-slate-700" />
+            <View className="flex-1 h-0.5 bg-slate-700" />
+            <View className="w-2.5 h-2.5 rounded-full bg-slate-700" />
           </View>
-          <Text style={styles.mapHint}>The live map will animate against the latest officer or passenger position snapshot.</Text>
+          <Text className="text-slate-400 text-[11px] mt-0.5">The live map will animate against the latest officer or passenger position snapshot.</Text>
         </View>
       </Animated.View>
 
-      <View style={[styles.actionsContainer, { backgroundColor: theme.card, borderColor: theme.border }]}>
-        <Text style={[styles.actionsTitle, { color: theme.text }]}>Officer Actions</Text>
-        <View style={styles.actionGrid}>
+      <View className="rounded-[18px] border p-3.5 mx-3 mt-0.5 gap-3" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
+        <Text className="text-base font-extrabold" style={{ color: theme.text }}>Officer Actions</Text>
+        <View className="flex-row flex-wrap gap-2">
           <ActionButton label="Accept" subtext="Accept complaint" icon="checkmark-circle" color="#2563EB" onPress={() => handleAction("accept")} />
           <ActionButton label="Investigate" subtext="Start investigation" icon="search" color="#0F766E" onPress={() => handleAction("investigate")} />
           <ActionButton label="Reply" subtext="Reply to passenger" icon="chatbubble-ellipses" color="#334155" onPress={onOpenReply} />
@@ -306,31 +296,32 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
         </View>
       </View>
 
-      <View style={[styles.timelineContainer, { backgroundColor: theme.card, borderColor: theme.border }]}>
-        <Text style={[styles.timelineTitle, { color: theme.text }]}>Activity Timeline</Text>
+      <View className="rounded-[18px] border p-3.5 mx-3 mt-3 gap-3" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
+        <Text className="text-base font-extrabold" style={{ color: theme.text }}>Activity Timeline</Text>
         {getTimelineEntries().length > 0 ? (
           getTimelineEntries().map((entry, index) => (
-            <View key={index} style={styles.timelineEntry}>
-              <View style={styles.timelineDot} />
-              <View style={styles.timelineContent}>
-                <Text style={[styles.timelineStaff, { color: theme.text }]}>{entry.staffName}</Text>
-                <Text style={[styles.timelineText, { color: theme.subtext }]}>{entry.text}</Text>
-                <Text style={styles.timelineTime}>{new Date(entry.timestamp).toLocaleString()}</Text>
+            <View key={index} className="flex-row gap-3 pl-1.5">
+              <View className="w-3 h-3 rounded-full bg-blue-600 mt-1" />
+              <View className="flex-1 gap-0.5">
+                <Text className="text-[13px] font-extrabold" style={{ color: theme.text }}>{entry.staffName}</Text>
+                <Text className="text-xs leading-snug" style={{ color: theme.subtext }}>{entry.text}</Text>
+                <Text className="text-[10px] text-slate-400">{new Date(entry.timestamp).toLocaleString()}</Text>
               </View>
             </View>
           ))
         ) : (
-          <Text style={[styles.empty, { color: theme.subtext }]}>No activity yet</Text>
+          <Text style={{ color: theme.subtext }}>No activity yet</Text>
         )}
       </View>
 
       <Modal visible={showActionModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>{getActionLabel(selectedAction)}</Text>
+        <View className="flex-1 justify-center p-4.5 bg-slate-900/65">
+          <View className="rounded-[18px] border p-4 gap-3" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
+            <Text className="text-lg font-extrabold" style={{ color: theme.text }}>{getActionLabel(selectedAction)}</Text>
             {selectedAction === "note" && (
               <TextInput
-                style={[styles.input, { backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text }]}
+                className="rounded-2xl border px-3 py-2.5 min-h-[100px]"
+                style={{ backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text, textAlignVertical: "top" }}
                 placeholder="Enter internal note..."
                 placeholderTextColor={theme.subtext}
                 value={actionNote}
@@ -341,7 +332,8 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
             )}
             {selectedAction === "escalateRpf" && (
               <TextInput
-                style={[styles.input, { backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text }]}
+                className="rounded-2xl border px-3 py-2.5 min-h-[100px]"
+                style={{ backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text, textAlignVertical: "top" }}
                 placeholder="Reason for escalation to RPF..."
                 placeholderTextColor={theme.subtext}
                 value={actionNote}
@@ -352,7 +344,8 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
             )}
             {selectedAction === "escalatePolice" && (
               <TextInput
-                style={[styles.input, { backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text }]}
+                className="rounded-2xl border px-3 py-2.5 min-h-[100px]"
+                style={{ backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text, textAlignVertical: "top" }}
                 placeholder="Reason for escalation to Police..."
                 placeholderTextColor={theme.subtext}
                 value={actionNote}
@@ -363,7 +356,8 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
             )}
             {selectedAction === "reassign" && (
               <TextInput
-                style={[styles.input, { backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text }]}
+                className="rounded-2xl border px-3 py-2.5 min-h-[100px]"
+                style={{ backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text, textAlignVertical: "top" }}
                 placeholder="Reason for reassignment..."
                 placeholderTextColor={theme.subtext}
                 value={actionNote}
@@ -374,7 +368,8 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
             )}
             {selectedAction === "resolve" && (
               <TextInput
-                style={[styles.input, { backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text }]}
+                className="rounded-2xl border px-3 py-2.5 min-h-[100px]"
+                style={{ backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text, textAlignVertical: "top" }}
                 placeholder="Resolution details..."
                 placeholderTextColor={theme.subtext}
                 value={actionNote}
@@ -385,7 +380,8 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
             )}
             {selectedAction === "close" && (
               <TextInput
-                style={[styles.input, { backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text }]}
+                className="rounded-2xl border px-3 py-2.5 min-h-[100px]"
+                style={{ backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text, textAlignVertical: "top" }}
                 placeholder="Closure reason..."
                 placeholderTextColor={theme.subtext}
                 value={actionNote}
@@ -394,19 +390,19 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
                 numberOfLines={3}
               />
             )}
-            <View style={styles.modalButtons}>
+            <View className="flex-row gap-2.5">
               <Pressable
-                style={[styles.modalButton, styles.cancelButton]}
+                className="flex-1 rounded-xl py-3 items-center bg-slate-700"
                 onPress={() => {
                   setShowActionModal(false);
                   setActionNote("");
                 }}
                 disabled={isLoading}
               >
-                <Text style={styles.modalButtonText}>Cancel</Text>
+                <Text className="text-white font-extrabold">Cancel</Text>
               </Pressable>
-              <Pressable style={[styles.modalButton, styles.confirmButton]} onPress={handleSubmitAction} disabled={isLoading}>
-                <Text style={styles.modalButtonText}>{isLoading ? "Processing..." : "Confirm"}</Text>
+              <Pressable className="flex-1 rounded-xl py-3 items-center bg-blue-600" onPress={handleSubmitAction} disabled={isLoading}>
+                <Text className="text-white font-extrabold">{isLoading ? "Processing..." : "Confirm"}</Text>
               </Pressable>
             </View>
           </View>
@@ -415,348 +411,5 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
     </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 24,
-  },
-  emptyShell: {
-    flex: 1,
-    padding: 12,
-    justifyContent: "center",
-  },
-  emptyCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 18,
-    alignItems: "center",
-    gap: 8,
-  },
-  card: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 14,
-    gap: 12,
-    margin: 12,
-    shadowColor: "#000000",
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 2,
-  },
-  heroRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  heroIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  heroCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  overline: {
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "800",
-  },
-  heroMeta: {
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  infoGrid: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 10,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  detailPill: {
-    flexBasis: "48%",
-    minWidth: "48%",
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 10,
-    gap: 4,
-  },
-  detailPillIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  detailPillLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
-  detailPillValue: {
-    fontSize: 13,
-    fontWeight: "700",
-    lineHeight: 17,
-  },
-  sectionBlock: {
-    gap: 6,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  sectionBody: {
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  detailStack: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 12,
-    gap: 8,
-  },
-  detailLineRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 16,
-  },
-  detailLineValue: {
-    flex: 1,
-    textAlign: "right",
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  row: {
-    color: "#334155",
-    fontSize: 13,
-  },
-  label: {
-    fontWeight: "700",
-    color: "#0F172A",
-  },
-  empty: {
-    color: "#475569",
-  },
-  mapCard: {
-    marginTop: 2,
-    borderRadius: 16,
-    padding: 14,
-    gap: 6,
-  },
-  mapHeaderRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-  mapHeaderCopy: {
-    flex: 1,
-    gap: 3,
-  },
-  mapTitle: {
-    color: "#F8FAFC",
-    fontWeight: "800",
-    fontSize: 14,
-  },
-  mapText: {
-    color: "#DBEAFE",
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  mapMeta: {
-    color: "#CBD5E1",
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  mapHint: {
-    color: "#94A3B8",
-    fontSize: 11,
-    marginTop: 2,
-  },
-  livePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(239, 68, 68, 0.16)",
-    borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.35)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#EF4444",
-  },
-  livePillText: {
-    color: "#FEE2E2",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 0.4,
-  },
-  routeTrack: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 6,
-    marginBottom: 2,
-  },
-  routeDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#334155",
-  },
-  routeDotActive: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#22C55E",
-    shadowColor: "#22C55E",
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
-  },
-  routeLine: {
-    flex: 1,
-    height: 2,
-    backgroundColor: "#334155",
-  },
-  actionsContainer: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 14,
-    marginHorizontal: 12,
-    marginTop: 2,
-    gap: 12,
-  },
-  actionsTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  actionGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  actionButton: {
-    flex: 1,
-    minWidth: "31%",
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-  },
-  actionButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "800",
-    fontSize: 12,
-  },
-  actionButtonSubtext: {
-    color: "rgba(255,255,255,0.86)",
-    fontSize: 10,
-    textAlign: "center",
-  },
-  timelineContainer: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 14,
-    marginHorizontal: 12,
-    marginTop: 12,
-    gap: 12,
-  },
-  timelineTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  timelineEntry: {
-    flexDirection: "row",
-    gap: 12,
-    paddingLeft: 6,
-  },
-  timelineDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#2563EB",
-    marginTop: 4,
-  },
-  timelineContent: {
-    flex: 1,
-    gap: 2,
-  },
-  timelineStaff: {
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  timelineText: {
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  timelineTime: {
-    fontSize: 10,
-    color: "#94A3B8",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(2, 6, 23, 0.65)",
-    justifyContent: "center",
-    padding: 18,
-  },
-  modalContent: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 16,
-    gap: 12,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  input: {
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    minHeight: 100,
-    textAlignVertical: "top",
-  },
-  modalButtons: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  modalButton: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  cancelButton: {
-    backgroundColor: "#334155",
-  },
-  confirmButton: {
-    backgroundColor: "#2563EB",
-  },
-  modalButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "800",
-  },
-});
 
 export default ComplaintDetailView;
