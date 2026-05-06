@@ -3359,52 +3359,10 @@ const AppContent = () => {
 
   // Role-based access validation
   const canAccessDashboard = () => {
-    if (!isAuthenticated) return false;
-    
-    // Passengers can only access Passenger dashboard
-    if (role === "Passenger") return true;
-    
-    // Cab/Auto drivers can only access Cab/Auto dashboard
-    if (role === "Cab/Auto") return true;
-    
-    // Driver/Conductor can only access Driver/Conductor dashboard
-    if (role === "Driver/Conductor") return true;
-    
-    // TTR/RPF/Police officers must have a valid specific role
-    if (role === "TTR/RPF/Police") {
-      return ["TTR", "TTE", "RPF", "Police"].includes(specificRole);
-    }
-    
-    return false;
+    return Boolean(isAuthenticated);
   };
 
-  // Render role-based authorization error
-  const renderRoleAccessDenied = () => (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.accessDeniedContainer}>
-        <View style={styles.accessDeniedCard}>
-          <Ionicons name="shield-alert-outline" size={56} color="#EF4444" />
-          <Text style={styles.accessDeniedTitle}>Access Denied</Text>
-          <Text style={styles.accessDeniedMessage}>
-            Your account role does not have access to this dashboard. Please log out and sign in with the correct account.
-          </Text>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { backgroundColor: "#EF4444", borderColor: "#EF4444" }]}
-            onPress={handleLogout}
-          >
-            <Text style={styles.secondaryButtonText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-
   const renderDashboard = () => {
-    // Check if user has access to any dashboard
-    if (!canAccessDashboard()) {
-      return renderRoleAccessDenied();
-    }
-
     if (role === "Passenger") {
       const trimmedEmail = email.trim();
       const displayName =
@@ -3437,11 +3395,13 @@ const AppContent = () => {
 
     // Handle TTR/RPF/Police based on specific role selection
     if (role === "TTR/RPF/Police") {
+      const resolvedSpecificRole =
+        specificRole || inferSpecificRoleFromProfessionalId(professionalId) || "TTR";
       const sharedProps = {
         officerEmail: (email || email).trim(),
         professionalId: professionalId.trim(),
         staffName: name.trim(),
-        specificRole: specificRole,
+        specificRole: resolvedSpecificRole,
         authToken,
         authUserId,
         authUserRole,
@@ -3450,22 +3410,22 @@ const AppContent = () => {
         onLogout: handleLogout,
       };
 
-      if (specificRole === "TTE") {
+      if (resolvedSpecificRole === "TTE") {
         return <TteDashboard {...sharedProps} />;
       }
 
-      if (specificRole === "RPF") {
+      if (resolvedSpecificRole === "RPF") {
         return <RpfDashboard {...sharedProps} />;
       }
 
-      if (specificRole === "Police") {
+      if (resolvedSpecificRole === "Police") {
         return <PoliceDashboard {...sharedProps} />;
       }
 
       return (
         <TtrDashboard
           {...sharedProps}
-          roleLabel={specificRole ? `${specificRole} dashboard` : "TTR Dashboard"}
+          roleLabel={`${resolvedSpecificRole} dashboard`}
         />
       );
     }
