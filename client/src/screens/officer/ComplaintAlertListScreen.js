@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from "react";
-import { Animated, Pressable, ScrollView, StyleSheet, Text, useColorScheme, View } from "react-native";
+import { Animated, Pressable, ScrollView, Text, useColorScheme, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { PriorityBadgeList } from "../../components/PriorityBadge";
 
@@ -49,72 +49,72 @@ const BlinkingAlertCard = ({ alert, selected, onPress, onAccept, onOpenReply, th
   return (
     <Animated.View style={{ opacity: cardOpacity }}>
       <Pressable
+        className={`rounded-2xl p-3.5 gap-2.5 shadow-sm ${selected ? 'border-[1.5px] bg-blue-50/50' : 'border-0 bg-white'}`}
         style={[
-          styles.item,
-          { backgroundColor: theme.card, borderColor: theme.border },
+          { backgroundColor: theme.card },
           selected && { borderColor: theme.accent, backgroundColor: theme.selected },
           shouldBlink && { shadowColor: theme.urgent, shadowOpacity: 0.22, shadowRadius: 12, elevation: 3 },
         ]}
         onPress={() => onPress(alert)}
       >
-        <View style={styles.itemHeader}>
-          <View style={styles.itemHeaderLeft}>
-            <View style={[styles.roleIcon, { backgroundColor: theme.accentSoft }]}>
+        <View className="flex-row justify-between items-start gap-2.5">
+          <View className="flex-1 flex-row gap-2.5 items-center">
+            <View className="w-8 h-8 rounded-xl justify-center items-center" style={{ backgroundColor: theme.accentSoft }}>
               <Ionicons name="shield-checkmark" size={14} color={theme.accent} />
             </View>
-            <View>
-              <Text style={[styles.idText, { color: theme.text }]}>{alert.id || alert.complaintId || alert._id}</Text>
-              <Text style={[styles.meta, { color: theme.subtext }]} numberOfLines={1}>
+            <View className="flex-1">
+              <Text className="text-[13px] font-extrabold" style={{ color: theme.text }}>{alert.id || alert.complaintId || alert._id}</Text>
+              <Text className="text-xs" style={{ color: theme.subtext }} numberOfLines={1}>
                 {alert.passengerName || "Passenger"} • {alert.assignedOfficerName || "Officer"}
               </Text>
             </View>
           </View>
-          <View style={[styles.statusPill, { backgroundColor: theme.statusPill, borderColor: theme.border }] }>
-            <Text style={[styles.status, { color: theme.accent }]}>{alert.status || "Submitted"}</Text>
+          <View className="rounded-full border px-2.5 py-1.5" style={{ backgroundColor: theme.statusPill, borderColor: theme.border }}>
+            <Text className="text-[11px] font-extrabold" style={{ color: theme.accent }}>{alert.status || "Submitted"}</Text>
           </View>
         </View>
 
-        <Text style={[styles.itemType, { color: theme.text }]}>{alert.itemType || "Rail complaint"}</Text>
-        <Text style={[styles.meta, { color: theme.subtext }]}>
+        <Text className="text-base font-extrabold" style={{ color: theme.text }}>{alert.itemType || "Rail complaint"}</Text>
+        <Text className="text-xs" style={{ color: theme.subtext }}>
           {trainName} • {coachLabel} / {seatLabel}
         </Text>
-        <Text style={[styles.meta, { color: theme.subtext }]}>
+        <Text className="text-xs" style={{ color: theme.subtext }}>
           {boardingStation} → {destinationStation}
         </Text>
 
         <PriorityBadgeList complaint={alert} />
 
-        <View style={[styles.detailRow, { borderColor: theme.border }]}>
-          <View style={styles.detailChip}>
+        <View className="flex-row flex-wrap gap-2 pt-1.5 border-t" style={{ borderColor: theme.border }}>
+          <View className="flex-row items-center gap-1.5 rounded-full border px-2.5 py-1.5 border-slate-300/30">
             <Ionicons name="train" size={12} color={theme.accent} />
-            <Text style={[styles.detailChipText, { color: theme.text }]}>{trainName}</Text>
+            <Text className="text-[11px] font-bold" style={{ color: theme.text }}>{trainName}</Text>
           </View>
-          <View style={styles.detailChip}>
+          <View className="flex-row items-center gap-1.5 rounded-full border px-2.5 py-1.5 border-slate-300/30">
             <Ionicons name="layers" size={12} color={theme.accent} />
-            <Text style={[styles.detailChipText, { color: theme.text }]}>{coachLabel} / {seatLabel}</Text>
+            <Text className="text-[11px] font-bold" style={{ color: theme.text }}>{coachLabel} / {seatLabel}</Text>
           </View>
         </View>
 
         {alert.priorityReason ? (
-          <Text style={[styles.reasonText, { color: theme.subtext }]} numberOfLines={2}>
+          <Text className="text-[11px] leading-snug" style={{ color: theme.subtext }} numberOfLines={2}>
             {alert.priorityReason}
           </Text>
         ) : null}
 
         {isAccepted ? (
-          <View style={[styles.acceptedBox, { backgroundColor: theme.successSoft, borderColor: theme.successBorder }]}>
-            <Text style={[styles.acceptedText, { color: theme.successText }]}>Accepted by {acceptedBy}</Text>
-            <Text style={[styles.acceptedSubtext, { color: theme.successSubtext }]}>Card locked to the assigned officer.</Text>
-            <View style={styles.actionRow}>
-              <Pressable style={[styles.secondaryAction, { backgroundColor: theme.accent }]} onPress={() => onOpenReply?.(alert)}>
-                <Text style={styles.secondaryActionText}>Reply / Status</Text>
+          <View className="mt-1 p-2.5 rounded-xl border gap-1" style={{ backgroundColor: theme.successSoft, borderColor: theme.successBorder }}>
+            <Text className="text-xs font-extrabold" style={{ color: theme.successText }}>Accepted by {acceptedBy}</Text>
+            <Text className="text-[11px]" style={{ color: theme.successSubtext }}>Card locked to the assigned officer.</Text>
+            <View className="mt-0.5 flex-row justify-end">
+              <Pressable className="rounded-full px-3.5 py-2" style={{ backgroundColor: theme.accent }} onPress={() => onOpenReply?.(alert)}>
+                <Text className="text-white text-xs font-extrabold">Reply / Status</Text>
               </Pressable>
             </View>
           </View>
         ) : (
-          <View style={styles.actionRow}>
-            <Pressable style={[styles.acceptAction, { backgroundColor: theme.success }]} onPress={() => onAccept?.(alert)}>
-              <Text style={styles.acceptActionText}>Accept</Text>
+          <View className="mt-0.5 flex-row justify-end">
+            <Pressable className="rounded-full px-3.5 py-2" style={{ backgroundColor: theme.success }} onPress={() => onAccept?.(alert)}>
+              <Text className="text-white text-xs font-extrabold">Accept</Text>
             </Pressable>
           </View>
         )}
@@ -159,24 +159,24 @@ const ComplaintAlertListScreen = ({ alerts, selectedId, onSelect, onAccept, onOp
   }, [alerts]);
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.screen }]}>
-      <View style={[styles.header, { backgroundColor: theme.card, borderColor: theme.border }]}>
+    <View className="flex-1 gap-2.5" style={{ backgroundColor: theme.screen }}>
+      <View className="mx-3 mt-3 rounded-2xl px-4 py-3.5 flex-row justify-between items-center gap-3 shadow-sm" style={{ backgroundColor: theme.card }}>
         <View>
-          <Text style={[styles.title, { color: theme.text }]}>Complaint Alert List</Text>
-          <Text style={[styles.subtitle, { color: theme.subtext }]}>Rail security operations board</Text>
+          <Text className="text-lg font-extrabold" style={{ color: theme.text }}>Complaint Alert List</Text>
+          <Text className="text-xs mt-0.5" style={{ color: theme.subtext }}>Rail security operations board</Text>
         </View>
-        <View style={[styles.headerPill, { backgroundColor: theme.statusPill, borderColor: theme.border }]}>
+        <View className="flex-row items-center gap-1.5 rounded-full border px-2.5 py-1.5" style={{ backgroundColor: theme.statusPill, borderColor: theme.border }}>
           <Ionicons name="warning" size={12} color={theme.urgent} />
-          <Text style={[styles.headerPillText, { color: theme.text }]}>{sortedAlerts.length} active</Text>
+          <Text className="text-[11px] font-extrabold" style={{ color: theme.text }}>{sortedAlerts.length} active</Text>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.list}>
+      <ScrollView contentContainerStyle={{ gap: 10, paddingHorizontal: 12, paddingBottom: 18 }}>
         {sortedAlerts.length === 0 ? (
-          <View style={[styles.emptyBox, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <View className="p-4 border rounded-[18px] items-center gap-2" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
             <Ionicons name="file-tray-outline" size={30} color={theme.accent} />
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>No Complaints Assigned</Text>
-            <Text style={[styles.emptyText, { color: theme.subtext }]}>You do not have any complaints assigned yet. Check back later or contact your supervisor for new assignments.</Text>
+            <Text className="text-base font-extrabold text-center" style={{ color: theme.text }}>No Complaints Assigned</Text>
+            <Text className="text-[13px] leading-snug text-center" style={{ color: theme.subtext }}>You do not have any complaints assigned yet. Check back later or contact your supervisor for new assignments.</Text>
           </View>
         ) : (
           sortedAlerts.map((alert) => {
@@ -198,192 +198,5 @@ const ComplaintAlertListScreen = ({ alerts, selectedId, onSelect, onAccept, onOp
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    gap: 10,
-  },
-  header: {
-    marginHorizontal: 12,
-    marginTop: 12,
-    borderRadius: 14,
-    borderWidth: 0,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: "#FFFFFF",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#0F172A",
-  },
-  subtitle: {
-    fontSize: 12,
-    marginTop: 2,
-    color: "#64748B",
-  },
-  headerPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  headerPillText: {
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  list: {
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingBottom: 18,
-  },
-  item: {
-    borderRadius: 14,
-    borderWidth: 0,
-    padding: 14,
-    gap: 10,
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#000000",
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  itemHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  itemHeaderLeft: {
-    flex: 1,
-    flexDirection: "row",
-    gap: 10,
-    alignItems: "center",
-  },
-  roleIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  idText: {
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  statusPill: {
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  status: {
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  itemType: {
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  meta: {
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  detailRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    paddingTop: 6,
-    borderTopWidth: 1,
-  },
-  detailChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(148, 163, 184, 0.28)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  detailChipText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  reasonText: {
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  actionRow: {
-    marginTop: 2,
-    flexDirection: "row",
-    justifyContent: "flex-end",
-  },
-  acceptAction: {
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  acceptActionText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  acceptedBox: {
-    marginTop: 4,
-    padding: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    gap: 3,
-  },
-  acceptedText: {
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  acceptedSubtext: {
-    fontSize: 11,
-  },
-  secondaryAction: {
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  secondaryActionText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  emptyBox: {
-    padding: 16,
-    borderWidth: 1,
-    borderRadius: 18,
-    alignItems: "center",
-    gap: 8,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  emptyText: {
-    fontSize: 13,
-    lineHeight: 18,
-    textAlign: "center",
-  },
-});
 
 export default ComplaintAlertListScreen;
