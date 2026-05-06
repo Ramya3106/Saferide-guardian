@@ -128,11 +128,9 @@ const isOfficialRole = (role) => OFFICIAL_ROLES.has(role);
 
 const getOfficialDomains = (role) => OFFICIAL_DOMAINS[role] || [];
 
-// TEMPORARILY ALLOWING ANY EMAIL - Domain validation disabled for testing
+// Email validation - now unified for all roles
 const isValidOfficialEmail = (role, emailValue) => {
-  const trimmed = (emailValue || "").trim().toLowerCase();
-  // Allow any valid email format (temporarily ignoring domain restrictions)
-  return isValidEmail(trimmed);
+  return isValidEmail(emailValue);
 };
 
 const isValidProfessionalId = (role, idValue) => {
@@ -557,7 +555,6 @@ router.post("/register", async (req, res) => {
 
     let email = (req.body?.email || "").trim().toLowerCase();
     const professionalId = (req.body?.professionalId || "").trim();
-    const officialEmail = (req.body?.officialEmail || "").trim().toLowerCase();
 
     if (isOfficialRole(role)) {
       if (!isValidProfessionalId(role, professionalId)) {
@@ -565,20 +562,13 @@ router.post("/register", async (req, res) => {
           .status(400)
           .json({ message: "Invalid professional ID format." });
       }
-      if (!isValidEmail(officialEmail)) {
-        return res.status(400).json({ message: "Enter a valid email." });
-      }
-      if (!req.body?.isVerified) {
-        return res.status(400).json({ message: "Email not verified." });
-      }
-      email = officialEmail;
-    } else {
-      if (!isValidEmail(email)) {
-        return res.status(400).json({ message: "Enter a valid email." });
-      }
-      if (!req.body?.isVerified) {
-        return res.status(400).json({ message: "Email not verified." });
-      }
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: "Enter a valid email." });
+    }
+    if (!req.body?.isVerified) {
+      return res.status(400).json({ message: "Email not verified." });
     }
 
     const existingUser = await User.findOne({ email }).lean();
@@ -1235,7 +1225,7 @@ router.post("/forgot-password", async (req, res) => {
   try {
     const role = (req.body?.role || "").trim();
     const professionalId = (req.body?.professionalId || "").trim();
-    const officialEmail = (req.body?.officialEmail || "").trim().toLowerCase();
+    const email = (req.body?.email || "").trim().toLowerCase();
 
     if (!role || role !== "TTR/RPF/Police") {
       return res.status(400).json({
@@ -1249,15 +1239,15 @@ router.post("/forgot-password", async (req, res) => {
       });
     }
 
-    if (!isValidOfficialEmail(role, officialEmail)) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({
-        message: "Official email domain required.",
+        message: "Enter a valid email.",
       });
     }
 
     const user = await findOfficialByProfessionalId(role, professionalId);
 
-    if (user && !hasMatchingEmail(user, officialEmail)) {
+    if (user && !hasMatchingEmail(user, email)) {
       return res.status(404).json({
         message: "No account found with these credentials.",
       });
@@ -1279,9 +1269,9 @@ router.post("/forgot-password", async (req, res) => {
     const resetCode = generateCode();
     const expiresAt = Date.now() + RESET_CODE_TTL_MS;
 
-    console.log("Storing reset code:", { officialEmail, resetCode, timestamp: new Date().toISOString() });
+    console.log("Storing reset code:", { email, resetCode, timestamp: new Date().toISOString() });
 
-    resetPasswordStore.set(officialEmail, {
+    resetPasswordStore.set(email, {
       code: resetCode,
       expiresAt,
       attempts: 0,
@@ -1293,7 +1283,7 @@ router.post("/forgot-password", async (req, res) => {
     // Send email asynchronously without blocking response
     transporter.sendMail({
       from: fromAddress || mailUser,
-      to: officialEmail,
+      to: email,
       subject: "SafeRide Guardian - Password Reset Code",
       text: `Your SafeRide password reset code is: ${resetCode}\n\nIt expires in 15 minutes.\n\nIf you didn't request this, please ignore this email.\n\nSafeRide Team`,
       html: `
@@ -1310,12 +1300,12 @@ router.post("/forgot-password", async (req, res) => {
         </div>
       `,
     }).then(() => {
-      console.log(`✅ Password reset code sent to ${officialEmail}`);
+      console.log(`✅ Password reset code sent to ${email}`);
     }).catch((error) => {
       console.error("❌ Email error:", error.message);
     });
 
-    console.log(`📤 Password reset code queued for ${officialEmail}`);
+    console.log(`📤 Password reset code queued for ${email}`);
     return res.status(200).json({
       sent: true,
     });
@@ -1328,13 +1318,13 @@ router.post("/forgot-password", async (req, res) => {
 // Password Reset - Verify reset code and update password
 router.post("/reset-password", async (req, res) => {
   try {
-    const officialEmail = (req.body?.officialEmail || "").trim().toLowerCase();
+    const email = (req.body?.email || "").trim().toLowerCase();
     const resetCode = String(req.body?.resetCode || "").trim();
     const newPassword = String(req.body?.newPassword || "").trim();
 
-    console.log("Reset password request:", { officialEmail, resetCode: resetCode ? "***" + resetCode.slice(-2) : "none" });
+    console.log("Reset password request:", { email, resetCode: resetCode ? "***" + resetCode.slice(-2) : "none" });
 
-    if (!isValidEmail(officialEmail) || resetCode.length !== 6) {
+    if (!isValidEmail(email) || resetCode.length !== 6) {
       return res.status(400).json({
         message: "Invalid email or reset code.",
       });
@@ -1346,7 +1336,7 @@ router.post("/reset-password", async (req, res) => {
       });
     }
 
-    const record = resetPasswordStore.get(officialEmail);
+    const record = resetPasswordStore.get(email);
     console.log("Reset password - record found:", !!record);
     console.log("Reset password - store keys:", Array.from(resetPasswordStore.keys()));
 
@@ -1357,7 +1347,7 @@ router.post("/reset-password", async (req, res) => {
     }
 
     if (Date.now() > record.expiresAt) {
-      resetPasswordStore.delete(officialEmail);
+      resetPasswordStore.delete(email);
       return res.status(400).json({
         message: "Reset code expired. Request a new one.",
       });
@@ -1385,9 +1375,9 @@ router.post("/reset-password", async (req, res) => {
     await user.save();
 
     // Delete the code after successful reset
-    resetPasswordStore.delete(officialEmail);
+    resetPasswordStore.delete(email);
 
-    console.log(`✅ Password reset successful for: ${officialEmail}`);
+    console.log(`✅ Password reset successful for: ${email}`);
     return res.status(200).json({
       success: true,
       message: "Password reset successful. You can now login.",

@@ -1092,10 +1092,9 @@ const AppContent = () => {
     return inferSpecificRoleFromProfessionalId(idValue);
   };
 
-  // TEMPORARILY ALLOWING ANY EMAIL - Domain validation disabled for testing
+  // Email validation - unified for all roles
   const isOfficialEmailValid = (selectedRole, emailValue) => {
     const trimmed = emailValue.trim().toLowerCase();
-    // Allow any valid email format (temporarily ignoring domain restrictions)
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
   };
 
