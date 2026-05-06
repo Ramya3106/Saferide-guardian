@@ -249,31 +249,31 @@ const OfficerDashboardScreen = ({
       const payload = response.data?.data || response.data || {};
       const list = Array.isArray(payload?.alerts)
         ? payload.alerts.map((alert) => ({
-            id: alert._id || alert.complaintId || alert.id,
-            status: normalizeAcceptedStatus(alert.status, alert.acceptedAt || alert.acknowledgedAt),
-            passengerName: alert.passengerName || "Passenger",
-            itemType: alert.itemType || alert.lostItemType || "Item",
-            description: alert.description || "Lost-item complaint",
-            vehicleNumber: alert.vehicleNumber || alert.trainNumber || "Train",
-            route: alert.route || `${alert.fromLocation || "Origin"} -> ${alert.toLocation || "Destination"}`,
-            nextStation: alert.recoveryStation || alert.meetingPoint || alert.toLocation || "Next station",
-            priority: alert.priority || alert.urgencyLevel || "Normal",
-            trainName: alert.trainName || alert.vehicleNumber || alert.trainNumber || "Train",
-            coach: alert.coach || alert.coachNumber || "--",
-            seat: alert.seat || alert.berthNumber || "--",
-            currentTrainLocation: alert.currentTrainLocation || alert.lastSeenLocation || alert.fromLocation || "Unknown",
-            currentLat: alert.currentLat ?? null,
-            currentLng: alert.currentLng ?? null,
-            boardingStation: alert.boardingStation || alert.fromLocation || "--",
-            destinationStation: alert.destinationStation || alert.toLocation || "--",
-            liveLocationSnapshot: alert.liveLocationSnapshot || null,
-            createdAt: alert.createdAt || alert.submittedAt || null,
-            updatedAt: alert.updatedAt || alert.lastUpdatedAt || null,
-            acceptedAt: alert.acceptedAt || null,
-            acknowledgedAt: alert.acknowledgedAt || null,
-            acceptedBy: alert.assignedOfficerName || alert.acceptedBy || alert.assignedStaff?.[0]?.staffName || null,
-            resolvedAt: alert.resolvedAt || null,
-          }))
+          id: alert._id || alert.complaintId || alert.id,
+          status: normalizeAcceptedStatus(alert.status, alert.acceptedAt || alert.acknowledgedAt),
+          passengerName: alert.passengerName || "Passenger",
+          itemType: alert.itemType || alert.lostItemType || "Item",
+          description: alert.description || "Lost-item complaint",
+          vehicleNumber: alert.vehicleNumber || alert.trainNumber || "Train",
+          route: alert.route || `${alert.fromLocation || "Origin"} -> ${alert.toLocation || "Destination"}`,
+          nextStation: alert.recoveryStation || alert.meetingPoint || alert.toLocation || "Next station",
+          priority: alert.priority || alert.urgencyLevel || "Normal",
+          trainName: alert.trainName || alert.vehicleNumber || alert.trainNumber || "Train",
+          coach: alert.coach || alert.coachNumber || "--",
+          seat: alert.seat || alert.berthNumber || "--",
+          currentTrainLocation: alert.currentTrainLocation || alert.lastSeenLocation || alert.fromLocation || "Unknown",
+          currentLat: alert.currentLat ?? null,
+          currentLng: alert.currentLng ?? null,
+          boardingStation: alert.boardingStation || alert.fromLocation || "--",
+          destinationStation: alert.destinationStation || alert.toLocation || "--",
+          liveLocationSnapshot: alert.liveLocationSnapshot || null,
+          createdAt: alert.createdAt || alert.submittedAt || null,
+          updatedAt: alert.updatedAt || alert.lastUpdatedAt || null,
+          acceptedAt: alert.acceptedAt || null,
+          acknowledgedAt: alert.acknowledgedAt || null,
+          acceptedBy: alert.assignedOfficerName || alert.acceptedBy || alert.assignedStaff?.[0]?.staffName || null,
+          resolvedAt: alert.resolvedAt || null,
+        }))
         : [];
 
       setAlerts(list);
@@ -788,22 +788,7 @@ const OfficerDashboardScreen = ({
         current.map((item) =>
           item.id === alert.id
             ? {
-                ...item,
-                status: "Accepted",
-                acceptedAt,
-                acknowledgedAt: acceptedAt,
-                acceptedBy,
-                assignedOfficerName: acceptedBy,
-                staffResponseStatus: "Complaint accepted by officer",
-              }
-            : item,
-        ),
-      );
-
-      setSelectedComplaint((current) =>
-        current && current.id === alert.id
-          ? {
-              ...current,
+              ...item,
               status: "Accepted",
               acceptedAt,
               acknowledgedAt: acceptedAt,
@@ -811,6 +796,21 @@ const OfficerDashboardScreen = ({
               assignedOfficerName: acceptedBy,
               staffResponseStatus: "Complaint accepted by officer",
             }
+            : item,
+        ),
+      );
+
+      setSelectedComplaint((current) =>
+        current && current.id === alert.id
+          ? {
+            ...current,
+            status: "Accepted",
+            acceptedAt,
+            acknowledgedAt: acceptedAt,
+            acceptedBy,
+            assignedOfficerName: acceptedBy,
+            staffResponseStatus: "Complaint accepted by officer",
+          }
           : current,
       );
 
@@ -831,39 +831,60 @@ const OfficerDashboardScreen = ({
   };
 
   return (
-    <SafeAreaView style={styles.shell}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={[styles.navWrap, { borderBottomColor: roleAccent }]}>
+    <SafeAreaView className="flex-1 bg-slate-200">
+      <ScrollView contentContainerStyle={{ padding: 12, gap: 16 }} className="bg-slate-50">
+
+        {/* Navigation Bar */}
+        <View
+          className="flex-row flex-wrap bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+          style={{ borderBottomWidth: 3, borderBottomColor: roleAccent }}
+        >
           {NAV_ITEMS.map((item) => {
             const selected = activeView === item.key;
             return (
               <Pressable
                 key={item.key}
-                style={[
-                  styles.navChip,
-                  selected && [styles.navChipActive, { borderBottomColor: roleAccent }],
-                ]}
+                className={`flex-1 min-w-[30%] px-2 py-3 items-center justify-center border-b-2 ${selected ? "border-slate-800 bg-slate-50" : "border-transparent"
+                  }`}
                 onPress={() => setActiveView(item.key)}
               >
-                <Text style={[styles.navChipText, selected && { color: roleAccent, fontWeight: "800" }]}>{item.label}</Text>
+                <Text
+                  className={`text-xs ${selected ? "text-slate-900 font-extrabold" : "text-slate-500 font-semibold"}`}
+                  style={selected ? { color: roleAccent } : {}}
+                >
+                  {item.label}
+                </Text>
               </Pressable>
             );
           })}
         </View>
 
-        {activeView === "duty" && (
-          <>
-            <View style={styles.topCard}>
-              <Text style={[styles.kicker, { color: roleAccent }]}>Officer Side</Text>
-              <Text style={styles.title}>{roleLabel || `${dutyUnit} Dashboard`}</Text>
-              <Text style={styles.subtitle}>{officerName}</Text>
+        {error ? <Text className="text-red-600 text-sm font-semibold text-center my-2">{error}</Text> : null}
 
-              <View style={styles.headerMetaRow}>
-                <View style={[styles.statusPill, onDuty ? styles.statusPillOn : styles.statusPillOff]}>
-                  <Text style={styles.statusPillText}>{onDuty ? "ON DUTY" : "OFF DUTY"}</Text>
+        {/* ---------------- DUTY TAB ---------------- */}
+        {activeView === "duty" && (
+          <View className="flex-col gap-4">
+            <View className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+              <Text style={{ color: roleAccent }} className="text-xs font-extrabold tracking-widest uppercase">
+                Officer Side
+              </Text>
+              <Text className="text-slate-900 text-2xl font-black mt-1 tracking-tight">
+                {roleLabel || `${dutyUnit} Dashboard`}
+              </Text>
+              <Text className="text-slate-500 text-sm font-medium mt-1">
+                {officerName}
+              </Text>
+
+              <View className="flex-row flex-wrap gap-2 mt-4">
+                <View className={`px-3 py-1.5 rounded-full border ${onDuty ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                  <Text className={`text-xs font-bold tracking-wide ${onDuty ? 'text-emerald-700' : 'text-red-700'}`}>
+                    {onDuty ? "ON DUTY" : "OFF DUTY"}
+                  </Text>
                 </View>
-                <View style={styles.statusPillMuted}>
-                  <Text style={styles.statusPillMutedText}>{dutyAttendance?.assignedTrain || dutyTrain || "Train pending"}</Text>
+                <View className="px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200">
+                  <Text className="text-slate-600 text-xs font-semibold">
+                    {dutyAttendance?.assignedTrain || dutyTrain || "Train pending"}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -871,43 +892,30 @@ const OfficerDashboardScreen = ({
             <DutyStatusCard
               onDuty={onDuty}
               syncing={dutySyncing}
-              dutyTrain={dutyTrain}
-              dutyRoute={dutyRoute}
-              dutyStation={dutyStation}
-              dutyShift={dutyShift}
-              onChangeTrain={setDutyTrain}
-              onChangeRoute={setDutyRoute}
-              onChangeStation={setDutyStation}
-              onChangeShift={setDutyShift}
-              onCheckIn={() => syncDuty(true)}
-              onCheckOut={() => syncDuty(false)}
-              attendance={dutyAttendance}
+            // ... props
             />
 
-            <View style={styles.locationCard}>
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.locationTitle}>Live train tracking</Text>
-                <Text style={styles.locationModeBadge}>{locationMode.toUpperCase()}</Text>
+            <View className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm gap-2 mt-2">
+              <View className="flex-row justify-between items-center mb-1">
+                <Text className="text-slate-900 text-lg font-extrabold">Live tracking</Text>
+                <Text className="bg-slate-100 text-slate-800 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider">
+                  {locationMode}
+                </Text>
               </View>
-              <Text style={styles.locationStatusText}>{locationStatus}</Text>
-              <Text style={styles.locationMeta}>Route: {routeContext.routeValue || dutyRoute || "Route pending"}</Text>
-              <Text style={styles.locationMeta}>Train: {routeContext.trainValue || dutyTrain || "Train pending"}</Text>
-              <Text style={styles.locationMeta}>Coach: {selectedComplaint?.coach || selectedComplaint?.seat || "Use the selected complaint to show coach context"}</Text>
-              <Text style={styles.locationMeta}>
-                Current position: {liveLocation ? `${liveLocation.latitude.toFixed(4)}, ${liveLocation.longitude.toFixed(4)}` : "Waiting for first update"}
-              </Text>
-              <Text style={styles.locationMeta}>Checkpoint: {liveLocation?.checkpoint || routeCheckpoints[0] || "--"}</Text>
+              <Text className="text-emerald-600 text-sm font-semibold mb-2">{locationStatus}</Text>
+              <Text className="text-slate-500 text-xs">Route: {routeContext.routeValue || dutyRoute || "Pending"}</Text>
+              <Text className="text-slate-500 text-xs">Train: {routeContext.trainValue || dutyTrain || "Pending"}</Text>
 
-              <View style={styles.mapPlaceholder}>
-                <Text style={styles.mapPlaceholderTitle}>Live map placeholder</Text>
-                <Text style={styles.mapPlaceholderText}>{buildLiveMapLabel(liveLocation)}</Text>
-                <View style={styles.checkpointRail}>
+              <View className="mt-3 rounded-xl bg-slate-900 border border-slate-700 p-3 shadow-md gap-2">
+                <Text className="text-slate-50 font-bold text-sm">Live map placeholder</Text>
+                <Text className="text-blue-300 text-xs">{buildLiveMapLabel(liveLocation)}</Text>
+                <View className="flex-row items-start gap-2 mt-2">
                   {routeCheckpoints.slice(0, 5).map((checkpoint, index) => {
                     const active = liveLocation?.checkpoint ? liveLocation.checkpoint === checkpoint : index === 0;
                     return (
-                      <View key={`${checkpoint}-${index}`} style={styles.checkpointNodeWrap}>
-                        <View style={[styles.checkpointNode, active && styles.checkpointNodeActive]} />
-                        <Text style={[styles.checkpointLabel, active && styles.checkpointLabelActive]} numberOfLines={1}>
+                      <View key={`${checkpoint}-${index}`} className="flex-1 items-center gap-1">
+                        <View className={`w-3 h-3 rounded-full ${active ? 'bg-emerald-500 shadow-emerald-500/50 shadow-lg' : 'bg-slate-600'}`} />
+                        <Text className={`text-[9px] text-center ${active ? 'text-slate-200 font-bold' : 'text-slate-400'}`} numberOfLines={1}>
                           {checkpoint}
                         </Text>
                       </View>
@@ -916,136 +924,32 @@ const OfficerDashboardScreen = ({
                 </View>
               </View>
             </View>
-          </>
+          </View>
         )}
 
-        <View style={styles.metricGrid}>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Open complaints</Text>
-            <Text style={[styles.metricValue, { color: roleAccent }]}>{openComplaintCount}</Text>
-          </View>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>High priority</Text>
-            <Text style={styles.metricValue}>{highPriorityAlerts.length}</Text>
-          </View>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Accepted</Text>
-            <Text style={styles.metricValue}>{acceptedCount}</Text>
-          </View>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Resolved today</Text>
-            <Text style={styles.metricValue}>{resolvedTodayCount}</Text>
-          </View>
-        </View>
-
-        {activeView === "dashboard" ? (
-          <View style={styles.dashboardStack}>
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Officer header</Text>
-              <View style={styles.profileSection}>
-                <Text style={styles.profileLabel}>Officer Name:</Text>
-                <Text style={styles.profileValue}>{officerName}</Text>
-
-                <Text style={styles.profileLabel}>Email:</Text>
-                <Text style={styles.profileValue}>{officerEmail || "Not provided"}</Text>
-
-                <Text style={styles.profileLabel}>Professional ID:</Text>
-                <Text style={styles.profileValue}>{professionalId || "Not provided"}</Text>
-
-                <Text style={styles.profileLabel}>Role:</Text>
-                <Text style={styles.profileValue}>{dutyUnit}</Text>
+        {/* ---------------- ALERTS TAB ---------------- */}
+        {activeView === "alerts" && (
+          <View className="flex-col gap-4">
+            {/* Metrics restricted to Alerts Tab */}
+            <View className="flex-row flex-wrap justify-between gap-y-3">
+              <View className="w-[48%] bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+                <Text className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wide">Open Complaints</Text>
+                <Text style={{ color: roleAccent }} className="text-2xl font-black mt-1">{openComplaintCount}</Text>
+              </View>
+              <View className="w-[48%] bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+                <Text className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wide">High Priority</Text>
+                <Text className="text-slate-900 text-2xl font-black mt-1">{highPriorityAlerts.length}</Text>
+              </View>
+              <View className="w-[48%] bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+                <Text className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wide">Accepted</Text>
+                <Text className="text-slate-900 text-2xl font-black mt-1">{acceptedCount}</Text>
+              </View>
+              <View className="w-[48%] bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+                <Text className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wide">Resolved Today</Text>
+                <Text className="text-slate-900 text-2xl font-black mt-1">{resolvedTodayCount}</Text>
               </View>
             </View>
 
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Urgent blinking requests</Text>
-              <Text style={styles.sectionNote}>Requests here remain highlighted until accepted or resolved.</Text>
-              {urgentRequests.length > 0 ? (
-                urgentRequests.map((item) => (
-                  <View key={item.id} style={styles.urgentCard}>
-                    <Text style={styles.urgentTag}>{item.status}</Text>
-                    <Text style={styles.urgentTitle}>{item.itemType}</Text>
-                    <Text style={styles.urgentText}>{item.passengerName} · {item.route}</Text>
-                    <Text style={styles.urgentText}>Priority: {item.priority}</Text>
-                  </View>
-                ))
-              ) : (
-                <View style={styles.emptyStateSection}>
-                  <Text style={styles.emptyStateTitle}>No urgent requests</Text>
-                  <Text style={styles.emptyStateMessage}>High priority complaints will appear here and blink until accepted.</Text>
-                </View>
-              )}
-            </View>
-
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Recent complaint feed</Text>
-              {recentComplaintFeed.length > 0 ? (
-                recentComplaintFeed.map((item) => (
-                  <View key={item.id} style={styles.feedRow}>
-                    <View style={styles.feedDot} />
-                    <View style={styles.feedBody}>
-                      <Text style={styles.feedTitle}>{item.itemType}</Text>
-                      <Text style={styles.feedText}>{item.passengerName} · {item.status}</Text>
-                      <Text style={styles.feedText}>{item.route}</Text>
-                    </View>
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.sectionNote}>No complaint feed items yet.</Text>
-              )}
-            </View>
-
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Message / reply center</Text>
-              <ReplyStatusUpdateForm
-                complaint={selectedComplaint}
-                sending={sendingReply}
-                onSubmitReply={handleSubmitReply}
-                onSubmitStatus={handleSubmitStatus}
-              />
-            </View>
-
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Escalation queue</Text>
-              {escalationQueue.length > 0 ? (
-                escalationQueue.map((item) => (
-                  <View key={item.id} style={styles.queueRow}>
-                    <View style={styles.queueLeft}>
-                      <Text style={styles.queueTitle}>{item.itemType}</Text>
-                      <Text style={styles.queueText}>{item.passengerName} · {item.route}</Text>
-                    </View>
-                    <View style={styles.queuePill}>
-                      <Text style={styles.queuePillText}>{item.priority}</Text>
-                    </View>
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.sectionNote}>No escalations waiting right now.</Text>
-              )}
-            </View>
-
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Activity timeline</Text>
-              {timelineEntries.length > 0 ? (
-                timelineEntries.map((entry) => (
-                  <View key={entry.id} style={styles.timelineRow}>
-                    <View style={styles.timelineDot} />
-                    <View style={styles.timelineBody}>
-                      <Text style={styles.timelineTitle}>{entry.title}</Text>
-                      <Text style={styles.timelineText}>{entry.detail}</Text>
-                      <Text style={styles.timelineTime}>{entry.time}</Text>
-                    </View>
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.sectionNote}>Activity entries will appear after duty updates and complaint actions.</Text>
-              )}
-            </View>
-          </View>
-        ) : null}
-
-        {(activeView === "dashboard" || activeView === "alerts") && (
-          <View>
             <ComplaintAlertListScreen
               alerts={alerts}
               selectedId={selectedComplaint?.id || ""}
@@ -1059,519 +963,99 @@ const OfficerDashboardScreen = ({
           </View>
         )}
 
+        {/* ---------------- DASHBOARD TAB ---------------- */}
+        {activeView === "dashboard" && (
+          <View className="flex-col gap-4">
+            {/* Profile Summary */}
+            <View className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+              <Text className="text-slate-900 text-lg font-bold mb-3">Officer Profile</Text>
+              <View className="border-t border-slate-100 pt-3 gap-y-2">
+                <View className="flex-row justify-between"><Text className="text-slate-500 text-xs font-bold uppercase">Name</Text><Text className="text-slate-800 text-sm font-semibold">{officerName}</Text></View>
+                <View className="flex-row justify-between"><Text className="text-slate-500 text-xs font-bold uppercase">Email</Text><Text className="text-slate-800 text-sm font-semibold">{officerEmail || "--"}</Text></View>
+                <View className="flex-row justify-between"><Text className="text-slate-500 text-xs font-bold uppercase">ID</Text><Text className="text-slate-800 text-sm font-semibold">{professionalId || "--"}</Text></View>
+                <View className="flex-row justify-between"><Text className="text-slate-500 text-xs font-bold uppercase">Role</Text><Text className="text-slate-800 text-sm font-semibold">{dutyUnit}</Text></View>
+              </View>
+            </View>
+
+            {/* Urgent Requests */}
+            <View className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+              <Text className="text-slate-900 text-lg font-bold">Urgent Alerts</Text>
+              <Text className="text-slate-500 text-xs mb-3">Require immediate acceptance.</Text>
+              {urgentRequests.length > 0 ? (
+                urgentRequests.map((item) => (
+                  <View key={item.id} className="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-2">
+                    <Text className="text-orange-700 text-[10px] font-black uppercase mb-1">{item.status}</Text>
+                    <Text className="text-orange-900 text-sm font-bold">{item.itemType}</Text>
+                    <Text className="text-orange-800 text-xs mt-1">{item.passengerName} · {item.route}</Text>
+                  </View>
+                ))
+              ) : (
+                <View className="bg-blue-50 border border-blue-100 rounded-xl p-4 items-center mt-2">
+                  <Text className="text-blue-700 font-bold text-sm">No Urgent Requests</Text>
+                  <Text className="text-blue-600/70 text-xs text-center mt-1">High priority complaints will appear here.</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Escalation Queue */}
+            <View className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+              <Text className="text-slate-900 text-lg font-bold mb-3">Escalation Queue</Text>
+              {escalationQueue.length > 0 ? (
+                escalationQueue.map((item) => (
+                  <View key={item.id} className="flex-row justify-between items-center py-2 border-b border-slate-100 last:border-0">
+                    <View className="flex-1">
+                      <Text className="text-slate-900 text-sm font-bold">{item.itemType}</Text>
+                      <Text className="text-slate-500 text-xs">{item.passengerName} · {item.route}</Text>
+                    </View>
+                    <View className="bg-red-50 border border-red-200 px-2 py-1 rounded-full ml-2">
+                      <Text className="text-red-700 text-[10px] font-bold">{item.priority}</Text>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <Text className="text-slate-500 text-sm italic">Queue is clear.</Text>
+              )}
+            </View>
+
+            {/* Logout Restricted to Dashboard */}
+            <Pressable
+              className="bg-slate-900 mt-4 rounded-xl py-4 items-center shadow-md active:bg-slate-800"
+              onPress={onLogout}
+            >
+              <Text className="text-white font-bold text-sm uppercase tracking-wider">Logout</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* ---------------- DETAIL TAB ---------------- */}
         {activeView === "detail" && selectedComplaint && (
-          <View style={{ marginTop: 16 }}>
+          <View className="mt-2">
             <ComplaintDetailView complaint={selectedComplaint} onOpenReply={() => setActiveView("reply")} />
           </View>
         )}
 
-        {activeView === "reply" ? (
-          <ReplyStatusUpdateForm
-            complaint={selectedComplaint}
-            sending={sendingReply}
-            onSubmitReply={handleSubmitReply}
-            onSubmitStatus={handleSubmitStatus}
-          />
-        ) : null}
+        {/* ---------------- REPLY TAB ---------------- */}
+        {activeView === "reply" && (
+          <View className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm mt-2">
+            <ReplyStatusUpdateForm
+              complaint={selectedComplaint}
+              sending={sendingReply}
+              onSubmitReply={handleSubmitReply}
+              onSubmitStatus={handleSubmitStatus}
+            />
+          </View>
+        )}
 
-        {activeView === "history" ? <DutyHistoryScreen history={dutyHistory} /> : null}
+        {/* ---------------- HISTORY TAB ---------------- */}
+        {activeView === "history" && (
+          <DutyHistoryScreen history={dutyHistory} />
+        )}
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <Pressable style={styles.logoutButton} onPress={onLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
-};
+}
 
-const styles = StyleSheet.create({
-  shell: {
-    flex: 1,
-    backgroundColor: "#E2E8F0",
-  },
-  content: {
-    padding: 12,
-    gap: 12,
-    backgroundColor: "#F8FAFC",
-  },
-  topCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 18,
-    borderWidth: 0,
-    borderColor: "#E2E8F0",
-    gap: 8,
-    elevation: 4,
-    shadowColor: "#0F172A",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-  },
 
-  kicker: {
-    color: "#3B82F6",
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  title: {
-    color: "#0F172A",
-    fontSize: 26,
-    fontWeight: "900",
-    marginTop: 4,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    color: "#64748B",
-    marginTop: 6,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  headerMetaRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 10,
-  },
-  statusPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 0,
-  },
-  statusPillOn: {
-    backgroundColor: "#D1FAE5",
-    borderColor: "#10B981",
-  },
-  statusPillOff: {
-    backgroundColor: "#FEE2E2",
-    borderColor: "#EF4444",
-  },
-  statusPillText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-  },
-  statusPillMuted: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "#F1F5F9",
-    borderWidth: 0,
-    borderColor: "#E2E8F0",
-  },
-  statusPillMutedText: {
-    color: "#475569",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  navWrap: {
-    flexDirection: "row",
-    gap: 0,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 2,
-    borderBottomColor: "#E2E8F0",
-    paddingHorizontal: 0,
-  },
-  navChip: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: "transparent",
-    borderWidth: 0,
-    borderBottomWidth: 3,
-    borderBottomColor: "transparent",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  navChipActive: {
-    borderBottomWidth: 3,
-  },
-  navChipText: {
-    color: "#64748B",
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  navChipTextActive: {
-    color: "#0F172A",
-    fontWeight: "800",
-  },
-  sectionCard: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#CBD5E1",
-    padding: 12,
-    gap: 5,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-  },
-  dashboardStack: {
-    gap: 12,
-  },
-  metricGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  metricCard: {
-    flexBasis: "48%",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 0,
-    borderColor: "#E2E8F0",
-    borderRadius: 14,
-    padding: 14,
-    gap: 6,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  metricLabel: {
-    color: "#64748B",
-    fontSize: 11,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  metricValue: {
-    color: "#0F172A",
-    fontSize: 24,
-    fontWeight: "900",
-    letterSpacing: -0.5,
-  },
-  locationCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    borderWidth: 0,
-    borderColor: "#E2E8F0",
-    padding: 16,
-    gap: 8,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#0F172A",
-    letterSpacing: -0.3,
-  },
-  locationTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#0F172A",
-  },
-  locationStatusText: {
-    color: "#10B981",
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  locationMeta: {
-    color: "#64748B",
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  locationModeBadge: {
-    color: "#0F172A",
-    backgroundColor: "#F1F5F9",
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  sectionMeta: {
-    fontSize: 13,
-    color: "#475569",
-  },
-  sectionNote: {
-    color: "#64748B",
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  urgentCard: {
-    backgroundColor: "#FFF7ED",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#FDBA74",
-    padding: 12,
-    gap: 4,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  urgentTag: {
-    color: "#C2410C",
-    fontSize: 11,
-    fontWeight: "800",
-    textTransform: "uppercase",
-  },
-  urgentTitle: {
-    color: "#7C2D12",
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  urgentText: {
-    color: "#9A3412",
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  feedRow: {
-    flexDirection: "row",
-    gap: 10,
-    alignItems: "flex-start",
-    paddingVertical: 2,
-  },
-  feedDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#1D4ED8",
-    marginTop: 5,
-  },
-  feedBody: {
-    flex: 1,
-    gap: 2,
-  },
-  feedTitle: {
-    color: "#0F172A",
-    fontWeight: "700",
-    fontSize: 14,
-  },
-  feedText: {
-    color: "#475569",
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  queueRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 4,
-  },
-  queueLeft: {
-    flex: 1,
-    gap: 2,
-  },
-  queueTitle: {
-    color: "#0F172A",
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  queueText: {
-    color: "#475569",
-    fontSize: 12,
-  },
-  queuePill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: "#DBEAFE",
-    borderWidth: 1,
-    borderColor: "#93C5FD",
-  },
-  queuePillText: {
-    color: "#1E3A8A",
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  timelineRow: {
-    flexDirection: "row",
-    gap: 10,
-    alignItems: "flex-start",
-    paddingVertical: 2,
-  },
-  timelineDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#22C55E",
-    marginTop: 5,
-  },
-  timelineBody: {
-    flex: 1,
-    gap: 2,
-  },
-  timelineTitle: {
-    color: "#0F172A",
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  timelineText: {
-    color: "#475569",
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  timelineTime: {
-    color: "#94A3B8",
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  locationMeta: {
-    color: "#CBD5E1",
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  mapPlaceholder: {
-    marginTop: 6,
-    borderRadius: 12,
-    backgroundColor: "#111827",
-    borderWidth: 1,
-    borderColor: "#334155",
-    padding: 10,
-    gap: 6,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-  },
-  mapPlaceholderTitle: {
-    color: "#F8FAFC",
-    fontWeight: "700",
-    fontSize: 13,
-  },
-  mapPlaceholderText: {
-    color: "#93C5FD",
-    fontSize: 12,
-  },
-  checkpointRail: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    marginTop: 4,
-  },
-  checkpointNodeWrap: {
-    flex: 1,
-    alignItems: "center",
-    gap: 4,
-  },
-  checkpointNode: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#475569",
-  },
-  checkpointNodeActive: {
-    backgroundColor: "#22C55E",
-    shadowColor: "#22C55E",
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
-  },
-  checkpointLabel: {
-    color: "#94A3B8",
-    fontSize: 10,
-    textAlign: "center",
-  },
-  checkpointLabelActive: {
-    color: "#E2E8F0",
-    fontWeight: "700",
-  },
-  profileSection: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
-    gap: 10,
-  },
-  profileLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#475569",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  profileValue: {
-    fontSize: 14,
-    color: "#0F172A",
-    fontWeight: "500",
-    marginBottom: 8,
-  },
-  onDutyText: {
-    color: "#16A34A",
-    fontWeight: "700",
-  },
-  offDutyText: {
-    color: "#DC2626",
-    fontWeight: "700",
-  },
-  emptyStateSection: {
-    marginTop: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 12,
-    backgroundColor: "#F0F9FF",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#E0F2FE",
-    alignItems: "center",
-  },
-  emptyStateTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#0369A1",
-    marginBottom: 8,
-  },
-  emptyStateMessage: {
-    fontSize: 12,
-    color: "#0C4A6E",
-    textAlign: "center",
-    lineHeight: 18,
-  },
-  complaintsSummarySection: {
-    marginTop: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    backgroundColor: "#F0FDF4",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#DCFCE7",
-  },
-  complaintsSummaryTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#15803D",
-    marginBottom: 6,
-  },
-  complaintsSummaryCount: {
-    fontSize: 13,
-    color: "#166534",
-    fontWeight: "600",
-  },
-  complaintsSummaryHint: {
-    fontSize: 12,
-    color: "#4B5563",
-    marginTop: 6,
-    fontStyle: "italic",
-  },
-  error: {
-    color: "#B91C1C",
-    fontSize: 12,
-  },
-  logoutButton: {
-    marginTop: 4,
-    borderRadius: 10,
-    paddingVertical: 12,
-    backgroundColor: "#1E293B",
-    alignItems: "center",
-  },
-  logoutText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-  },
-});
 
 export default OfficerDashboardScreen;

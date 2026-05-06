@@ -28,6 +28,7 @@ import CarAutoDashboard from "./CarAutoDashboard";
 import DriverConductorDashboard from "./DriverConductorDashboard";
 import PasswordVerification from "./PasswordVerification";
 import OfficerDashboardScreen from "./src/screens/officer/OfficerDashboardScreen";
+import "./global.css"
 
 const ROLES = ["Passenger", "Driver/Conductor", "Cab/Auto", "TTR/RPF/Police"];
 const OFFICER_ROLES = [
@@ -1766,7 +1767,7 @@ const AppContent = () => {
         setAuthUserRole(String(data?.role || profile?.role || role));
         setEmail(profile.email || email.trim().toLowerCase());
         setError("");
-        
+
         // Proceed to authenticate; keep any inferred specific role
         if (inferredRole && ["TTR", "TTE", "RPF", "Police"].includes(inferredRole)) {
           setSpecificRole(inferredRole);
@@ -2071,7 +2072,7 @@ const AppContent = () => {
         resetCode: resetCode.trim(),
         newPassword: newPassword.trim(),
       };
-      
+
       console.log("Resetting password with:", { email: email.trim().toLowerCase(), codeLength: resetCode.trim().length });
 
       // Use the forgot-password reset endpoint
@@ -2398,7 +2399,7 @@ const AppContent = () => {
                 style={[
                   styles.transportButtonText,
                   selectedTransport === "Train" &&
-                    styles.transportButtonTextSelected,
+                  styles.transportButtonTextSelected,
                 ]}
               >
                 Train
@@ -2417,7 +2418,7 @@ const AppContent = () => {
                 style={[
                   styles.transportButtonText,
                   selectedTransport === "Car" &&
-                    styles.transportButtonTextSelected,
+                  styles.transportButtonTextSelected,
                 ]}
               >
                 Car
@@ -2438,7 +2439,7 @@ const AppContent = () => {
                 style={[
                   styles.transportButtonText,
                   selectedTransport === "Bus" &&
-                    styles.transportButtonTextSelected,
+                  styles.transportButtonTextSelected,
                 ]}
               >
                 Bus
@@ -2457,7 +2458,7 @@ const AppContent = () => {
                 style={[
                   styles.transportButtonText,
                   selectedTransport === "Auto" &&
-                    styles.transportButtonTextSelected,
+                  styles.transportButtonTextSelected,
                 ]}
               >
                 Auto
@@ -3686,7 +3687,7 @@ const AppContent = () => {
                               style={[
                                 styles.authorityOption,
                                 specificRole === item.key &&
-                                  styles.authorityOptionActive,
+                                styles.authorityOptionActive,
                               ]}
                               onPress={() => setSpecificRole(item.key)}
                             >
@@ -3798,8 +3799,8 @@ const AppContent = () => {
                               style={[
                                 styles.input,
                                 isRegister &&
-                                  isVerified &&
-                                  styles.inputDisabled,
+                                isVerified &&
+                                styles.inputDisabled,
                               ]}
                               placeholder={isOfficialRole ? "officer.username / officer.email" : "you@example.com"}
                               placeholderTextColor="#94A3B8"
@@ -3853,43 +3854,43 @@ const AppContent = () => {
                         )}
 
                         {showPasswordInput && (
-                            <View style={styles.inputGroup}>
-                              <AnimatedLabel text={requiredLabel("Password")} iconName="lock-closed" />
-                              <View style={styles.passwordRow}>
-                                <TextInput
-                                  style={[styles.input, styles.passwordInput]}
-                                  placeholder="Enter your password"
-                                  placeholderTextColor="#94A3B8"
-                                  value={password}
-                                  onChangeText={setPassword}
-                                  secureTextEntry={!showPassword}
+                          <View style={styles.inputGroup}>
+                            <AnimatedLabel text={requiredLabel("Password")} iconName="lock-closed" />
+                            <View style={styles.passwordRow}>
+                              <TextInput
+                                style={[styles.input, styles.passwordInput]}
+                                placeholder="Enter your password"
+                                placeholderTextColor="#94A3B8"
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry={!showPassword}
+                              />
+                              <TouchableOpacity
+                                style={styles.eyeButton}
+                                onPress={() =>
+                                  setShowPassword((prev) => !prev)
+                                }
+                                accessibilityLabel={
+                                  showPassword
+                                    ? "Hide password"
+                                    : "Show password"
+                                }
+                              >
+                                <Ionicons
+                                  name={showPassword ? "eye-off" : "eye"}
+                                  size={20}
+                                  color="#64748B"
                                 />
-                                <TouchableOpacity
-                                  style={styles.eyeButton}
-                                  onPress={() =>
-                                    setShowPassword((prev) => !prev)
-                                  }
-                                  accessibilityLabel={
-                                    showPassword
-                                      ? "Hide password"
-                                      : "Show password"
-                                  }
-                                >
-                                  <Ionicons
-                                    name={showPassword ? "eye-off" : "eye"}
-                                    size={20}
-                                    color="#64748B"
-                                  />
-                                </TouchableOpacity>
-                              </View>
-                              {isRegister && !isPasswordStrong && (
-                                <PasswordVerification
-                                  checks={passwordChecks}
-                                  metCount={metPasswordChecks}
-                                />
-                              )}
+                              </TouchableOpacity>
                             </View>
-                          )}
+                            {isRegister && !isPasswordStrong && (
+                              <PasswordVerification
+                                checks={passwordChecks}
+                                metCount={metPasswordChecks}
+                              />
+                            )}
+                          </View>
+                        )}
 
                         {isRegister && (
                           <View style={styles.inputGroup}>
@@ -4087,7 +4088,7 @@ const AppContent = () => {
                                       (professionalId.trim().length < 6 ||
                                         email.trim().length < 5 ||
                                         isSendingResetCode) &&
-                                        styles.buttonDisabled,
+                                      styles.buttonDisabled,
                                     ]}
                                     onPress={handleSendResetCode}
                                     disabled={
@@ -4138,7 +4139,7 @@ const AppContent = () => {
                                           styles.primaryButton,
                                           (resetCode.trim().length !== 6 ||
                                             isVerifyingResetCode) &&
-                                            styles.buttonDisabled,
+                                          styles.buttonDisabled,
                                         ]}
                                         onPress={handleVerifyResetCode}
                                         disabled={
@@ -4157,7 +4158,7 @@ const AppContent = () => {
                                           styles.textButton,
                                           (resetResendCountdown > 0 ||
                                             isSendingResetCode) &&
-                                            styles.buttonDisabled,
+                                          styles.buttonDisabled,
                                         ]}
                                         onPress={handleResendResetCode}
                                         disabled={
@@ -4279,15 +4280,15 @@ const AppContent = () => {
                                           (!isNewPasswordStrong ||
                                             !isResetPasswordMatch ||
                                             confirmNewPassword.trim().length <
-                                              PASSWORD_MIN_LENGTH) &&
-                                            styles.buttonDisabled,
+                                            PASSWORD_MIN_LENGTH) &&
+                                          styles.buttonDisabled,
                                         ]}
                                         onPress={handleResetPassword}
                                         disabled={
                                           !isNewPasswordStrong ||
                                           !isResetPasswordMatch ||
                                           confirmNewPassword.trim().length <
-                                            PASSWORD_MIN_LENGTH
+                                          PASSWORD_MIN_LENGTH
                                         }
                                       >
                                         <Text style={styles.primaryButtonText}>
@@ -4371,7 +4372,7 @@ const AppContent = () => {
                                       styles.primaryButton,
                                       (email.trim().length < 5 ||
                                         isSendingResetCode) &&
-                                        styles.buttonDisabled,
+                                      styles.buttonDisabled,
                                     ]}
                                     onPress={handleSendResetCodeUser}
                                     disabled={
@@ -4421,7 +4422,7 @@ const AppContent = () => {
                                           styles.primaryButton,
                                           (resetCode.trim().length !== 6 ||
                                             isVerifyingResetCode) &&
-                                            styles.buttonDisabled,
+                                          styles.buttonDisabled,
                                         ]}
                                         onPress={handleVerifyResetCodeUser}
                                         disabled={
@@ -4440,7 +4441,7 @@ const AppContent = () => {
                                           styles.textButton,
                                           (resetResendCountdown > 0 ||
                                             isSendingResetCode) &&
-                                            styles.buttonDisabled,
+                                          styles.buttonDisabled,
                                         ]}
                                         onPress={handleResendResetCodeUser}
                                         disabled={
@@ -4562,15 +4563,15 @@ const AppContent = () => {
                                           (!isNewPasswordStrong ||
                                             !isResetPasswordMatch ||
                                             confirmNewPassword.trim().length <
-                                              PASSWORD_MIN_LENGTH) &&
-                                            styles.buttonDisabled,
+                                            PASSWORD_MIN_LENGTH) &&
+                                          styles.buttonDisabled,
                                         ]}
                                         onPress={handleResetPasswordUser}
                                         disabled={
                                           !isNewPasswordStrong ||
                                           !isResetPasswordMatch ||
                                           confirmNewPassword.trim().length <
-                                            PASSWORD_MIN_LENGTH
+                                          PASSWORD_MIN_LENGTH
                                         }
                                       >
                                         <Text style={styles.primaryButtonText}>
@@ -4620,7 +4621,7 @@ const AppContent = () => {
                                   styles.primaryButton,
                                   (otpEmail.trim().length < 5 ||
                                     isSendingOtp) &&
-                                    styles.buttonDisabled,
+                                  styles.buttonDisabled,
                                 ]}
                                 onPress={handleSendOtp}
                                 disabled={
@@ -4672,7 +4673,7 @@ const AppContent = () => {
                                   style={[
                                     styles.textButton,
                                     otpResendCountdown > 0 &&
-                                      styles.buttonDisabled,
+                                    styles.buttonDisabled,
                                   ]}
                                   onPress={handleSendOtp}
                                   activeOpacity={0.85}
@@ -4708,7 +4709,7 @@ const AppContent = () => {
                                       style={[
                                         styles.roleChip,
                                         travelType === item &&
-                                          styles.roleChipActive,
+                                        styles.roleChipActive,
                                       ]}
                                       onPress={() => setTravelType(item)}
                                     >
@@ -4716,7 +4717,7 @@ const AppContent = () => {
                                         style={[
                                           styles.roleChipText,
                                           travelType === item &&
-                                            styles.roleChipTextActive,
+                                          styles.roleChipTextActive,
                                         ]}
                                       >
                                         {item}
