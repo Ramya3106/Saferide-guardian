@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -159,7 +160,7 @@ const OfficerDashboardScreen = ({
   const dutyUnit = useMemo(() => parseRoleFromId(professionalId, specificRole), [professionalId, specificRole]);
   const officerName = staffName || officerEmail || professionalId || "Duty Officer";
   const roleAccent = ROLE_ACCENTS[dutyUnit] || ROLE_ACCENTS.TTR;
-
+  const [menuVisible, setMenuVisible] = useState(false);
   const [activeView, setActiveView] = useState("dashboard");
   const [alerts, setAlerts] = useState([]);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
@@ -836,6 +837,7 @@ const OfficerDashboardScreen = ({
           <Text style={[styles.kicker, { color: roleAccent }]}>Officer Side</Text>
           <Text style={styles.title}>{roleLabel || `${dutyUnit} Dashboard`}</Text>
           <Text style={styles.subtitle}>{officerName}</Text>
+
           <View style={styles.headerMetaRow}>
             <View style={[styles.statusPill, onDuty ? styles.statusPillOn : styles.statusPillOff]}>
               <Text style={styles.statusPillText}>{onDuty ? "ON DUTY" : "OFF DUTY"}</Text>
@@ -852,7 +854,11 @@ const OfficerDashboardScreen = ({
             return (
               <Pressable
                 key={item.key}
-                style={[styles.navChip, selected && styles.navChipActive]}
+                style={[
+                  styles.navChip,
+                  selected && styles.navChipActive,
+                  selected && { borderColor: roleAccent, backgroundColor: `${roleAccent}20` },
+                ]}
                 onPress={() => setActiveView(item.key)}
               >
                 <Text style={[styles.navChipText, selected && styles.navChipTextActive]}>{item.label}</Text>
@@ -1103,6 +1109,53 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#1E293B",
     gap: 2,
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  menuButton: {
+    position: "absolute",
+    right: 12,
+    top: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#0B1220",
+  },
+  menuContainer: {
+    position: "absolute",
+    right: 12,
+    top: 60,
+    width: 220,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    zIndex: 50,
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+  },
+  menuItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "transparent",
+    marginBottom: 6,
+  },
+  menuItemText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0F172A",
   },
   kicker: {
     color: "#93C5FD",
@@ -1190,6 +1243,11 @@ const styles = StyleSheet.create({
     borderColor: "#CBD5E1",
     padding: 12,
     gap: 5,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
   },
   dashboardStack: {
     gap: 12,
@@ -1207,6 +1265,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 12,
     gap: 4,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
   metricLabel: {
     color: "#64748B",
@@ -1226,6 +1289,11 @@ const styles = StyleSheet.create({
     borderColor: "#1E293B",
     padding: 12,
     gap: 6,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
   },
   sectionHeaderRow: {
     flexDirection: "row",
@@ -1272,6 +1340,11 @@ const styles = StyleSheet.create({
     borderColor: "#FDBA74",
     padding: 12,
     gap: 4,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
   urgentTag: {
     color: "#C2410C",
@@ -1394,6 +1467,11 @@ const styles = StyleSheet.create({
     borderColor: "#334155",
     padding: 10,
     gap: 6,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
   },
   mapPlaceholderTitle: {
     color: "#F8FAFC",
