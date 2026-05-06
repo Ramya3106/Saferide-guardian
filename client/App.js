@@ -1679,13 +1679,8 @@ const AppContent = () => {
       return;
     }
 
-    if (!isRegister && isOfficialRole && pendingApproval) {
-      setError("Your account is pending admin approval. Please try later.");
-      return;
-    }
-
     if (isRegister && isOfficialRole && !isVerified) {
-      setError("Verify your official email before registering.");
+      setError("Verify your email before registering.");
       return;
     }
 
@@ -1730,14 +1725,11 @@ const AppContent = () => {
 
         resetForm();
         setMode("login");
-        setPendingApproval(isOfficialRole);
 
         if (isOfficialRole) {
           setProfessionalId(registeredProfessionalId);
           setEmail(registeredEmail);
-          setError(
-            "Registration submitted. Admin approval takes up to 24 hours.",
-          );
+          setError("Registration successful. Please log in.");
           return;
         }
 
@@ -1781,7 +1773,6 @@ const AppContent = () => {
         setIsAuthenticated(true);
       } catch (err) {
         const message = err?.response?.data?.message || "Unable to log in.";
-        setPendingApproval(message.toLowerCase().includes("pending"));
         setError(message);
       }
       return;
@@ -4982,18 +4973,6 @@ const AppContent = () => {
                                 onChangeText={setJurisdiction}
                               />
                             </View>
-                          </View>
-                        )}
-
-                        {pendingApproval && !isRegister && isOfficialRole && (
-                          <View style={styles.noticeCard}>
-                            <Text style={styles.noticeTitle}>
-                              Approval pending
-                            </Text>
-                            <Text style={styles.noticeText}>
-                              Your registration is under admin review. Check
-                              your official inbox for approval within 24 hours.
-                            </Text>
                           </View>
                         )}
 

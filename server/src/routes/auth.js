@@ -608,8 +608,7 @@ router.post("/register", async (req, res) => {
       toStop: req.body?.toStop || undefined,
       pnrRange: req.body?.pnrRange || undefined,
       jurisdiction: req.body?.jurisdiction || undefined,
-      approvalStatus: isOfficialRole(role) ? "pending" : "approved",
-      approvalRequestedAt: isOfficialRole(role) ? new Date() : undefined,
+      approvalStatus: "approved",
       isVerified: Boolean(req.body?.isVerified),
     };
 
@@ -731,10 +730,6 @@ router.post("/login", async (req, res) => {
     if (!user) {
       console.log("❌ USER NOT FOUND after lookup");
       return res.status(401).json({ message: "Invalid credentials." });
-    }
-
-    if (user.approvalStatus && user.approvalStatus !== "approved") {
-      return res.status(403).json({ message: "Account pending approval." });
     }
 
     if (isOfficialRole(role) && !isOtp) {
