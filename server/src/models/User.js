@@ -76,12 +76,6 @@ const userSchema = new mongoose.Schema(
       set: encrypt,
       get: decrypt,
     },
-    officialEmail: {
-      type: String,
-      lowercase: true,
-      set: encrypt,
-      get: decrypt,
-    },
     role: {
       type: String,
       required: true,

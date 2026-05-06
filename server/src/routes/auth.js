@@ -128,10 +128,7 @@ const isOfficialRole = (role) => OFFICIAL_ROLES.has(role);
 
 const getOfficialDomains = (role) => OFFICIAL_DOMAINS[role] || [];
 
-// Email validation - now unified for all roles
-const isValidOfficialEmail = (role, emailValue) => {
-  return isValidEmail(emailValue);
-};
+// Email validation - unified for all roles
 
 const isValidProfessionalId = (role, idValue) => {
   const normalized = (idValue || "").trim().toUpperCase();
@@ -354,7 +351,7 @@ const hasMatchingEmail = (user, emailValue) => {
     return false;
   }
 
-  return [user.email, user.officialEmail].some(
+  return [user.email].some(
     (candidate) => normalizeEmail(candidate) === normalized,
   );
 };
@@ -597,7 +594,6 @@ router.post("/register", async (req, res) => {
       role,
       password: hashedPassword,
       professionalId: professionalId || undefined,
-      officialEmail: officialEmail || undefined,
       travelType: req.body?.travelType || undefined,
       travelNumber: req.body?.travelNumber || undefined,
       travelName: req.body?.travelName || undefined,
@@ -690,14 +686,7 @@ router.post("/login", async (req, res) => {
     const TEMP_UNIVERSAL_ROLE_LOGIN = true;
     let user;
     if (isOtp) {
-      if (isOfficialRole(role)) {
-        if (!isValidOfficialEmail(role, email)) {
-          console.log("❌ Invalid official email domain");
-          return res
-            .status(400)
-            .json({ message: "Official email domain required." });
-        }
-      } else if (!isValidEmail(email)) {
+      if (!isValidEmail(email)) {
         console.log("❌ Invalid email format");
         return res.status(400).json({ message: "Enter a valid email." });
       }
@@ -1030,19 +1019,19 @@ router.post("/duty/location", requireAuth, requireRoles(OFFICER_ROLES), async (r
 // Verify reset code for official users - For two-step password reset
 router.post("/verify-reset-code", async (req, res) => {
   try {
-    const officialEmail = (req.body?.officialEmail || "").trim().toLowerCase();
+    const email = (req.body?.email || "").trim().toLowerCase();
     const resetCode = String(req.body?.resetCode || "").trim();
 
-    console.log("Verify reset code request:", { officialEmail, resetCode });
+    console.log("Verify reset code request:", { email, resetCode });
 
-    if (!isValidEmail(officialEmail) || resetCode.length !== 6) {
+    if (!isValidEmail(email) || resetCode.length !== 6) {
       return res.status(400).json({
         valid: false,
         message: "Invalid email or reset code format.",
       });
     }
 
-    const record = resetPasswordStore.get(officialEmail);
+    const record = resetPasswordStore.get(email);
     console.log("Reset code record found:", !!record);
     console.log("Store contents:", Array.from(resetPasswordStore.keys()));
 
@@ -1054,7 +1043,7 @@ router.post("/verify-reset-code", async (req, res) => {
     }
 
     if (Date.now() > record.expiresAt) {
-      resetPasswordStore.delete(officialEmail);
+      resetPasswordStore.delete(email);
       return res.status(400).json({
         valid: false,
         message: "Reset code expired. Request a new one.",
@@ -1062,7 +1051,7 @@ router.post("/verify-reset-code", async (req, res) => {
     }
 
     if (record.attempts >= MAX_ATTEMPTS) {
-      resetPasswordStore.delete(officialEmail);
+      resetPasswordStore.delete(email);
       return res.status(429).json({
         valid: false,
         message: "Too many attempts. Request a new code.",
@@ -1073,7 +1062,7 @@ router.post("/verify-reset-code", async (req, res) => {
 
     if (record.code !== resetCode) {
       record.attempts += 1;
-      resetPasswordStore.set(officialEmail, record);
+      resetPasswordStore.set(email, record);
       return res.status(400).json({
         valid: false,
         message: "Incorrect reset code.",
@@ -1362,7 +1351,7 @@ router.post("/reset-password", async (req, res) => {
     // Code is valid, proceed with password reset
     const user = await User.findById(record.userId);
     if (!user) {
-      resetPasswordStore.delete(officialEmail);
+      resetPasswordStore.delete(email);
       return res.status(404).json({
         message: "User not found.",
       });
@@ -1391,11 +1380,11 @@ router.post("/reset-password", async (req, res) => {
 // Password Reset with OTP - For official roles using email verification
 router.post("/reset-password-otp", async (req, res) => {
   try {
-    const officialEmail = (req.body?.officialEmail || "").trim().toLowerCase();
+    const email = (req.body?.email || "").trim().toLowerCase();
     const otpCode = String(req.body?.otpCode || "").trim();
     const newPassword = String(req.body?.newPassword || "").trim();
 
-    if (!isValidEmail(officialEmail) || otpCode.length !== 6) {
+    if (!isValidEmail(email) || otpCode.length !== 6) {
       return res.status(400).json({
         message: "Invalid email or verification code.",
       });
@@ -1408,13 +1397,13 @@ router.post("/reset-password-otp", async (req, res) => {
     }
 
     // Verify OTP code
-    const result = consumeVerificationCode(officialEmail, otpCode);
+    const result = consumeVerificationCode(email, otpCode);
     if (!result.ok) {
       return res.status(result.status).json({ message: result.message });
     }
 
-    // Find user by official email
-    const user = await findUserByEmail(officialEmail, {
+    // Find user by email
+    const user = await findUserByEmail(email, {
       role: "TTR/RPF/Police",
       includePassword: true,
     });
@@ -1429,7 +1418,7 @@ router.post("/reset-password-otp", async (req, res) => {
     user.password = hashedPassword;
     await user.save();
 
-    console.log(`✅ Password reset successful via OTP for: ${officialEmail}`);
+    console.log(`✅ Password reset successful via OTP for: ${email}`);
     return res.status(200).json({
       success: true,
       message: "Password reset successful. You can now login.",

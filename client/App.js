@@ -970,7 +970,6 @@ const AppContent = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [officialEmail, setOfficialEmail] = useState("");
   const [professionalId, setProfessionalId] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -1062,7 +1061,7 @@ const AppContent = () => {
   const isRegister = mode === "register";
   const isOfficialRole = role === "TTR/RPF/Police";
   const isOperationalStaff = role === "Driver/Conductor" || role === "Cab/Auto";
-  const otpEmail = (isOfficialRole ? officialEmail : email).trim();
+  const otpEmail = email.trim();
   const isOtpContext = isRegister || (!isRegister && (loginWithOtp || isPostLoginOtpStep));
   const showPasswordInput =
     !forgotPasswordMode &&
@@ -1090,12 +1089,6 @@ const AppContent = () => {
 
   const inferSpecificRoleFromId = (idValue) => {
     return inferSpecificRoleFromProfessionalId(idValue);
-  };
-
-  // Email validation - unified for all roles
-  const isOfficialEmailValid = (selectedRole, emailValue) => {
-    const trimmed = emailValue.trim().toLowerCase();
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
   };
 
   const isValidEmail = (emailValue) => {
@@ -1159,7 +1152,7 @@ const AppContent = () => {
       if (isOfficialRole) {
         return (
           isProfessionalIdValid(role, professionalId) &&
-          isValidEmail(officialEmail) &&
+          isValidEmail(email) &&
           isVerified &&
           pnrRange.trim().length >= 5 &&
           jurisdiction.trim().length >= 3
@@ -1233,7 +1226,7 @@ const AppContent = () => {
     loginWithOtp,
     name,
     otpEmail,
-    officialEmail,
+    email,
     password,
     isRegisterPasswordMatch,
     phone,
@@ -1430,7 +1423,6 @@ const AppContent = () => {
     setName("");
     setPhone("");
     setEmail("");
-    setOfficialEmail("");
     setProfessionalId("");
     setPassword("");
     setConfirmPassword("");
@@ -1595,7 +1587,6 @@ const AppContent = () => {
     setName(profile.name || "");
     setPhone(profile.phone || "");
     setEmail(profile.email || "");
-    setOfficialEmail(profile.officialEmail || profile.email || "");
     setProfessionalId(profile.professionalId || "");
     setJurisdiction(profile.jurisdiction || "");
     setPnrRange(profile.pnrRange || "");
@@ -1620,11 +1611,7 @@ const AppContent = () => {
   };
 
   const initiatePostLoginOtp = async (profile = {}, inferredRole = "") => {
-    const resolvedEmail = (
-      isOfficialRole
-        ? profile.officialEmail || profile.email || ""
-        : profile.email || email
-    )
+    const resolvedEmail = (profile.email || email)
       .trim()
       .toLowerCase();
 
@@ -1633,11 +1620,7 @@ const AppContent = () => {
       return false;
     }
 
-    if (isOfficialRole) {
-      setOfficialEmail(resolvedEmail);
-    } else {
-      setEmail(resolvedEmail);
-    }
+    setEmail(resolvedEmail);
 
     setPendingLoginProfile(profile);
     setPendingLoginSpecificRole(inferredRole);
@@ -1711,7 +1694,6 @@ const AppContent = () => {
     if (isRegister) {
       const isBusTravel = travelType === "Bus";
       const registeredEmail = email.trim().toLowerCase();
-      const registeredOfficialEmail = officialEmail.trim().toLowerCase();
       const registeredProfessionalId = professionalId.trim();
       const resolvedTravelRoute = isBusTravel
         ? `${busDeparture.trim()} -> ${busArrival.trim()}`
@@ -1727,7 +1709,6 @@ const AppContent = () => {
           name: name.trim(),
           phone: phone.trim(),
           email: email.trim().toLowerCase(),
-          officialEmail: officialEmail.trim().toLowerCase(),
           professionalId: professionalId.trim(),
           password: password.trim(),
           isVerified,
@@ -1753,7 +1734,7 @@ const AppContent = () => {
 
         if (isOfficialRole) {
           setProfessionalId(registeredProfessionalId);
-          setOfficialEmail(registeredOfficialEmail);
+          setEmail(registeredEmail);
           setError(
             "Registration submitted. Admin approval takes up to 24 hours.",
           );
@@ -1795,7 +1776,7 @@ const AppContent = () => {
         setAuthToken(data?.token || "");
         setAuthUserId(String(profile?.id || profile?._id || ""));
         setAuthUserRole(String(data?.role || profile?.role || role));
-        setOfficialEmail(profile.email || email.trim().toLowerCase());
+        setEmail(profile.email || email.trim().toLowerCase());
         setError("");
         setIsAuthenticated(true);
       } catch (err) {
@@ -1951,7 +1932,7 @@ const AppContent = () => {
   };
 
   const handleSendResetCode = async () => {
-    const trimmedEmail = officialEmail.trim().toLowerCase();
+    const trimmedEmail = email.trim().toLowerCase();
     const trimmedProfessionalId = professionalId.trim();
 
     // Validate professional ID
@@ -1966,14 +1947,6 @@ const AppContent = () => {
       return;
     }
 
-    // Check if it's an official domain
-    if (!isOfficialEmailValid(role, officialEmail)) {
-      setError(
-        `Please use your official ${getOfficialDomain(role)} email address.`,
-      );
-      return;
-    }
-
     setError("");
     setIsResetCodeSent(false);
     setResetCode("");
@@ -1983,7 +1956,7 @@ const AppContent = () => {
       const { data } = await axios.post(`${API_BASE}/auth/forgot-password`, {
         role,
         professionalId: trimmedProfessionalId,
-        officialEmail: trimmedEmail,
+        email: trimmedEmail,
       });
       const sent = Boolean(data?.sent);
       setIsResetCodeSent(sent);
@@ -2002,7 +1975,7 @@ const AppContent = () => {
   };
 
   const handleResendResetCode = async () => {
-    const trimmedEmail = officialEmail.trim().toLowerCase();
+    const trimmedEmail = email.trim().toLowerCase();
     const trimmedProfessionalId = professionalId.trim();
 
     if (trimmedProfessionalId.length < 6) {
@@ -2015,13 +1988,6 @@ const AppContent = () => {
       return;
     }
 
-    if (!isOfficialEmailValid(role, officialEmail)) {
-      setError(
-        `Please use your official ${getOfficialDomain(role)} email address.`,
-      );
-      return;
-    }
-
     setError("");
     setResetCode("");
     setIsResetCodeVerified(false);
@@ -2031,7 +1997,7 @@ const AppContent = () => {
       const { data } = await axios.post(`${API_BASE}/auth/forgot-password`, {
         role,
         professionalId: trimmedProfessionalId,
-        officialEmail: trimmedEmail,
+        email: trimmedEmail,
       });
       const sent = Boolean(data?.sent);
       setIsResetCodeSent(sent);
@@ -2060,7 +2026,7 @@ const AppContent = () => {
 
     try {
       const payload = {
-        officialEmail: officialEmail.trim().toLowerCase(),
+        email: email.trim().toLowerCase(),
         resetCode: resetCode.trim(),
       };
 
@@ -2110,12 +2076,12 @@ const AppContent = () => {
 
     try {
       const payload = {
-        officialEmail: officialEmail.trim().toLowerCase(),
+        email: email.trim().toLowerCase(),
         resetCode: resetCode.trim(),
         newPassword: newPassword.trim(),
       };
       
-      console.log("Resetting password with:", { email: payload.officialEmail, codeLength: payload.resetCode.length });
+      console.log("Resetting password with:", { email: email.trim().toLowerCase(), codeLength: resetCode.trim().length });
 
       // Use the forgot-password reset endpoint
       await axios.post(`${API_BASE}/auth/reset-password`, payload);
@@ -2132,7 +2098,7 @@ const AppContent = () => {
         setConfirmNewPassword("");
         setIsResetCodeSent(false);
         setIsResetCodeVerified(false);
-        setOfficialEmail("");
+        setEmail("");
         setProfessionalId("");
       }, 2000);
     } catch (err) {
@@ -2811,7 +2777,7 @@ const AppContent = () => {
 
   const renderTtrDashboard = () => {
     const displayName = name.trim() || "Officer";
-    const displayEmail = officialEmail.trim() || "Not set";
+    const displayEmail = email.trim() || "Not set";
     const displayProfessionalId = professionalId.trim() || "Not set";
     const displayRole = specificRole || "TTR";
     const displayJurisdiction = jurisdiction.trim() || "Chennai Division";
@@ -3052,7 +3018,7 @@ const AppContent = () => {
 
   const renderRpfDashboard = () => {
     const displayName = name.trim() || "Officer";
-    const displayEmail = officialEmail.trim() || "Not set";
+    const displayEmail = email.trim() || "Not set";
     const displayProfessionalId = professionalId.trim() || "RPF-CH-11456";
     const displayJurisdiction = jurisdiction.trim() || "Chennai Central Zone";
 
@@ -3219,7 +3185,7 @@ const AppContent = () => {
 
   const renderPoliceDashboard = () => {
     const displayName = name.trim() || "Officer";
-    const displayEmail = officialEmail.trim() || "Not set";
+    const displayEmail = email.trim() || "Not set";
     const displayProfessionalId = professionalId.trim() || "Not set";
     const displayRole = specificRole || "Police";
     const displayJurisdiction = jurisdiction.trim() || "Trichy";
@@ -3481,7 +3447,7 @@ const AppContent = () => {
     // Handle TTR/RPF/Police based on specific role selection
     if (role === "TTR/RPF/Police") {
       const sharedProps = {
-        officerEmail: (officialEmail || email).trim(),
+        officerEmail: (email || email).trim(),
         professionalId: professionalId.trim(),
         staffName: name.trim(),
         specificRole: specificRole,
@@ -3915,23 +3881,22 @@ const AppContent = () => {
 
                         {isRegister && isOfficialRole && (
                           <View style={styles.inputGroup}>
-                            <Text style={styles.label}>{requiredLabel("Official email")}</Text>
+                            <Text style={styles.label}>{requiredLabel("Email")}</Text>
                             <TextInput
                               style={[
                                 styles.input,
                                 isVerified && styles.inputDisabled,
                               ]}
-                              placeholder={`name@${getOfficialDomain(role)}`}
+                              placeholder="name@example.com"
                               placeholderTextColor="#94A3B8"
-                              value={officialEmail}
-                              onChangeText={setOfficialEmail}
+                              value={email}
+                              onChangeText={setEmail}
                               autoCapitalize="none"
                               keyboardType="email-address"
                               editable={!isVerified}
                             />
                             <Text style={styles.helperText}>
-                              Use your {getOfficialDomain(role)} mailbox for
-                              approval.
+                              Use your email for registration
                             </Text>
                           </View>
                         )}
@@ -4108,7 +4073,7 @@ const AppContent = () => {
                                     setConfirmNewPassword("");
                                     setIsResetCodeSent(false);
                                     setResetSuccess(false);
-                                    setOfficialEmail("");
+                                    setEmail("");
                                     setProfessionalId("");
                                     setError("");
                                   }}
@@ -4150,34 +4115,33 @@ const AppContent = () => {
                                   </View>
                                   <View style={styles.inputGroup}>
                                     <Text style={styles.label}>
-                                      {requiredLabel("Official Email")}
+                                      {requiredLabel("Email")}
                                     </Text>
                                     <TextInput
                                       style={styles.input}
-                                      placeholder={`name@${getOfficialDomain(role)}`}
+                                      placeholder="name@example.com"
                                       placeholderTextColor="#94A3B8"
-                                      value={officialEmail}
-                                      onChangeText={setOfficialEmail}
+                                      value={email}
+                                      onChangeText={setEmail}
                                       autoCapitalize="none"
                                       keyboardType="email-address"
                                     />
                                     <Text style={styles.helperText}>
-                                      Enter your registered{" "}
-                                      {getOfficialDomain(role)} email
+                                      Enter your registered email
                                     </Text>
                                   </View>
                                   <TouchableOpacity
                                     style={[
                                       styles.primaryButton,
                                       (professionalId.trim().length < 6 ||
-                                        officialEmail.trim().length < 5 ||
+                                        email.trim().length < 5 ||
                                         isSendingResetCode) &&
                                         styles.buttonDisabled,
                                     ]}
                                     onPress={handleSendResetCode}
                                     disabled={
                                       professionalId.trim().length < 6 ||
-                                      officialEmail.trim().length < 5 ||
+                                      email.trim().length < 5 ||
                                       isSendingResetCode
                                     }
                                   >
