@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 
 const STATUS_OPTIONS = [
   "Seen",
@@ -20,20 +20,21 @@ const ReplyStatusUpdateForm = ({ complaint, onSubmitReply, onSubmitStatus, sendi
 
   if (!complaint) {
     return (
-      <View style={styles.card}>
-        <Text style={styles.title}>Reply / Status Update Form</Text>
-        <Text style={styles.helper}>Select a complaint first.</Text>
+      <View className="bg-white rounded-2xl p-4 gap-3 shadow-sm">
+        <Text className="text-lg font-extrabold text-slate-900 tracking-tight">Reply / Status Update Form</Text>
+        <Text className="text-xs text-slate-500">Select a complaint first.</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>Reply / Status Update Form</Text>
-      <Text style={styles.helper}>Complaint: {complaint.id}</Text>
+    <View className="bg-white rounded-2xl p-4 gap-3 shadow-sm">
+      <Text className="text-lg font-extrabold text-slate-900 tracking-tight">Reply / Status Update Form</Text>
+      <Text className="text-xs text-slate-500">Complaint: {complaint.id}</Text>
 
       <TextInput
-        style={[styles.input, styles.textArea]}
+        className="border border-slate-200 rounded-xl px-3 py-2.5 bg-slate-50 text-slate-900 text-sm min-h-[100px]"
+        style={{ textAlignVertical: "top" }}
         value={message}
         onChangeText={setMessage}
         placeholder="Write reply for passenger"
@@ -41,140 +42,45 @@ const ReplyStatusUpdateForm = ({ complaint, onSubmitReply, onSubmitStatus, sendi
         multiline
       />
 
-      <View style={styles.statusWrap}>
+      <View className="flex-row flex-wrap gap-2">
         {STATUS_OPTIONS.map((option) => {
           const selected = option === status;
           return (
             <Pressable
               key={option}
               onPress={() => setStatus(option)}
-              style={[styles.chip, selected && styles.chipActive]}
+              className={`border rounded-full px-3 py-2 ${selected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-slate-50'}`}
             >
-              <Text style={[styles.chipText, selected && styles.chipTextActive]}>{option}</Text>
+              <Text className={`text-xs ${selected ? 'text-blue-500 font-extrabold' : 'text-slate-500 font-semibold'}`}>{option}</Text>
             </Pressable>
           );
         })}
       </View>
 
-      <View style={styles.row}>
+      <View className="flex-row gap-2.5">
         <Pressable
-          style={[styles.action, styles.primary, (!canReply || sending) && styles.disabled]}
+          className={`flex-1 py-3 rounded-xl items-center shadow-sm ${(!canReply || sending) ? 'bg-slate-300' : 'bg-blue-500'}`}
           onPress={() => {
             if (!canReply || sending) return;
             onSubmitReply(message.trim(), status);
             setMessage("");
           }}
         >
-          <Text style={styles.actionText}>{sending ? "Sending..." : "Send Reply"}</Text>
+          <Text className="text-white font-bold text-xs">{sending ? "Sending..." : "Send Reply"}</Text>
         </Pressable>
 
         <Pressable
-          style={[styles.action, styles.secondary, (!canUpdate || sending) && styles.disabled]}
+          className={`flex-1 py-3 rounded-xl items-center shadow-sm ${(!canUpdate || sending) ? 'bg-slate-300' : 'bg-emerald-500'}`}
           onPress={() => {
             if (!canUpdate || sending) return;
             onSubmitStatus(status);
           }}
         >
-          <Text style={styles.actionText}>{sending ? "Updating..." : "Update Status"}</Text>
+          <Text className="text-white font-bold text-xs">{sending ? "Updating..." : "Update Status"}</Text>
         </Pressable>
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 14,
-    borderWidth: 0,
-    borderColor: "#E2E8F0",
-    padding: 16,
-    gap: 12,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#0F172A",
-    letterSpacing: -0.3,
-  },
-  helper: {
-    fontSize: 12,
-    color: "#64748B",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    backgroundColor: "#F8FAFC",
-    color: "#0F172A",
-    fontSize: 14,
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: "top",
-  },
-  statusWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  chip: {
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: "#F8FAFC",
-  },
-  chipActive: {
-    borderColor: "#3B82F6",
-    backgroundColor: "#EFF6FF",
-  },
-  chipText: {
-    fontSize: 12,
-    color: "#64748B",
-    fontWeight: "600",
-  },
-  chipTextActive: {
-    color: "#3B82F6",
-    fontWeight: "800",
-  },
-  row: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  action: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  primary: {
-    backgroundColor: "#3B82F6",
-  },
-  secondary: {
-    backgroundColor: "#10B981",
-  },
-  disabled: {
-    backgroundColor: "#CBD5E1",
-  },
-  actionText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-    fontSize: 12,
-  },
-});
 
 export default ReplyStatusUpdateForm;
