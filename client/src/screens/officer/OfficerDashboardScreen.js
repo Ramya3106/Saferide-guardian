@@ -958,20 +958,6 @@ const OfficerDashboardScreen = ({
             </View>
 
             <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Assigned duty</Text>
-              <View style={styles.profileSection}>
-                <Text style={styles.profileLabel}>Train:</Text>
-                <Text style={styles.profileValue}>{dutyAttendance?.assignedTrain || dutyTrain || "Train pending"}</Text>
-
-                <Text style={styles.profileLabel}>Route:</Text>
-                <Text style={styles.profileValue}>{dutyAttendance?.assignedRoute || dutyRoute || "Route pending"}</Text>
-
-                <Text style={styles.profileLabel}>Shift:</Text>
-                <Text style={styles.profileValue}>{dutyAttendance?.assignedShift || dutyShift || "Shift pending"}</Text>
-              </View>
-            </View>
-
-            <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>Urgent blinking requests</Text>
               <Text style={styles.sectionNote}>Requests here remain highlighted until accepted or resolved.</Text>
               {urgentRequests.length > 0 ? (

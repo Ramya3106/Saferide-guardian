@@ -63,21 +63,33 @@ const DutyStatusCard = ({
           return (
             <>
               <Pressable
-                style={[styles.action, styles.primary, checkInDisabled && styles.actionDisabled]}
+                style={({ pressed }) => [
+                  styles.action,
+                  styles.primary,
+                  checkInDisabled ? styles.actionDisabled : pressed && styles.actionPressed,
+                ]}
                 disabled={checkInDisabled}
                 accessibilityState={{ disabled: checkInDisabled }}
                 onPress={onCheckIn}
               >
-                <Text style={styles.actionText}>Check-In</Text>
+                <Text style={[styles.actionText, checkInDisabled && styles.actionTextDisabled]}>
+                  Check-In
+                </Text>
               </Pressable>
 
               <Pressable
-                style={[styles.action, styles.danger, checkOutDisabled && styles.actionDisabled]}
+                style={({ pressed }) => [
+                  styles.action,
+                  styles.danger,
+                  checkOutDisabled ? styles.actionDisabled : pressed && styles.actionPressed,
+                ]}
                 disabled={checkOutDisabled}
                 accessibilityState={{ disabled: checkOutDisabled }}
                 onPress={onCheckOut}
               >
-                <Text style={styles.actionText}>Check-Out</Text>
+                <Text style={[styles.actionText, checkOutDisabled && styles.actionTextDisabled]}>
+                  Check-Out
+                </Text>
               </Pressable>
             </>
           );
@@ -173,13 +185,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#EF4444",
   },
   actionDisabled: {
-    opacity: 0.4,
+    backgroundColor: "#CBD5E1",
+    opacity: 1,
+    elevation: 0,
+  },
+  actionPressed: {
+    elevation: 4,
+    shadowOpacity: 0.15,
   },
   actionText: {
     color: "#FFFFFF",
     fontWeight: "800",
     fontSize: 13,
     letterSpacing: 0.3,
+  },
+  actionTextDisabled: {
+    color: "#94A3B8",
   },
   info: {
     fontSize: 12,
