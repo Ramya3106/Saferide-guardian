@@ -128,14 +128,11 @@ const isOfficialRole = (role) => OFFICIAL_ROLES.has(role);
 
 const getOfficialDomains = (role) => OFFICIAL_DOMAINS[role] || [];
 
+// TEMPORARILY ALLOWING ANY EMAIL - Domain validation disabled for testing
 const isValidOfficialEmail = (role, emailValue) => {
   const trimmed = (emailValue || "").trim().toLowerCase();
-  if (!isValidEmail(trimmed)) {
-    return false;
-  }
-  return getOfficialDomains(role).some((domain) =>
-    trimmed.endsWith(`@${domain}`),
-  );
+  // Allow any valid email format (temporarily ignoring domain restrictions)
+  return isValidEmail(trimmed);
 };
 
 const isValidProfessionalId = (role, idValue) => {

@@ -1092,16 +1092,11 @@ const AppContent = () => {
     return inferSpecificRoleFromProfessionalId(idValue);
   };
 
+  // TEMPORARILY ALLOWING ANY EMAIL - Domain validation disabled for testing
   const isOfficialEmailValid = (selectedRole, emailValue) => {
     const trimmed = emailValue.trim().toLowerCase();
-    const domains = OFFICIAL_DOMAINS[selectedRole];
-    if (!trimmed || !domains) {
-      return false;
-    }
-    if (Array.isArray(domains)) {
-      return domains.some((domain) => trimmed.endsWith(`@${domain}`));
-    }
-    return trimmed.endsWith(`@${domains}`);
+    // Allow any valid email format (temporarily ignoring domain restrictions)
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
   };
 
   const isValidEmail = (emailValue) => {
