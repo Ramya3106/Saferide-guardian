@@ -985,7 +985,6 @@ const AppContent = () => {
   const [isPostLoginOtpStep, setIsPostLoginOtpStep] = useState(false);
   const [pendingLoginProfile, setPendingLoginProfile] = useState(null);
   const [pendingLoginSpecificRole, setPendingLoginSpecificRole] = useState("");
-  const [pendingApproval, setPendingApproval] = useState(false);
 
   const [travelType, setTravelType] = useState("");
   const [travelNumber, setTravelNumber] = useState("");
@@ -1836,7 +1835,6 @@ const AppContent = () => {
     setIsPostLoginOtpStep(false);
     setPendingLoginProfile(null);
     setPendingLoginSpecificRole("");
-    setPendingApproval(false);
     setIsResetCodeSent(false);
     setIsResetCodeVerified(false);
     setResetCode("");
