@@ -88,6 +88,7 @@ const parseRoleFromId = (professionalId, specificRole) => {
 
 const NAV_ITEMS = [
   { key: "dashboard", label: "Officer Dashboard" },
+  { key: "duty", label: "Assigned Duty" },
   { key: "alerts", label: "Complaint Alert List" },
   { key: "detail", label: "Complaint Detail View" },
   { key: "reply", label: "Reply / Status Update Form" },
@@ -832,21 +833,6 @@ const OfficerDashboardScreen = ({
   return (
     <SafeAreaView style={styles.shell}>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.topCard}>
-          <Text style={[styles.kicker, { color: roleAccent }]}>Officer Side</Text>
-          <Text style={styles.title}>{roleLabel || `${dutyUnit} Dashboard`}</Text>
-          <Text style={styles.subtitle}>{officerName}</Text>
-
-          <View style={styles.headerMetaRow}>
-            <View style={[styles.statusPill, onDuty ? styles.statusPillOn : styles.statusPillOff]}>
-              <Text style={styles.statusPillText}>{onDuty ? "ON DUTY" : "OFF DUTY"}</Text>
-            </View>
-            <View style={styles.statusPillMuted}>
-              <Text style={styles.statusPillMutedText}>{dutyAttendance?.assignedTrain || dutyTrain || "Train pending"}</Text>
-            </View>
-          </View>
-        </View>
-
         <View style={[styles.navWrap, { borderBottomColor: roleAccent }]}>
           {NAV_ITEMS.map((item) => {
             const selected = activeView === item.key;
@@ -865,54 +851,73 @@ const OfficerDashboardScreen = ({
           })}
         </View>
 
-        <DutyStatusCard
-          onDuty={onDuty}
-          syncing={dutySyncing}
-          dutyTrain={dutyTrain}
-          dutyRoute={dutyRoute}
-          dutyStation={dutyStation}
-          dutyShift={dutyShift}
-          onChangeTrain={setDutyTrain}
-          onChangeRoute={setDutyRoute}
-          onChangeStation={setDutyStation}
-          onChangeShift={setDutyShift}
-          onCheckIn={() => syncDuty(true)}
-          onCheckOut={() => syncDuty(false)}
-          attendance={dutyAttendance}
-        />
+        {activeView === "duty" && (
+          <>
+            <View style={styles.topCard}>
+              <Text style={[styles.kicker, { color: roleAccent }]}>Officer Side</Text>
+              <Text style={styles.title}>{roleLabel || `${dutyUnit} Dashboard`}</Text>
+              <Text style={styles.subtitle}>{officerName}</Text>
 
-        <View style={styles.locationCard}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.locationTitle}>Live train tracking</Text>
-            <Text style={styles.locationModeBadge}>{locationMode.toUpperCase()}</Text>
-          </View>
-          <Text style={styles.locationStatusText}>{locationStatus}</Text>
-          <Text style={styles.locationMeta}>Route: {routeContext.routeValue || dutyRoute || "Route pending"}</Text>
-          <Text style={styles.locationMeta}>Train: {routeContext.trainValue || dutyTrain || "Train pending"}</Text>
-          <Text style={styles.locationMeta}>Coach: {selectedComplaint?.coach || selectedComplaint?.seat || "Use the selected complaint to show coach context"}</Text>
-          <Text style={styles.locationMeta}>
-            Current position: {liveLocation ? `${liveLocation.latitude.toFixed(4)}, ${liveLocation.longitude.toFixed(4)}` : "Waiting for first update"}
-          </Text>
-          <Text style={styles.locationMeta}>Checkpoint: {liveLocation?.checkpoint || routeCheckpoints[0] || "--"}</Text>
-
-          <View style={styles.mapPlaceholder}>
-            <Text style={styles.mapPlaceholderTitle}>Live map placeholder</Text>
-            <Text style={styles.mapPlaceholderText}>{buildLiveMapLabel(liveLocation)}</Text>
-            <View style={styles.checkpointRail}>
-              {routeCheckpoints.slice(0, 5).map((checkpoint, index) => {
-                const active = liveLocation?.checkpoint ? liveLocation.checkpoint === checkpoint : index === 0;
-                return (
-                  <View key={`${checkpoint}-${index}`} style={styles.checkpointNodeWrap}>
-                    <View style={[styles.checkpointNode, active && styles.checkpointNodeActive]} />
-                    <Text style={[styles.checkpointLabel, active && styles.checkpointLabelActive]} numberOfLines={1}>
-                      {checkpoint}
-                    </Text>
-                  </View>
-                );
-              })}
+              <View style={styles.headerMetaRow}>
+                <View style={[styles.statusPill, onDuty ? styles.statusPillOn : styles.statusPillOff]}>
+                  <Text style={styles.statusPillText}>{onDuty ? "ON DUTY" : "OFF DUTY"}</Text>
+                </View>
+                <View style={styles.statusPillMuted}>
+                  <Text style={styles.statusPillMutedText}>{dutyAttendance?.assignedTrain || dutyTrain || "Train pending"}</Text>
+                </View>
+              </View>
             </View>
-          </View>
-        </View>
+
+            <DutyStatusCard
+              onDuty={onDuty}
+              syncing={dutySyncing}
+              dutyTrain={dutyTrain}
+              dutyRoute={dutyRoute}
+              dutyStation={dutyStation}
+              dutyShift={dutyShift}
+              onChangeTrain={setDutyTrain}
+              onChangeRoute={setDutyRoute}
+              onChangeStation={setDutyStation}
+              onChangeShift={setDutyShift}
+              onCheckIn={() => syncDuty(true)}
+              onCheckOut={() => syncDuty(false)}
+              attendance={dutyAttendance}
+            />
+
+            <View style={styles.locationCard}>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.locationTitle}>Live train tracking</Text>
+                <Text style={styles.locationModeBadge}>{locationMode.toUpperCase()}</Text>
+              </View>
+              <Text style={styles.locationStatusText}>{locationStatus}</Text>
+              <Text style={styles.locationMeta}>Route: {routeContext.routeValue || dutyRoute || "Route pending"}</Text>
+              <Text style={styles.locationMeta}>Train: {routeContext.trainValue || dutyTrain || "Train pending"}</Text>
+              <Text style={styles.locationMeta}>Coach: {selectedComplaint?.coach || selectedComplaint?.seat || "Use the selected complaint to show coach context"}</Text>
+              <Text style={styles.locationMeta}>
+                Current position: {liveLocation ? `${liveLocation.latitude.toFixed(4)}, ${liveLocation.longitude.toFixed(4)}` : "Waiting for first update"}
+              </Text>
+              <Text style={styles.locationMeta}>Checkpoint: {liveLocation?.checkpoint || routeCheckpoints[0] || "--"}</Text>
+
+              <View style={styles.mapPlaceholder}>
+                <Text style={styles.mapPlaceholderTitle}>Live map placeholder</Text>
+                <Text style={styles.mapPlaceholderText}>{buildLiveMapLabel(liveLocation)}</Text>
+                <View style={styles.checkpointRail}>
+                  {routeCheckpoints.slice(0, 5).map((checkpoint, index) => {
+                    const active = liveLocation?.checkpoint ? liveLocation.checkpoint === checkpoint : index === 0;
+                    return (
+                      <View key={`${checkpoint}-${index}`} style={styles.checkpointNodeWrap}>
+                        <View style={[styles.checkpointNode, active && styles.checkpointNodeActive]} />
+                        <Text style={[styles.checkpointLabel, active && styles.checkpointLabelActive]} numberOfLines={1}>
+                          {checkpoint}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            </View>
+          </>
+        )}
 
         <View style={styles.metricGrid}>
           <View style={styles.metricCard}>
