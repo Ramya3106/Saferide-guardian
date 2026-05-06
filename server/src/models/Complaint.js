@@ -221,6 +221,35 @@ const complaintSchema = new mongoose.Schema(
       type: String,
       enum: ["Low", "Normal", "High", "Critical"],
       default: "Normal",
+      index: true,
+    },
+    priorityFactors: {
+      itemValue: {
+        type: String,
+        enum: ["Low", "Medium", "High", "VeryHigh"],
+        default: null,
+      },
+      itemValueAmount: Number,
+      securitySuspicion: Boolean,
+      passengerVulnerability: {
+        type: String,
+        enum: ["Adult", "Child", "Senior", "Woman", "PWD"],
+        default: null,
+      },
+      nightTravel: Boolean,
+      theftIndication: Boolean,
+      createdAt: Date,
+    },
+    priorityCalculatedAt: Date,
+    autoEscalated: Boolean,
+    autoEscalatedAt: Date,
+    autoEscalationTimer: {
+      timeoutMs: {
+        type: Number,
+        default: 300000, // 5 minutes demo timeout
+      },
+      startedAt: Date,
+      escalatedAt: Date,
     },
     assignedRole: {
       type: String,

@@ -3,7 +3,6 @@ import axios from "axios";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import * as Location from "expo-location";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { io } from "socket.io-client";
 
 import { getApiBase } from "../../../apiConfig";
 import DutyStatusCard from "./DutyStatusCard";
@@ -11,6 +10,7 @@ import ComplaintAlertListScreen from "./ComplaintAlertListScreen";
 import ComplaintDetailView from "./ComplaintDetailView";
 import ReplyStatusUpdateForm from "./ReplyStatusUpdateForm";
 import DutyHistoryScreen from "./DutyHistoryScreen";
+import { socketService } from "../../services/socketService";
 
 const API_BASE = getApiBase();
 const SOCKET_BASE = API_BASE.replace(/\/api\/?$/, "");
@@ -536,7 +536,7 @@ const OfficerDashboardScreen = ({
   }, [dutyRoute, dutyTrain, dutyUnit, onDuty, publishLiveLocation, routeCheckpoints, routeContext]);
 
   useEffect(() => {
-    const socket = io(SOCKET_BASE, {
+    const socket = socketService.connect(SOCKET_BASE, {
       transports: ["websocket"],
       reconnection: true,
       withCredentials: true,

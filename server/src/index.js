@@ -8,6 +8,7 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 const app = require("./app");
 const connectDb = require("./config/db");
 const { setIo } = require("./utils/socket");
+const { startAutoEscalationService } = require("./services/autoEscalationService");
 
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/saferide";
@@ -107,7 +108,10 @@ const startServer = async () => {
   });
 
   server.listen(PORT, () => {
-    // Server is listening
+    console.log(`🚀 SafeRide Guardian Server running on port ${PORT}`);
+    
+    // Start auto-escalation service (check every 30 seconds for demo)
+    startAutoEscalationService(30000);
   });
 
   server.on("error", async (error) => {

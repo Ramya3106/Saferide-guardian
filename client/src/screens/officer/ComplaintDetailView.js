@@ -1,17 +1,113 @@
-import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View, ScrollView, Modal, TextInput } from "react-native";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Animated,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  useColorScheme,
+  View,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { PriorityBadgeList, PriorityHeader, PrioritySummary } from "../../components/PriorityBadge";
+import { updateComplaintAction } from "../../services/complaintService";
+
+const DetailPill = ({ icon, label, value, theme }) => (
+  <View style={[styles.detailPill, { backgroundColor: theme.chip, borderColor: theme.chipBorder }]}>
+    <View style={[styles.detailPillIcon, { backgroundColor: theme.accentSoft }]}>
+      <Ionicons name={icon} size={12} color={theme.accent} />
+    </View>
+    <Text style={[styles.detailPillLabel, { color: theme.subtext }]}>{label}</Text>
+    <Text style={[styles.detailPillValue, { color: theme.text }]} numberOfLines={2}>
+      {value}
+    </Text>
+  </View>
+);
+
+const DetailLine = ({ label, value, theme, emphasize = false }) => (
+  <View style={styles.detailLineRow}>
+    <Text style={[styles.label, { color: theme.subtext }]}>{label}</Text>
+    <Text style={[styles.detailLineValue, { color: theme.text, fontWeight: emphasize ? "800" : "600" }]}>
+      {value}
+    </Text>
+  </View>
+);
+
+const ActionButton = ({ label, subtext, icon, color, onPress }) => (
+  <Pressable style={[styles.actionButton, { backgroundColor: color }]} onPress={onPress}>
+    <Ionicons name={icon} size={16} color="#FFFFFF" />
+    <Text style={styles.actionButtonText}>{label}</Text>
+    <Text style={styles.actionButtonSubtext}>{subtext}</Text>
+  </Pressable>
+);
 
 const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
   const [showActionModal, setShowActionModal] = useState(false);
   const [selectedAction, setSelectedAction] = useState(null);
   const [actionNote, setActionNote] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const colorScheme = useColorScheme();
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+
+  const theme = useMemo(() => {
+    const isDark = colorScheme === "dark";
+    return {
+      isDark,
+      screen: isDark ? "#07111F" : "#EAF1F7",
+      card: isDark ? "#0D1726" : "#FFFFFF",
+      elevated: isDark ? "#111C2D" : "#F8FBFF",
+      border: isDark ? "#22314A" : "#D7E1EC",
+      text: isDark ? "#EAF2FF" : "#0F172A",
+      subtext: isDark ? "#9FB2CC" : "#52637A",
+      chip: isDark ? "#162337" : "#EDF4FB",
+      chipBorder: isDark ? "#29415F" : "#D8E4EF",
+      accent: "#2563EB",
+      accentSoft: isDark ? "#112A4A" : "#DBEAFE",
+    };
+  }, [colorScheme]);
+
+  const isUrgent = ["High", "Critical"].includes(complaint?.priority) && complaint?.status !== "Closed";
+
+  useEffect(() => {
+    if (!isUrgent) {
+      pulseAnim.stopAnimation();
+      pulseAnim.setValue(0);
+      return undefined;
+    }
+
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+
+    loop.start();
+    return () => loop.stop();
+  }, [isUrgent, pulseAnim]);
+
+  const pulseOpacity = isUrgent
+    ? pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.66, 1] })
+    : 1;
+
+  const trainName = complaint?.trainName || complaint?.vehicleNumber || "Duronto Express 12259";
+  const coachLabel = complaint?.coach || "S4";
+  const seatLabel = complaint?.seat || "21";
+  const boardingStation = complaint?.boardingStation || "New Delhi (NDLS)";
+  const destinationStation = complaint?.destinationStation || "Mumbai CSMT";
+  const officerId = complaint?.assignedOfficerId || complaint?.acceptedBy || "OFF-TTR-204";
+  const officerName = complaint?.assignedOfficerName || complaint?.staffName || "Officer Rahul Kumar";
 
   if (!complaint) {
     return (
-      <View style={styles.card}>
-        <Text style={styles.title}>Complaint Detail View</Text>
-        <Text style={styles.empty}>Select an alert to view complete details.</Text>
+      <View style={[styles.emptyShell, { backgroundColor: theme.screen }]}>
+        <View style={[styles.emptyCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <Ionicons name="train" size={28} color={theme.accent} />
+          <Text style={[styles.title, { color: theme.text }]}>Complaint Detail View</Text>
+          <Text style={[styles.empty, { color: theme.subtext }]}>Select an alert to view complete details.</Text>
+        </View>
       </View>
     );
   }
@@ -28,51 +124,37 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
   const performAction = async (action, additionalData = {}) => {
     setIsLoading(true);
     try {
-      const endpoint = getActionEndpoint(action);
       const payload = getActionPayload(action, additionalData);
+      const headers = {
+        "X-User-Email": "officer@example.com",
+        "X-User-Name": "Officer Name",
+        "X-User-Role": "TTR/RPF/Police",
+        "X-Duty-Unit": "TTR",
+      };
 
-      const response = await fetch(endpoint, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "x-user-email": "officer@example.com",
-          "x-user-name": "Officer Name",
-          "x-user-role": "TTR/RPF/Police",
-          "x-duty-unit": "TTR",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
+      const actionPathMap = {
+        accept: "/accept",
+        investigate: "/start-investigation",
+        note: "/note",
+        escalateRpf: "/escalate-rpf",
+        escalatePolice: "/escalate-police",
+        reassign: "/reassign",
+        resolve: "/resolve",
+        close: "/close",
+      };
+      const data = await updateComplaintAction(complaint._id, actionPathMap[action] || `/${action}`, payload, headers);
+      if (data) {
         setShowActionModal(false);
         setActionNote("");
         if (onActionComplete) {
           onActionComplete(data);
         }
-      } else {
-        console.error("Action failed:", response.statusText);
       }
     } catch (error) {
       console.error("Error performing action:", error);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const getActionEndpoint = (action) => {
-    const baseUrl = `http://localhost:5000/api/complaints/${complaint._id}/staff`;
-    const endpoints = {
-      accept: `${baseUrl}/accept`,
-      investigate: `${baseUrl}/start-investigation`,
-      note: `${baseUrl}/note`,
-      escalateRpf: `${baseUrl}/escalate-rpf`,
-      escalatePolice: `${baseUrl}/escalate-police`,
-      reassign: `${baseUrl}/reassign`,
-      resolve: `${baseUrl}/resolve`,
-      close: `${baseUrl}/close`,
-    };
-    return endpoints[action] || `${baseUrl}/${action}`;
   };
 
   const getActionPayload = (action, additionalData) => {
@@ -90,11 +172,9 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
   };
 
   const handleSubmitAction = async () => {
-    if (["note", "reassign", "resolve", "close"].includes(selectedAction)) {
-      if (!actionNote.trim()) {
-        console.warn("Please enter details for this action");
-        return;
-      }
+    if (["note", "reassign", "resolve", "close"].includes(selectedAction) && !actionNote.trim()) {
+      console.warn("Please enter details for this action");
+      return;
     }
     await performAction(selectedAction, {});
   };
@@ -117,63 +197,88 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
     if (!complaint.messages || complaint.messages.length === 0) {
       return [];
     }
-    return complaint.messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    return [...complaint.messages].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Complaint Detail View</Text>
-        <Text style={styles.row}>
-          <Text style={styles.label}>Complaint:</Text> {complaint.complaintId || complaint._id}
-        </Text>
-        <Text style={styles.row}>
-          <Text style={styles.label}>Passenger:</Text> {complaint.passengerName}
-        </Text>
-        <Text style={styles.row}>
-          <Text style={styles.label}>Train:</Text> {complaint.trainName || complaint.vehicleNumber}
-        </Text>
-        <Text style={styles.row}>
-          <Text style={styles.label}>Coach / Seat:</Text> {complaint.coach || "--"} / {complaint.seat || "--"}
-        </Text>
-        <Text style={styles.row}>
-          <Text style={styles.label}>Route:</Text> {complaint.route}
-        </Text>
-        <Text style={styles.row}>
-          <Text style={styles.label}>Boarding:</Text> {complaint.boardingStation || "--"}
-        </Text>
-        <Text style={styles.row}>
-          <Text style={styles.label}>Destination:</Text> {complaint.destinationStation || "--"}
-        </Text>
-        <Text style={styles.row}>
-          <Text style={styles.label}>Item:</Text> {complaint.itemType}
-        </Text>
-        <Text style={styles.row}>
-          <Text style={styles.label}>Priority:</Text> {complaint.priority}
-        </Text>
-        <Text style={styles.row}>
-          <Text style={styles.label}>Status:</Text> {complaint.status}
-        </Text>
-        <Text style={styles.row}>
-          <Text style={styles.label}>Description:</Text> {complaint.description}
-        </Text>
-        <Text style={styles.row}>
-          <Text style={styles.label}>Next Station:</Text> {complaint.nextStation || "--"}
-        </Text>
+    <ScrollView style={[styles.container, { backgroundColor: theme.screen }]} contentContainerStyle={styles.scrollContent}>
+      <Animated.View
+        style={[
+          styles.card,
+          { backgroundColor: theme.card, borderColor: theme.border, opacity: pulseOpacity },
+        ]}
+      >
+        <View style={styles.heroRow}>
+          <View style={[styles.heroIcon, { backgroundColor: theme.accentSoft }]}>
+            <Ionicons name="train" size={20} color={theme.accent} />
+          </View>
+          <View style={styles.heroCopy}>
+            <Text style={[styles.overline, { color: theme.subtext }]}>Rail operations console</Text>
+            <Text style={[styles.title, { color: theme.text }]}>Complaint Detail View</Text>
+            <Text style={[styles.heroMeta, { color: theme.subtext }]} numberOfLines={2}>
+              {`${complaint.complaintId || complaint._id} • ${trainName} • ${boardingStation} to ${destinationStation}`}
+            </Text>
+          </View>
+        </View>
 
-        <View style={styles.mapCard}>
-          <Text style={styles.mapTitle}>Live map placeholder</Text>
-          <Text style={styles.mapText}>
-            {complaint.currentTrainLocation || complaint.nextStation || complaint.route || "Train route not resolved yet"}
+        <PriorityHeader complaint={complaint} />
+        <PriorityBadgeList complaint={complaint} />
+
+        <View style={[styles.infoGrid, { backgroundColor: theme.elevated, borderColor: theme.border }]}>
+          <DetailPill icon="person" label="Passenger" value={complaint.passengerName || "Passenger record"} theme={theme} />
+          <DetailPill icon="train" label="Train" value={trainName} theme={theme} />
+          <DetailPill icon="layers" label="Coach / Seat" value={`${coachLabel} / ${seatLabel}`} theme={theme} />
+          <DetailPill icon="map" label="Route" value={complaint.route || `${boardingStation} → ${destinationStation}`} theme={theme} />
+          <DetailPill icon="locate" label="Boarding" value={boardingStation} theme={theme} />
+          <DetailPill icon="flag" label="Destination" value={destinationStation} theme={theme} />
+          <DetailPill icon="document-text" label="Item" value={complaint.itemType || "Unknown item"} theme={theme} />
+          <DetailPill icon="shield-checkmark" label="Officer ID" value={officerId} theme={theme} />
+        </View>
+
+        <View style={styles.sectionBlock}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Operations snapshot</Text>
+          <Text style={[styles.sectionBody, { color: theme.subtext }]}>
+            Officer {officerName} is handling this case through the railway security workflow. The card layout keeps priority cues, station context, and duty identifiers visible for a polished final-year demo.
           </Text>
+        </View>
+
+        <View style={[styles.detailStack, { backgroundColor: theme.elevated, borderColor: theme.border }]}>
+          <DetailLine label="Complaint" value={complaint.complaintId || complaint._id} theme={theme} />
+          <DetailLine label="Passenger" value={complaint.passengerName || "--"} theme={theme} />
+          <DetailLine label="Train" value={trainName} theme={theme} />
+          <DetailLine label="Coach / Seat" value={`${coachLabel} / ${seatLabel}`} theme={theme} />
+          <DetailLine label="Route" value={complaint.route || `${boardingStation} → ${destinationStation}`} theme={theme} />
+          <DetailLine label="Boarding" value={boardingStation} theme={theme} />
+          <DetailLine label="Destination" value={destinationStation} theme={theme} />
+          <DetailLine label="Item" value={complaint.itemType || "--"} theme={theme} />
+          <DetailLine label="Priority" value={complaint.priority || "Normal"} theme={theme} emphasize />
+          <DetailLine label="Status" value={complaint.status || "Submitted"} theme={theme} emphasize />
+          <DetailLine label="Description" value={complaint.description || "--"} theme={theme} />
+          <DetailLine label="Next Station" value={complaint.nextStation || "Kanpur Central (CNB)"} theme={theme} />
+        </View>
+
+        <PrioritySummary complaint={complaint} />
+
+        <View style={[styles.mapCard, { backgroundColor: theme.isDark ? "#0B1220" : "#10233F" }]}>
+          <View style={styles.mapHeaderRow}>
+            <View style={styles.mapHeaderCopy}>
+              <Text style={styles.mapTitle}>Live operations panel</Text>
+              <Text style={styles.mapText}>
+                {complaint.currentTrainLocation || complaint.nextStation || complaint.route || "Train route not resolved yet"}
+              </Text>
+            </View>
+            <View style={styles.livePill}>
+              <View style={styles.liveDot} />
+              <Text style={styles.livePillText}>LIVE</Text>
+            </View>
+          </View>
           <Text style={styles.mapMeta}>
-            Position:{" "}
-            {typeof complaint.currentLat === "number" && typeof complaint.currentLng === "number"
+            Position: {typeof complaint.currentLat === "number" && typeof complaint.currentLng === "number"
               ? `${complaint.currentLat.toFixed(4)}, ${complaint.currentLng.toFixed(4)}`
               : "Mock checkpoint only"}
           </Text>
           <Text style={styles.mapMeta}>
-            Route context: {complaint.boardingStation || "--"} -> {complaint.destinationStation || "--"}
+            Route context: {boardingStation} -> {destinationStation}
           </Text>
           <View style={styles.routeTrack}>
             <View style={styles.routeDotActive} />
@@ -184,159 +289,111 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
           </View>
           <Text style={styles.mapHint}>The live map will animate against the latest officer or passenger position snapshot.</Text>
         </View>
-      </View>
+      </Animated.View>
 
-      {/* Officer Actions Section */}
-      <View style={styles.actionsContainer}>
-        <Text style={styles.actionsTitle}>Officer Actions</Text>
-
+      <View style={[styles.actionsContainer, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.actionsTitle, { color: theme.text }]}>Officer Actions</Text>
         <View style={styles.actionGrid}>
-          <Pressable style={styles.actionButton} onPress={() => handleAction("accept")}>
-            <Text style={styles.actionButtonText}>Accept</Text>
-            <Text style={styles.actionButtonSubtext}>Accept complaint</Text>
-          </Pressable>
-
-          <Pressable style={styles.actionButton} onPress={() => handleAction("investigate")}>
-            <Text style={styles.actionButtonText}>Investigate</Text>
-            <Text style={styles.actionButtonSubtext}>Start investigation</Text>
-          </Pressable>
-
-          <Pressable style={styles.actionButton} onPress={onOpenReply}>
-            <Text style={styles.actionButtonText}>Reply</Text>
-            <Text style={styles.actionButtonSubtext}>Reply to passenger</Text>
-          </Pressable>
-
-          <Pressable style={styles.actionButton} onPress={() => handleAction("note")}>
-            <Text style={styles.actionButtonText}>Note</Text>
-            <Text style={styles.actionButtonSubtext}>Add internal note</Text>
-          </Pressable>
-
-          <Pressable style={[styles.actionButton, styles.escalateButton]} onPress={() => handleAction("escalateRpf")}>
-            <Text style={styles.actionButtonText}>Escalate</Text>
-            <Text style={styles.actionButtonSubtext}>Escalate to RPF</Text>
-          </Pressable>
-
-          <Pressable style={[styles.actionButton, styles.escalateButton]} onPress={() => handleAction("escalatePolice")}>
-            <Text style={styles.actionButtonText}>Police</Text>
-            <Text style={styles.actionButtonSubtext}>Escalate to Police</Text>
-          </Pressable>
-
-          <Pressable style={styles.actionButton} onPress={() => handleAction("reassign")}>
-            <Text style={styles.actionButtonText}>Reassign</Text>
-            <Text style={styles.actionButtonSubtext}>Reassign complaint</Text>
-          </Pressable>
-
-          <Pressable style={[styles.actionButton, styles.resolveButton]} onPress={() => handleAction("resolve")}>
-            <Text style={styles.actionButtonText}>Resolve</Text>
-            <Text style={styles.actionButtonSubtext}>Mark as resolved</Text>
-          </Pressable>
-
-          <Pressable style={[styles.actionButton, styles.closeButton]} onPress={() => handleAction("close")}>
-            <Text style={styles.actionButtonText}>Close</Text>
-            <Text style={styles.actionButtonSubtext}>Close complaint</Text>
-          </Pressable>
+          <ActionButton label="Accept" subtext="Accept complaint" icon="checkmark-circle" color="#2563EB" onPress={() => handleAction("accept")} />
+          <ActionButton label="Investigate" subtext="Start investigation" icon="search" color="#0F766E" onPress={() => handleAction("investigate")} />
+          <ActionButton label="Reply" subtext="Reply to passenger" icon="chatbubble-ellipses" color="#334155" onPress={onOpenReply} />
+          <ActionButton label="Note" subtext="Add internal note" icon="document-text" color="#475569" onPress={() => handleAction("note")} />
+          <ActionButton label="Escalate" subtext="Escalate to RPF" icon="trail-sign" color="#F59E0B" onPress={() => handleAction("escalateRpf")} />
+          <ActionButton label="Police" subtext="Escalate to Police" icon="shield-half" color="#B45309" onPress={() => handleAction("escalatePolice")} />
+          <ActionButton label="Reassign" subtext="Reassign complaint" icon="swap-horizontal" color="#7C3AED" onPress={() => handleAction("reassign")} />
+          <ActionButton label="Resolve" subtext="Mark as resolved" icon="checkmark-done-circle" color="#10B981" onPress={() => handleAction("resolve")} />
+          <ActionButton label="Close" subtext="Close complaint" icon="lock-closed" color="#EF4444" onPress={() => handleAction("close")} />
         </View>
       </View>
 
-      {/* Timeline Section */}
-      <View style={styles.timelineContainer}>
-        <Text style={styles.timelineTitle}>Activity Timeline</Text>
+      <View style={[styles.timelineContainer, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.timelineTitle, { color: theme.text }]}>Activity Timeline</Text>
         {getTimelineEntries().length > 0 ? (
           getTimelineEntries().map((entry, index) => (
             <View key={index} style={styles.timelineEntry}>
               <View style={styles.timelineDot} />
               <View style={styles.timelineContent}>
-                <Text style={styles.timelineStaff}>{entry.staffName}</Text>
-                <Text style={styles.timelineText}>{entry.text}</Text>
-                <Text style={styles.timelineTime}>
-                  {new Date(entry.timestamp).toLocaleString()}
-                </Text>
+                <Text style={[styles.timelineStaff, { color: theme.text }]}>{entry.staffName}</Text>
+                <Text style={[styles.timelineText, { color: theme.subtext }]}>{entry.text}</Text>
+                <Text style={styles.timelineTime}>{new Date(entry.timestamp).toLocaleString()}</Text>
               </View>
             </View>
           ))
         ) : (
-          <Text style={styles.empty}>No activity yet</Text>
+          <Text style={[styles.empty, { color: theme.subtext }]}>No activity yet</Text>
         )}
       </View>
 
-      {/* Action Modal */}
       <Modal visible={showActionModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{getActionLabel(selectedAction)}</Text>
-
+          <View style={[styles.modalContent, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>{getActionLabel(selectedAction)}</Text>
             {selectedAction === "note" && (
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text }]}
                 placeholder="Enter internal note..."
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.subtext}
                 value={actionNote}
                 onChangeText={setActionNote}
                 multiline
                 numberOfLines={4}
               />
             )}
-
             {selectedAction === "escalateRpf" && (
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text }]}
                 placeholder="Reason for escalation to RPF..."
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.subtext}
                 value={actionNote}
                 onChangeText={setActionNote}
                 multiline
                 numberOfLines={3}
               />
             )}
-
             {selectedAction === "escalatePolice" && (
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text }]}
                 placeholder="Reason for escalation to Police..."
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.subtext}
                 value={actionNote}
                 onChangeText={setActionNote}
                 multiline
                 numberOfLines={3}
               />
             )}
-
             {selectedAction === "reassign" && (
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text }]}
                 placeholder="Reason for reassignment..."
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.subtext}
                 value={actionNote}
                 onChangeText={setActionNote}
                 multiline
                 numberOfLines={3}
               />
             )}
-
             {selectedAction === "resolve" && (
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text }]}
                 placeholder="Resolution details..."
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.subtext}
                 value={actionNote}
                 onChangeText={setActionNote}
                 multiline
                 numberOfLines={3}
               />
             )}
-
             {selectedAction === "close" && (
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: theme.elevated, borderColor: theme.border, color: theme.text }]}
                 placeholder="Closure reason..."
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={theme.subtext}
                 value={actionNote}
                 onChangeText={setActionNote}
                 multiline
                 numberOfLines={3}
               />
             )}
-
             <View style={styles.modalButtons}>
               <Pressable
                 style={[styles.modalButton, styles.cancelButton]}
@@ -348,12 +405,7 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
               >
                 <Text style={styles.modalButtonText}>Cancel</Text>
               </Pressable>
-
-              <Pressable
-                style={[styles.modalButton, styles.confirmButton]}
-                onPress={handleSubmitAction}
-                disabled={isLoading}
-              >
+              <Pressable style={[styles.modalButton, styles.confirmButton]} onPress={handleSubmitAction} disabled={isLoading}>
                 <Text style={styles.modalButtonText}>{isLoading ? "Processing..." : "Confirm"}</Text>
               </Pressable>
             </View>
@@ -367,22 +419,125 @@ const ComplaintDetailView = ({ complaint, onOpenReply, onActionComplete }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F0F4F8",
+  },
+  scrollContent: {
+    paddingBottom: 24,
+  },
+  emptyShell: {
+    flex: 1,
+    padding: 12,
+    justifyContent: "center",
+  },
+  emptyCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 18,
+    alignItems: "center",
+    gap: 8,
   },
   card: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#CBD5E1",
-    padding: 12,
-    gap: 5,
+    padding: 14,
+    gap: 12,
     margin: 12,
+    shadowColor: "#000000",
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 2,
+  },
+  heroRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  heroIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  heroCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  overline: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
+    fontWeight: "800",
+  },
+  heroMeta: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  infoGrid: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 10,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  detailPill: {
+    flexBasis: "48%",
+    minWidth: "48%",
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 10,
+    gap: 4,
+  },
+  detailPillIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  detailPillLabel: {
+    fontSize: 11,
     fontWeight: "700",
-    color: "#0F172A",
-    marginBottom: 2,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  detailPillValue: {
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 17,
+  },
+  sectionBlock: {
+    gap: 6,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  sectionBody: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  detailStack: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 12,
+    gap: 8,
+  },
+  detailLineRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 16,
+  },
+  detailLineValue: {
+    flex: 1,
+    textAlign: "right",
+    fontSize: 13,
+    lineHeight: 18,
   },
   row: {
     color: "#334155",
@@ -396,38 +551,70 @@ const styles = StyleSheet.create({
     color: "#475569",
   },
   mapCard: {
-    marginTop: 8,
-    borderRadius: 12,
-    padding: 12,
-    backgroundColor: "#0F172A",
-    borderWidth: 1,
-    borderColor: "#1E293B",
-    gap: 4,
+    marginTop: 2,
+    borderRadius: 16,
+    padding: 14,
+    gap: 6,
+  },
+  mapHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  mapHeaderCopy: {
+    flex: 1,
+    gap: 3,
   },
   mapTitle: {
     color: "#F8FAFC",
-    fontWeight: "700",
+    fontWeight: "800",
     fontSize: 14,
   },
   mapText: {
     color: "#DBEAFE",
     fontSize: 13,
+    lineHeight: 18,
   },
   mapMeta: {
     color: "#CBD5E1",
     fontSize: 12,
+    lineHeight: 17,
   },
   mapHint: {
     color: "#94A3B8",
     fontSize: 11,
     marginTop: 2,
   },
+  livePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(239, 68, 68, 0.16)",
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.35)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#EF4444",
+  },
+  livePillText: {
+    color: "#FEE2E2",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+  },
   routeTrack: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     marginTop: 6,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   routeDot: {
     width: 10,
@@ -450,18 +637,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#334155",
   },
   actionsContainer: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#CBD5E1",
-    padding: 12,
-    margin: 12,
+    padding: 14,
+    marginHorizontal: 12,
+    marginTop: 2,
+    gap: 12,
   },
   actionsTitle: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#0F172A",
-    marginBottom: 12,
+    fontWeight: "800",
   },
   actionGrid: {
     flexDirection: "row",
@@ -470,57 +655,46 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    minWidth: "45%",
-    backgroundColor: "#1D4ED8",
-    borderRadius: 8,
-    padding: 10,
+    minWidth: "31%",
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
     alignItems: "center",
-    gap: 2,
-  },
-  escalateButton: {
-    backgroundColor: "#F59E0B",
-  },
-  resolveButton: {
-    backgroundColor: "#10B981",
-  },
-  closeButton: {
-    backgroundColor: "#EF4444",
+    justifyContent: "center",
+    gap: 4,
   },
   actionButtonText: {
     color: "#FFFFFF",
-    fontWeight: "700",
+    fontWeight: "800",
     fontSize: 12,
   },
   actionButtonSubtext: {
-    color: "#E0F2FE",
+    color: "rgba(255,255,255,0.86)",
     fontSize: 10,
+    textAlign: "center",
   },
   timelineContainer: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#CBD5E1",
-    padding: 12,
-    margin: 12,
-    marginBottom: 24,
+    padding: 14,
+    marginHorizontal: 12,
+    marginTop: 12,
+    gap: 12,
   },
   timelineTitle: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#0F172A",
-    marginBottom: 12,
+    fontWeight: "800",
   },
   timelineEntry: {
     flexDirection: "row",
     gap: 12,
-    marginBottom: 12,
-    paddingLeft: 8,
+    paddingLeft: 6,
   },
   timelineDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: "#1D4ED8",
+    backgroundColor: "#2563EB",
     marginTop: 4,
   },
   timelineContent: {
@@ -529,65 +703,59 @@ const styles = StyleSheet.create({
   },
   timelineStaff: {
     fontSize: 13,
-    fontWeight: "700",
-    color: "#0F172A",
+    fontWeight: "800",
   },
   timelineText: {
     fontSize: 12,
-    color: "#334155",
+    lineHeight: 17,
   },
   timelineTime: {
-    fontSize: 11,
+    fontSize: 10,
     color: "#94A3B8",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
+    backgroundColor: "rgba(2, 6, 23, 0.65)",
+    justifyContent: "center",
+    padding: 18,
   },
   modalContent: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 16,
+    borderRadius: 18,
+    borderWidth: 1,
     padding: 16,
     gap: 12,
-    maxHeight: "80%",
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#0F172A",
+    fontWeight: "800",
   },
   input: {
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#CBD5E1",
-    borderRadius: 8,
-    padding: 12,
-    backgroundColor: "#FFFFFF",
-    color: "#0F172A",
-    minHeight: 80,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 100,
     textAlignVertical: "top",
   },
   modalButtons: {
     flexDirection: "row",
-    gap: 8,
+    gap: 10,
   },
   modalButton: {
     flex: 1,
+    borderRadius: 12,
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
     alignItems: "center",
   },
   cancelButton: {
-    backgroundColor: "#E2E8F0",
+    backgroundColor: "#334155",
   },
   confirmButton: {
-    backgroundColor: "#1D4ED8",
+    backgroundColor: "#2563EB",
   },
   modalButtonText: {
-    fontWeight: "700",
-    fontSize: 14,
     color: "#FFFFFF",
+    fontWeight: "800",
   },
 });
 

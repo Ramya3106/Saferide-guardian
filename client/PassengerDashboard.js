@@ -19,8 +19,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
-import { io } from "socket.io-client";
 import { getApiBase } from "./apiConfig";
+import PassengerMessageThread from "./src/screens/PassengerMessageThread";
+import { socketService } from "./src/services/socketService";
 
 const API_BASE = getApiBase();
 const SOCKET_BASE = API_BASE.replace(/\/api\/?$/, "");
@@ -261,7 +262,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
       return undefined;
     }
 
-    const socket = io(SOCKET_BASE, {
+    const socket = socketService.connect(SOCKET_BASE, {
       transports: ["websocket"],
       reconnection: true,
       withCredentials: true,
@@ -347,6 +348,13 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     socket.on("complaint:location-update", mergeComplaintRecord);
     socket.on("complaint:escalation", mergeComplaintRecord);
 
+    // Listen for passenger messages (real-time updates when officer sends message)
+    socket.on("passenger:message", (payload) => {
+      if (payload?.complaintId) {
+        mergeComplaintRecord(payload);
+      }
+    });
+
     socket.on("connect", () => {
       socket.emit("join:passenger", userEmail);
     });
@@ -358,6 +366,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
       socket.off("complaint:status-change", mergeComplaintRecord);
       socket.off("complaint:location-update", mergeComplaintRecord);
       socket.off("complaint:escalation", mergeComplaintRecord);
+      socket.off("passenger:message");
       socket.disconnect();
       socketRef.current = null;
     };
@@ -1084,30 +1093,49 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     );
   };
 
-  // Section 7: Staff Message Panel
+  // Section 7: Staff Message Panel - Using Message Thread Component
   const renderStaffMessages = () => {
     if (!currentComplaint) return null;
+
+    const handleMessageSent = async (messageText) => {
+      try {
+        const response = await axios.post(
+          `${API_BASE}/passenger/messages/${currentComplaint._id}`,
+          { text: messageText },
+          {
+            headers: {
+              "x-user-email": userEmail,
+              "x-user-name": userName,
+              "x-user-phone": userPhone,
+              Authorization: `Bearer ${authToken}`,
+            },
+          }
+        );
+
+        // Message was sent successfully, UI will update via socket event
+        if (response.data?.complaint) {
+          setCurrentComplaint({
+            ...currentComplaint,
+            ...response.data.complaint,
+          });
+        }
+      } catch (error) {
+        console.error("Error sending message:", error);
+        Alert.alert("Error", "Failed to send message. Please try again.");
+      }
+    };
 
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>💬 Staff Messages</Text>
-        <View style={styles.messagesCard}>
-          {currentComplaint.messages && currentComplaint.messages.length > 0 ? (
-            currentComplaint.messages.map((msg, idx) => (
-              <View key={idx} style={styles.messageItem}>
-                <Text style={styles.messageStaff}>
-                  👤 {msg.staffName || "Staff"}
-                </Text>
-                <Text style={styles.messageText}>{msg.text}</Text>
-                <Text style={styles.messageTime}>{msg.timestamp}</Text>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.noMessagesText}>
-              Waiting for staff update...
-            </Text>
-          )}
-        </View>
+        <PassengerMessageThread
+          complaint={currentComplaint}
+          userEmail={userEmail}
+          userName={userName}
+          onMessageSent={handleMessageSent}
+          apiBase={API_BASE}
+          authToken={authToken}
+        />
       </View>
     );
   };

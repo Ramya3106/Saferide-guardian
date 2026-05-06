@@ -13,6 +13,10 @@ const complaintReplySchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    officerName: {
+      type: String,
+      default: null,
+    },
     officerRole: {
       type: String,
       required: true,
@@ -30,12 +34,24 @@ const complaintReplySchema = new mongoose.Schema(
       enum: [
         "Seen",
         "Acknowledged",
+        "Accepted",
         "Item Being Checked",
         "Item Found",
         "Passenger Contacted",
         "Ready for Handover",
+        "Recovered",
         "Closed",
       ],
+    },
+    visibleToPassenger: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+    messageType: {
+      type: String,
+      enum: ["system", "officer-reply", "status-update"],
+      default: "officer-reply",
     },
     repliedAt: {
       type: Date,
@@ -49,5 +65,6 @@ const complaintReplySchema = new mongoose.Schema(
 );
 
 complaintReplySchema.index({ complaintId: 1, repliedAt: -1 });
+complaintReplySchema.index({ complaintId: 1, visibleToPassenger: 1, repliedAt: -1 });
 
 module.exports = mongoose.model("ComplaintReply", complaintReplySchema);

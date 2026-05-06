@@ -1,12 +1,16 @@
 import React from "react";
 import { registerRootComponent } from "expo";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Provider } from "react-redux";
 import App from "./App";
+import store from "./src/store";
 
 const Root = () => (
-  <SafeAreaProvider>
-    <App />
-  </SafeAreaProvider>
+  <Provider store={store}>
+    <SafeAreaProvider>
+      <App />
+    </SafeAreaProvider>
+  </Provider>
 );
 
 registerRootComponent(Root);

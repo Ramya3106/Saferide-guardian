@@ -18,6 +18,11 @@ const {
   isActiveStatus,
   getStatusDescription,
 } = require("../utils/complaintStatusFlow");
+const {
+  sortByPriority,
+  getPriorityColor,
+  getPriorityLabel,
+} = require("../utils/priorityCalculator");
 
 const router = express.Router();
 
@@ -376,15 +381,36 @@ router.get("/officer/:officerId", requireOfficerRole, async (req, res) => {
       ],
     };
 
-    const complaints = await Complaint.find(query).sort({ updatedAt: -1 });
+    const complaints = await Complaint.find(query).exec();
+    
+    // Sort by priority (Critical/High first), then by date
+    const sortedComplaints = sortByPriority(complaints);
+
+    // Add priority metadata for UI display
+    const complaintsWithMetadata = sortedComplaints.map((complaint) => {
+      const complaintObj =
+        complaint.toObject ? complaint.toObject() : complaint;
+      return {
+        ...complaintObj,
+        priorityColor: getPriorityColor(complaint.priority),
+        priorityLabel: getPriorityLabel(complaint.priority),
+        priorityReason: complaint.alertPriorityReason,
+      };
+    });
 
     return success(res, 200, "Complaints retrieved successfully", {
       officerId,
-      complaints,
-      total: complaints.length
+      complaints: complaintsWithMetadata,
+      total: complaintsWithMetadata.length,
     });
   } catch (error) {
-    return failure(res, 500, "Failed to fetch officer complaints", "INTERNAL_ERROR", error.message);
+    return failure(
+      res,
+      500,
+      "Failed to fetch officer complaints",
+      "INTERNAL_ERROR",
+      error.message
+    );
   }
 });
 
@@ -459,6 +485,19 @@ router.post("/:id/staff/respond", requireOfficerRole, async (req, res) => {
       statusUpdate: complaint.status,
     });
 
+    // Also store passenger-visible message
+    const passengerMessage = await ComplaintReply.create({
+      complaintId: complaint._id,
+      officerId: currentOfficer.staffId || currentOfficer.staffEmail,
+      officerName: currentOfficer.staffName,
+      officerRole: currentOfficer.dutyUnit || "TTR",
+      message: text,
+      statusUpdate: complaint.status,
+      visibleToPassenger: true,
+      messageType: "officer-reply",
+      repliedAt: new Date(),
+    });
+
     emitSocketEvent("complaint:reply", {
       complaintId: String(complaint._id),
       passengerId: complaint.passengerId,
@@ -478,6 +517,17 @@ router.post("/:id/staff/respond", requireOfficerRole, async (req, res) => {
       source: "officer-response",
     });
 
+    // Send passenger notification with officer's message
+    emitSocketEvent("passenger:message", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      message: passengerMessage ? (passengerMessage.toObject ? passengerMessage.toObject() : passengerMessage) : null,
+      senderName: currentOfficer.staffName,
+      senderRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      messageText: text,
+      source: "officer-reply",
+    });
+
     await logAction({
       action: "OFFICER_REPLIED_TO_PASSENGER",
       actorType: "OFFICER",
@@ -495,6 +545,7 @@ router.post("/:id/staff/respond", requireOfficerRole, async (req, res) => {
     return success(res, 200, "Reply saved successfully", {
       complaint,
       reply: storedReply,
+      passengerMessage,
     });
   } catch (error) {
     console.error("Staff respond error:", error.message);
@@ -799,6 +850,14 @@ router.patch("/:id/staff/accept", requireOfficerRole, async (req, res) => {
     complaint.messages.push(
       staffTimelineEntry(currentOfficer.staffName, "Complaint accepted", currentOfficer),
     );
+    
+    // Reset auto-escalation timer (prevent further escalation once accepted)
+    complaint.autoEscalationTimer = {
+      timeoutMs: 300000,
+      startedAt: new Date(),
+      escalatedAt: null,
+    };
+    
     syncCanonicalComplaintFields(complaint, currentOfficer, { accepted: true });
     await complaint.save();
 
@@ -807,6 +866,19 @@ router.patch("/:id/staff/accept", requireOfficerRole, async (req, res) => {
       currentOfficer,
       message: "Complaint accepted",
       statusUpdate: "Accepted",
+    });
+
+    // Create passenger notification message
+    const passengerNotification = await ComplaintReply.create({
+      complaintId: complaint._id,
+      officerId: currentOfficer.staffId || currentOfficer.staffEmail,
+      officerName: currentOfficer.staffName,
+      officerRole: currentOfficer.dutyUnit || "TTR",
+      message: `Your complaint has been accepted by an on-duty ${currentOfficer.dutyUnit || "TTR"} officer. We are now investigating your case.`,
+      statusUpdate: "Accepted",
+      visibleToPassenger: true,
+      messageType: "system",
+      repliedAt: new Date(),
     });
 
     emitSocketEvent("complaint:accepted", {
@@ -828,6 +900,17 @@ router.patch("/:id/staff/accept", requireOfficerRole, async (req, res) => {
       source: "officer-accept",
     });
 
+    // Send passenger notification
+    emitSocketEvent("passenger:message", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      message: passengerNotification ? (passengerNotification.toObject ? passengerNotification.toObject() : passengerNotification) : null,
+      senderName: currentOfficer.staffName,
+      senderRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
+      messageText: `Your complaint has been accepted by an on-duty ${currentOfficer.dutyUnit || "TTR"} officer.`,
+      source: "officer-accept",
+    });
+
     await logAction({
       action: "OFFICER_ACCEPTED_COMPLAINT",
       actorType: "OFFICER",
@@ -845,6 +928,7 @@ router.patch("/:id/staff/accept", requireOfficerRole, async (req, res) => {
     return success(res, 200, "Complaint accepted successfully", {
       complaint,
       reply: storedReply,
+      passengerNotification,
     });
   } catch (error) {
     console.error("Staff accept error:", error.message);

@@ -20,6 +20,11 @@ const {
   isActiveStatus,
   getStatusDescription,
 } = require("../utils/complaintStatusFlow");
+const {
+  calculatePriority,
+  getPriorityReason,
+  PRIORITY_LEVELS,
+} = require("../utils/priorityCalculator");
 
 // Middleware to extract user email from headers
 const getUserEmail = (req) => req.headers["x-user-email"] || "";
@@ -311,17 +316,23 @@ router.post("/complaints", async (req, res) => {
 
     console.log("📝 Creating complaint for email:", userEmail);
 
-    const submitAuthorityValue = normalizeSubmitAuthority(submitAuthority);
-    const resolvedComplaintType = complaintType || lostItemType || itemType || transportType;
-    const resolvedComplaintDescription = complaintDescription || description;
-    const resolvedComplaintTime = complaintTime || timestamp || new Date();
-    const resolvedPriority = priority || severity || detectPriority({ transportType, itemType, description });
-    const resolvedLocation = currentTrainLocation || lastSeenLocation || fromLocation || route || null;
-    const resolvedPassengerPhoneMasked = passengerPhoneMasked || maskPhoneNumber(req.body?.passengerPhone || req.body?.phone);
-    const resolvedTrainName = trainName || vehicleNumber || null;
-    const resolvedCoach = coach || req.body?.coachNumber || null;
-    const resolvedSeat = seat || req.body?.berthNumber || null;
-    const assignedStaff = [];
+    // Calculate priority based on multiple factors
+    const { priority: calculatedPriority, factors: priorityFactors } = calculatePriority({
+      itemValue: req.body?.itemValue,
+      securitySuspicion: req.body?.securitySuspicion,
+      passengerAge: req.headers["x-user-age"],
+      passengerGender: req.headers["x-user-gender"],
+      passengerDisability: req.body?.passengerDisability,
+      complaintTime: resolvedComplaintTime,
+      timestamp: resolvedComplaintTime,
+      itemType: itemType,
+      theftIndication: req.body?.theftIndication,
+      suspiciousActivity: req.body?.suspiciousActivity,
+      submitAuthority: submitAuthorityValue,
+    });
+
+    const resolvedPriority = calculatedPriority || priority || severity || "Normal";
+    const priorityReason = getPriorityReason(priorityFactors);
 
     const complaint = new Complaint({
       passengerId: userEmail,
@@ -357,13 +368,14 @@ router.post("/complaints", async (req, res) => {
       status: "Submitted",
       severity: resolvedPriority,
       priority: resolvedPriority,
+      priorityFactors,
+      priorityCalculatedAt: new Date(),
+      autoEscalationTimer: {
+        timeoutMs: 300000, // 5 minutes for demo
+        startedAt: new Date(),
+      },
       assignedStaff,
-      alertPriorityReason:
-        resolvedPriority === "Critical"
-          ? "Critical lost-item escalation"
-          : resolvedPriority === "High"
-            ? "High priority lost-item report"
-            : "Standard lost-item report",
+      alertPriorityReason: priorityReason,
       dispatchMode: assignedStaff.length > 0 ? "On-duty dispatch" : "Unassigned fallback",
     });
 
@@ -1030,77 +1042,138 @@ router.get("/messages/:complaintId", async (req, res) => {
     const complaintId = req.params.complaintId;
     const userEmail = getUserEmail(req);
 
-    const complaint = await Complaint.findOne({ _id: complaintId, passengerEmail: userEmail });
+    const complaint = await Complaint.findOne({ 
+      $or: [
+        { _id: complaintId, passengerEmail: userEmail },
+        { complaintId: complaintId, passengerEmail: userEmail }
+      ]
+    });
 
     if (!complaint) {
-      return res.status(404).json({ message: "Complaint not found" });
+      return failure(res, 404, "Complaint not found", "NOT_FOUND");
     }
 
-    res.json({
-      messages: complaint.messages || [],
+    // Get all timeline messages
+    const timelineMessages = (complaint.messages || []).map((msg) => ({
+      id: `timeline-${msg.timestamp}`,
+      type: "timeline",
+      sender: msg.staffName || "Officer",
+      senderRole: "Officer",
+      text: msg.text,
+      timestamp: msg.timestamp,
+      isOfficer: true,
+      isInternalNote: msg.isInternalNote || false,
+    }));
+
+    // Get all complaint replies visible to passenger
+    const complaintReplies = await ComplaintReply.find({
+      complaintId: complaint._id,
+      visibleToPassenger: true,
+    }).sort({ repliedAt: 1 });
+
+    const replyMessages = complaintReplies.map((reply) => ({
+      id: reply._id.toString(),
+      type: reply.messageType || "officer-reply",
+      sender: reply.officerName || "Officer",
+      senderRole: reply.officerRole,
+      text: reply.message,
+      timestamp: reply.repliedAt,
+      isOfficer: true,
+    }));
+
+    // Merge and sort all messages
+    const allMessages = [...timelineMessages.filter(m => !m.isInternalNote), ...replyMessages]
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+    return success(res, 200, "Messages retrieved successfully", {
+      complaintId: complaint._id,
       staffName: complaint.staffName,
-      message: "Messages retrieved successfully",
+      staffRole: complaint.assignedRole,
+      status: complaint.status,
+      messages: allMessages,
+      total: allMessages.length,
     });
   } catch (error) {
     console.error("Error fetching messages:", error);
-    res.status(500).json({ message: "Error fetching messages" });
+    return failure(res, 500, "Error fetching messages", "INTERNAL_ERROR", error.message);
   }
 });
 
-// POST /api/passenger/messages/:complaintId - Send message to staff
+// POST /api/passenger/messages/:complaintId - Passenger sends message
 router.post("/messages/:complaintId", async (req, res) => {
   try {
     const complaintId = req.params.complaintId;
     const userEmail = getUserEmail(req);
     const { text } = req.body;
 
-    if (!text) {
-      return res.status(400).json({ message: "Message text required" });
+    if (!text || !String(text).trim()) {
+      return failure(res, 400, "Message text required", "VALIDATION_ERROR");
     }
 
     const complaint = await Complaint.findOne({
-      _id: complaintId,
-      passengerEmail: userEmail,
+      $or: [
+        { _id: complaintId, passengerEmail: userEmail },
+        { complaintId: complaintId, passengerEmail: userEmail }
+      ]
     });
 
     if (!complaint) {
-      return res.status(404).json({ message: "Complaint not found" });
+      return failure(res, 404, "Complaint not found", "NOT_FOUND");
     }
 
+    // Add to complaint timeline
     const newMessage = {
-      staffId: complaint.staffId,
-      staffName: complaint.staffName,
-      text,
+      staffId: "passenger",
+      staffName: "Passenger",
+      text: String(text).trim(),
       timestamp: new Date(),
+      isPassengerMessage: true,
     };
 
     complaint.messages.push(newMessage);
     await complaint.save();
 
-    emitSocketEvent("complaint:location-update", {
+    // Create complaint reply record for conversation log
+    const passengerReply = await ComplaintReply.create({
+      complaintId: complaint._id,
+      officerId: "passenger",
+      officerName: complaint.passengerName,
+      officerRole: "Passenger",
+      message: String(text).trim(),
+      statusUpdate: complaint.status,
+      visibleToPassenger: true,
+      messageType: "passenger-message",
+      repliedAt: new Date(),
+    });
+
+    // Emit socket events for real-time update
+    emitSocketEvent("passenger:message", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      senderName: complaint.passengerName,
+      senderRole: "Passenger",
+      messageText: String(text).trim(),
+      message: passengerReply ? (passengerReply.toObject ? passengerReply.toObject() : passengerReply) : null,
+      source: "passenger-message",
+    });
+
+    // Notify assigned officer
+    emitSocketEvent("complaint:new-message", {
       complaintId: String(complaint._id),
       passengerId: complaint.passengerId,
       complaint: complaint.toObject ? complaint.toObject() : complaint,
-      location: complaint.sharedLocation,
-      status: complaint.status,
-      source: "passenger-location",
+      message: newMessage,
+      messageCount: complaint.messages.length,
+      source: "passenger-message",
     });
 
-    emitSocketEvent("complaint:accepted", {
-      complaintId: String(complaint._id),
-      passengerId: complaint.passengerId,
+    return success(res, 200, "Message sent successfully", {
       complaint: complaint.toObject ? complaint.toObject() : complaint,
-      acceptedAt: complaint.acceptedAt || new Date(),
-      source: "passenger-location",
-    });
-
-    res.json({
-      message: "Message sent successfully",
-      messages: complaint.messages,
+      message: passengerReply ? (passengerReply.toObject ? passengerReply.toObject() : passengerReply) : null,
     });
   } catch (error) {
     console.error("Error sending message:", error);
-    res.status(500).json({ message: "Error sending message" });
+    return failure(res, 500, "Error sending message", "INTERNAL_ERROR", error.message);
   }
 });
 
