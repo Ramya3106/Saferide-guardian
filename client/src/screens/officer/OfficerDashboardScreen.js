@@ -1053,22 +1053,26 @@ const OfficerDashboardScreen = ({
           </View>
         ) : null}
 
-        {activeView === "alerts" ? (
-          <ComplaintAlertListScreen
-            alerts={alerts}
-            selectedId={selectedComplaint?.id || ""}
-            onSelect={(item) => {
-              setSelectedComplaint(item);
-              setActiveView("detail");
-            }}
-            onAccept={handleAcceptComplaint}
-            onOpenReply={handleOpenReplyForComplaint}
-          />
-        ) : null}
+        {(activeView === "dashboard" || activeView === "alerts") && (
+          <View>
+            <ComplaintAlertListScreen
+              alerts={alerts}
+              selectedId={selectedComplaint?.id || ""}
+              onSelect={(item) => {
+                setSelectedComplaint(item);
+                setActiveView("detail");
+              }}
+              onAccept={handleAcceptComplaint}
+              onOpenReply={handleOpenReplyForComplaint}
+            />
+          </View>
+        )}
 
-        {activeView === "detail" ? (
-          <ComplaintDetailView complaint={selectedComplaint} onOpenReply={() => setActiveView("reply")} />
-        ) : null}
+        {(activeView === "dashboard" || activeView === "detail") && selectedComplaint && (
+          <View style={{ marginTop: 16 }}>
+            <ComplaintDetailView complaint={selectedComplaint} onOpenReply={() => setActiveView("reply")} />
+          </View>
+        )}
 
         {activeView === "reply" ? (
           <ReplyStatusUpdateForm
