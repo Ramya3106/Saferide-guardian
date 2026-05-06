@@ -29,38 +29,46 @@ const DutyHistoryScreen = ({ history }) => {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 8,
+    gap: 12,
   },
   title: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#0F172A",
+    letterSpacing: -0.3,
   },
   list: {
-    gap: 8,
-    paddingBottom: 8,
+    gap: 10,
+    paddingBottom: 12,
   },
   item: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#CBD5E1",
-    padding: 12,
-    gap: 2,
+    borderRadius: 14,
+    borderWidth: 0,
+    borderColor: "#E2E8F0",
+    padding: 14,
+    gap: 6,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
   },
   row: {
-    color: "#334155",
+    color: "#64748B",
     fontSize: 12,
+    fontWeight: "500",
   },
   emptyBox: {
-    padding: 14,
+    padding: 16,
     backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
-    borderRadius: 12,
+    borderColor: "#E2E8F0",
+    borderRadius: 14,
   },
   emptyText: {
-    color: "#475569",
+    color: "#64748B",
+    fontSize: 14,
   },
 });
 
