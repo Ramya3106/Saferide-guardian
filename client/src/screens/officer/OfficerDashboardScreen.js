@@ -1068,7 +1068,7 @@ const OfficerDashboardScreen = ({
           </View>
         )}
 
-        {(activeView === "dashboard" || activeView === "detail") && selectedComplaint && (
+        {activeView === "detail" && selectedComplaint && (
           <View style={{ marginTop: 16 }}>
             <ComplaintDetailView complaint={selectedComplaint} onOpenReply={() => setActiveView("reply")} />
           </View>
