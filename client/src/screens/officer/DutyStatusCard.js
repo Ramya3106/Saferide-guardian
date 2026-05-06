@@ -84,6 +84,11 @@ const styles = StyleSheet.create({
     borderColor: "#CBD5E1",
     padding: 12,
     gap: 8,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
   headerRow: {
     flexDirection: "row",
@@ -121,6 +126,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     backgroundColor: "#FFFFFF",
     color: "#0F172A",
+    elevation: 1,
   },
   row: {
     flexDirection: "row",
@@ -131,6 +137,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: "center",
+    elevation: 2,
   },
   primary: {
     backgroundColor: "#2563EB",

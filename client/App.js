@@ -1597,12 +1597,9 @@ const AppContent = () => {
     if (isOfficialRole) {
       if (inferredRole) {
         setSpecificRole(inferredRole);
-        setShowRoleSelection(false);
-        setIsAuthenticated(true);
-        return;
       }
-
-      setShowRoleSelection(true);
+      // proceed to authenticated state regardless of inferredRole
+      setIsAuthenticated(true);
       return;
     }
 
@@ -1770,16 +1767,11 @@ const AppContent = () => {
         setEmail(profile.email || email.trim().toLowerCase());
         setError("");
         
-        // If it's an official role, check if we have a valid specific role
-        if (role === "TTR/RPF/Police") {
-          if (inferredRole && ["TTR", "TTE", "RPF", "Police"].includes(inferredRole)) {
-            setIsAuthenticated(true);
-          } else {
-            setShowRoleSelection(true);
-          }
-        } else {
-          setIsAuthenticated(true);
+        // Proceed to authenticate; keep any inferred specific role
+        if (inferredRole && ["TTR", "TTE", "RPF", "Police"].includes(inferredRole)) {
+          setSpecificRole(inferredRole);
         }
+        setIsAuthenticated(true);
       } catch (err) {
         const message = err?.response?.data?.message || "Unable to log in.";
         setError(message);
