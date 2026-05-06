@@ -160,7 +160,6 @@ const OfficerDashboardScreen = ({
   const dutyUnit = useMemo(() => parseRoleFromId(professionalId, specificRole), [professionalId, specificRole]);
   const officerName = staffName || officerEmail || professionalId || "Duty Officer";
   const roleAccent = ROLE_ACCENTS[dutyUnit] || ROLE_ACCENTS.TTR;
-  const [menuVisible, setMenuVisible] = useState(false);
   const [activeView, setActiveView] = useState("dashboard");
   const [alerts, setAlerts] = useState([]);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
@@ -846,45 +845,9 @@ const OfficerDashboardScreen = ({
               <Text style={styles.statusPillMutedText}>{dutyAttendance?.assignedTrain || dutyTrain || "Train pending"}</Text>
             </View>
           </View>
-
-          <Pressable
-            style={[styles.menuButton, { borderColor: `${roleAccent}33` }]}
-            onPress={() => setMenuVisible((v) => !v)}
-            accessibilityLabel="Open dashboard menu"
-            accessibilityRole="button"
-          >
-            <Ionicons name="menu" size={22} color={roleAccent} />
-          </Pressable>
-
-          {menuVisible && (
-            <View style={[styles.menuContainer, { borderColor: roleAccent }]}> 
-              {NAV_ITEMS.map((item) => (
-                <Pressable
-                  key={item.key}
-                  style={({ pressed }) => [
-                    styles.menuItem,
-                    { flexDirection: "row", alignItems: "center" },
-                    activeView === item.key && { backgroundColor: `${roleAccent}10`, borderColor: roleAccent },
-                    pressed && { opacity: 0.75 },
-                  ]}
-                  onPress={() => {
-                    setActiveView(item.key);
-                    setMenuVisible(false);
-                  }}
-                >
-                  {activeView === item.key ? (
-                    <View style={[styles.menuAccent, { backgroundColor: roleAccent }]} />
-                  ) : (
-                    <View style={styles.menuAccentPlaceholder} />
-                  )}
-                  <Text style={[styles.menuItemText, activeView === item.key && { color: roleAccent }]}>{item.label}</Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
         </View>
 
-        <View style={styles.navWrap}>
+        <View style={[styles.navWrap, { borderBottomColor: roleAccent }]}>
           {NAV_ITEMS.map((item) => {
             const selected = activeView === item.key;
             return (
@@ -892,12 +855,11 @@ const OfficerDashboardScreen = ({
                 key={item.key}
                 style={[
                   styles.navChip,
-                  selected && styles.navChipActive,
-                  selected && { borderColor: roleAccent, backgroundColor: `${roleAccent}20` },
+                  selected && [styles.navChipActive, { borderBottomColor: roleAccent }],
                 ]}
                 onPress={() => setActiveView(item.key)}
               >
-                <Text style={[styles.navChipText, selected && styles.navChipTextActive]}>{item.label}</Text>
+                <Text style={[styles.navChipText, selected && { color: roleAccent, fontWeight: "800" }]}>{item.label}</Text>
               </Pressable>
             );
           })}
