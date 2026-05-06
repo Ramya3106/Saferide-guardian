@@ -57,12 +57,31 @@ const DutyStatusCard = ({
       </View>
 
       <View style={styles.row}>
-        <Pressable style={[styles.action, styles.primary, syncing || onDuty ? styles.actionDisabled : {}]} disabled={syncing || onDuty} onPress={onCheckIn}>
-          <Text style={styles.actionText}>Check-In</Text>
-        </Pressable>
-        <Pressable style={[styles.action, styles.danger, syncing || !onDuty ? styles.actionDisabled : {}]} disabled={syncing || !onDuty} onPress={onCheckOut}>
-          <Text style={styles.actionText}>Check-Out</Text>
-        </Pressable>
+        {(() => {
+          const checkInDisabled = Boolean(syncing) || Boolean(onDuty);
+          const checkOutDisabled = Boolean(syncing) || !Boolean(onDuty);
+          return (
+            <>
+              <Pressable
+                style={[styles.action, styles.primary, checkInDisabled && styles.actionDisabled]}
+                disabled={checkInDisabled}
+                accessibilityState={{ disabled: checkInDisabled }}
+                onPress={onCheckIn}
+              >
+                <Text style={styles.actionText}>Check-In</Text>
+              </Pressable>
+
+              <Pressable
+                style={[styles.action, styles.danger, checkOutDisabled && styles.actionDisabled]}
+                disabled={checkOutDisabled}
+                accessibilityState={{ disabled: checkOutDisabled }}
+                onPress={onCheckOut}
+              >
+                <Text style={styles.actionText}>Check-Out</Text>
+              </Pressable>
+            </>
+          );
+        })()}
       </View>
 
       <Text style={styles.info}>Session: {attendance?.status || (onDuty ? "ACTIVE" : "INACTIVE")}</Text>

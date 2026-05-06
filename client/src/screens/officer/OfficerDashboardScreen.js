@@ -846,6 +846,42 @@ const OfficerDashboardScreen = ({
               <Text style={styles.statusPillMutedText}>{dutyAttendance?.assignedTrain || dutyTrain || "Train pending"}</Text>
             </View>
           </View>
+
+          <Pressable
+            style={[styles.menuButton, { borderColor: `${roleAccent}33` }]}
+            onPress={() => setMenuVisible((v) => !v)}
+            accessibilityLabel="Open dashboard menu"
+            accessibilityRole="button"
+          >
+            <Ionicons name="menu" size={22} color={roleAccent} />
+          </Pressable>
+
+          {menuVisible && (
+            <View style={[styles.menuContainer, { borderColor: roleAccent }]}> 
+              {NAV_ITEMS.map((item) => (
+                <Pressable
+                  key={item.key}
+                  style={({ pressed }) => [
+                    styles.menuItem,
+                    { flexDirection: "row", alignItems: "center" },
+                    activeView === item.key && { backgroundColor: `${roleAccent}10`, borderColor: roleAccent },
+                    pressed && { opacity: 0.75 },
+                  ]}
+                  onPress={() => {
+                    setActiveView(item.key);
+                    setMenuVisible(false);
+                  }}
+                >
+                  {activeView === item.key ? (
+                    <View style={[styles.menuAccent, { backgroundColor: roleAccent }]} />
+                  ) : (
+                    <View style={styles.menuAccentPlaceholder} />
+                  )}
+                  <Text style={[styles.menuItemText, activeView === item.key && { color: roleAccent }]}>{item.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.navWrap}>
@@ -1114,6 +1150,61 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
+  },
+  menuButton: {
+    position: "absolute",
+    right: 12,
+    top: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#07111A",
+  },
+  menuContainer: {
+    position: "absolute",
+    right: 12,
+    top: 64,
+    width: 220,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    zIndex: 50,
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+  },
+  menuItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "transparent",
+    marginBottom: 6,
+  },
+  menuAccent: {
+    width: 6,
+    height: 28,
+    borderRadius: 3,
+    marginRight: 10,
+  },
+  menuAccentPlaceholder: {
+    width: 6,
+    height: 28,
+    borderRadius: 3,
+    marginRight: 10,
+    backgroundColor: "transparent",
+  },
+  menuItemText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0F172A",
   },
   menuButton: {
     position: "absolute",
