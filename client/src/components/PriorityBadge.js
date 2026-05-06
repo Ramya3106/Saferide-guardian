@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 /**
@@ -57,18 +57,17 @@ export default function PriorityBadge({
 
   return (
     <View
+      className={`flex-row items-center justify-center rounded-2xl ${isCritical ? 'border-[1.5px] border-red-500 shadow-sm shadow-red-500' : ''}`}
       style={[
-        styles.badge,
         {
           backgroundColor: config.backgroundColor,
           paddingVertical: sizeConfig.padding,
           paddingHorizontal: sizeConfig.padding + 2,
         },
-        isCritical && styles.criticalBadge,
         style,
       ]}
     >
-      <View style={styles.badgeContent}>
+      <View className="flex-row items-center justify-center">
         <Ionicons
           name={config.icon}
           size={sizeConfig.iconSize}
@@ -77,14 +76,11 @@ export default function PriorityBadge({
         />
         {showLabel && (
           <Text
-            style={[
-              styles.badgeText,
-              {
-                color: config.color,
-                fontSize: sizeConfig.fontSize,
-                fontWeight: isCritical ? "700" : "600",
-              },
-            ]}
+            className={`text-center ${isCritical ? 'font-bold' : 'font-semibold'}`}
+            style={{
+              color: config.color,
+              fontSize: sizeConfig.fontSize,
+            }}
           >
             {config.label}
           </Text>
@@ -106,30 +102,20 @@ export function PriorityBadgeList({ complaint, style = {} }) {
   const isHighPriority = priority === "Critical" || priority === "High";
 
   return (
-    <View style={[styles.badgeListContainer, style]}>
+    <View className="flex-row flex-wrap items-center gap-1.5" style={style}>
       <PriorityBadge priority={priority} size="medium" />
       {isAutoEscalated && (
-        <View
-          style={[
-            styles.escalatedBadge,
-            { backgroundColor: "#FEE2E2", borderColor: "#EF4444" },
-          ]}
-        >
+        <View className="flex-row items-center gap-1 px-1.5 py-1 rounded-xl border border-red-500 bg-red-100">
           <Ionicons name="chevron-up" size={12} color="#EF4444" />
-          <Text style={{ color: "#EF4444", fontSize: 10, fontWeight: "600" }}>
+          <Text className="text-red-500 text-[10px] font-semibold">
             ESCALATED
           </Text>
         </View>
       )}
       {isHighPriority && !complaint.acceptedAt && (
-        <View
-          style={[
-            styles.urgentBadge,
-            { backgroundColor: "#FFE5E5", borderColor: "#EF4444" },
-          ]}
-        >
+        <View className="flex-row items-center gap-1 px-1.5 py-1 rounded-xl border border-red-500 bg-red-50">
           <Ionicons name="time" size={12} color="#EF4444" />
-          <Text style={{ color: "#EF4444", fontSize: 10, fontWeight: "600" }}>
+          <Text className="text-red-500 text-[10px] font-semibold">
             PENDING
           </Text>
         </View>
@@ -172,18 +158,18 @@ export function PrioritySummary({ complaint, style = {} }) {
   }
 
   return (
-    <View style={[styles.summaryContainer, style]}>
-      <Text style={styles.summaryTitle}>Priority Factors:</Text>
+    <View className="bg-slate-50 rounded-xl p-3 border-l-4 border-l-blue-500" style={style}>
+      <Text className="text-xs font-bold text-slate-900 mb-2">Priority Factors:</Text>
       {factorsList.length > 0 ? (
-        <View style={styles.factorsList}>
+        <View className="gap-1">
           {factorsList.map((factor, idx) => (
-            <Text key={idx} style={styles.factorItem}>
+            <Text key={idx} className="text-xs text-slate-600 ml-1">
               {factor}
             </Text>
           ))}
         </View>
       ) : (
-        <Text style={styles.noFactorsText}>Standard assessment</Text>
+        <Text className="text-xs text-slate-400 italic">Standard assessment</Text>
       )}
     </View>
   );
@@ -208,26 +194,24 @@ export function PriorityHeader({ complaint, style = {} }) {
   };
 
   const bgColorMap = {
-    Low: "#ECFDF5",
-    Normal: "#EFF6FF",
-    High: "#FFFBEB",
-    Critical: "#FEF2F2",
+    Low: "bg-emerald-50",
+    Normal: "bg-blue-50",
+    High: "bg-amber-50",
+    Critical: "bg-red-50",
   };
 
   return (
     <View
+      className={`border-l-4 rounded-lg p-4 mb-3 ${bgColorMap[priority]} ${(isCritical || isHigh) ? 'shadow-sm' : ''}`}
       style={[
-        styles.headerContainer,
         {
-          backgroundColor: bgColorMap[priority],
           borderLeftColor: colorMap[priority],
         },
-        (isCritical || isHigh) && styles.headerHighPriority,
         style,
       ]}
     >
-      <View style={styles.headerContent}>
-        <View style={styles.headerTitleRow}>
+      <View className="gap-2">
+        <View className="flex-row items-center gap-2">
           <Ionicons
             name={
               isCritical
@@ -240,26 +224,21 @@ export function PriorityHeader({ complaint, style = {} }) {
             color={colorMap[priority]}
           />
           <Text
-            style={[
-              styles.headerTitle,
-              {
-                color: colorMap[priority],
-                fontWeight: isCritical ? "700" : "600",
-              },
-            ]}
+            className={`text-base flex-1 ${isCritical ? 'font-bold' : 'font-semibold'}`}
+            style={{ color: colorMap[priority] }}
           >
             {isCritical ? "🚨 CRITICAL PRIORITY" : isHigh ? "⚠️ High Priority" : priority}
           </Text>
         </View>
 
         {complaint.alertPriorityReason && (
-          <Text style={styles.headerReason}>{complaint.alertPriorityReason}</Text>
+          <Text className="text-sm text-slate-600 ml-8">{complaint.alertPriorityReason}</Text>
         )}
 
         {complaint.autoEscalated && (
-          <View style={styles.escalationNotice}>
+          <View className="flex-row items-center gap-2 bg-red-100 py-2 px-2.5 rounded-md ml-8">
             <Ionicons name="alert" size={14} color="#EF4444" />
-            <Text style={styles.escalationText}>
+            <Text className="text-xs text-red-500 font-medium flex-1">
               Auto-escalated due to no acceptance within timeout
             </Text>
           </View>
@@ -268,127 +247,3 @@ export function PriorityHeader({ complaint, style = {} }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  badge: {
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    flexDirection: "row",
-  },
-  criticalBadge: {
-    borderWidth: 1.5,
-    borderColor: "#EF4444",
-    shadowColor: "#EF4444",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  badgeContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeText: {
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  badgeListContainer: {
-    flexDirection: "row",
-    gap: 6,
-    flexWrap: "wrap",
-    alignItems: "center",
-  },
-  escalatedBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  urgentBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  summaryContainer: {
-    backgroundColor: "#F9FAFB",
-    borderRadius: 12,
-    padding: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: "#3B82F6",
-  },
-  summaryTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 8,
-  },
-  factorsList: {
-    gap: 4,
-  },
-  factorItem: {
-    fontSize: 12,
-    color: "#4B5563",
-    marginLeft: 4,
-  },
-  noFactorsText: {
-    fontSize: 12,
-    color: "#9CA3AF",
-    fontStyle: "italic",
-  },
-  headerContainer: {
-    borderLeftWidth: 4,
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-  },
-  headerHighPriority: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  headerContent: {
-    gap: 8,
-  },
-  headerTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    flex: 1,
-  },
-  headerReason: {
-    fontSize: 13,
-    color: "#4B5563",
-    marginLeft: 32,
-  },
-  escalationNotice: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#FEE2E2",
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    marginLeft: 32,
-  },
-  escalationText: {
-    fontSize: 12,
-    color: "#EF4444",
-    fontWeight: "500",
-    flex: 1,
-  },
-});

@@ -831,91 +831,183 @@ const OfficerDashboardScreen = ({
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-200">
-      <ScrollView contentContainerStyle={{ padding: 12, gap: 16 }} className="bg-slate-50">
+    <SafeAreaView className="flex-1 bg-slate-100">
 
-        {/* Navigation Bar */}
-        <View
-          className="flex-row flex-wrap bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
-          style={{ borderBottomWidth: 3, borderBottomColor: roleAccent }}
+      {/* ---------------- SCROLLABLE PILL NAV BAR ---------------- */}
+      <View className="bg-slate-100 pt-2 pb-3">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
         >
           {NAV_ITEMS.map((item) => {
-            const selected = activeView === item.key;
+            const isActive = activeView === item.key;
             return (
               <Pressable
                 key={item.key}
-                className={`flex-1 min-w-[30%] px-2 py-3 items-center justify-center border-b-2 ${selected ? "border-slate-800 bg-slate-50" : "border-transparent"
+                className={`flex-row items-center px-5 py-3 rounded-full transition-all ${isActive ? "bg-slate-900 shadow-md shadow-slate-900/20" : "bg-white border border-slate-200"
                   }`}
                 onPress={() => setActiveView(item.key)}
               >
-                <Text
-                  className={`text-xs ${selected ? "text-slate-900 font-extrabold" : "text-slate-500 font-semibold"}`}
-                  style={selected ? { color: roleAccent } : {}}
-                >
+                <Ionicons
+                  name={item.icon}
+                  size={16}
+                  color={isActive ? "#FFFFFF" : "#64748B"}
+                  style={{ marginRight: 6 }}
+                />
+                <Text className={`text-sm font-bold ${isActive ? "text-white" : "text-slate-600"}`}>
                   {item.label}
                 </Text>
               </Pressable>
             );
           })}
-        </View>
+        </ScrollView>
+      </View>
 
-        {error ? <Text className="text-red-600 text-sm font-semibold text-center my-2">{error}</Text> : null}
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, gap: 20 }} className="flex-1">
 
-        {/* ---------------- DUTY TAB ---------------- */}
-        {activeView === "duty" && (
-          <View className="flex-col gap-4">
-            <View className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-              <Text style={{ color: roleAccent }} className="text-xs font-extrabold tracking-widest uppercase">
-                Officer Side
-              </Text>
-              <Text className="text-slate-900 text-2xl font-black mt-1 tracking-tight">
-                {roleLabel || `${dutyUnit} Dashboard`}
-              </Text>
-              <Text className="text-slate-500 text-sm font-medium mt-1">
-                {officerName}
-              </Text>
+        {error ? (
+          <View className="bg-red-50 p-3 rounded-xl border border-red-100">
+            <Text className="text-red-600 text-xs font-semibold text-center">{error}</Text>
+          </View>
+        ) : null}
 
-              <View className="flex-row flex-wrap gap-2 mt-4">
-                <View className={`px-3 py-1.5 rounded-full border ${onDuty ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-                  <Text className={`text-xs font-bold tracking-wide ${onDuty ? 'text-emerald-700' : 'text-red-700'}`}>
-                    {onDuty ? "ON DUTY" : "OFF DUTY"}
+        {/* ---------------- DASHBOARD TAB ---------------- */}
+        {activeView === "dashboard" && (
+          <View className="gap-5">
+            {/* Dark Mode Style Hero Card for Officer */}
+            <View className="bg-slate-900 rounded-[28px] p-6 shadow-xl shadow-slate-900/10">
+              <View className="flex-row justify-between items-start mb-4">
+                <View>
+                  <Text style={{ color: roleAccent }} className="text-[10px] font-black uppercase tracking-widest mb-1">
+                    Welcome Back
+                  </Text>
+                  <Text className="text-white text-2xl font-black">{officerName}</Text>
+                </View>
+                <View className={`px-3 py-1.5 rounded-full ${onDuty ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
+                  <Text className={`text-xs font-bold ${onDuty ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {onDuty ? "• ON DUTY" : "• OFF DUTY"}
                   </Text>
                 </View>
-                <View className="px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200">
-                  <Text className="text-slate-600 text-xs font-semibold">
-                    {dutyAttendance?.assignedTrain || dutyTrain || "Train pending"}
-                  </Text>
+              </View>
+
+              <View className="flex-row gap-4 bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50">
+                <View className="flex-1">
+                  <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1">Role</Text>
+                  <Text className="text-white text-sm font-semibold">{dutyUnit}</Text>
+                </View>
+                <View className="w-[1px] bg-slate-700" />
+                <View className="flex-1">
+                  <Text className="text-slate-400 text-[10px] font-bold uppercase mb-1">ID</Text>
+                  <Text className="text-white text-sm font-semibold">{professionalId || "--"}</Text>
                 </View>
               </View>
             </View>
 
+            {/* Urgent Alerts - High Visibility Cards */}
+            <View>
+              <Text className="text-slate-900 text-lg font-black mb-3 ml-1">Urgent Alerts</Text>
+              {urgentRequests.length > 0 ? (
+                urgentRequests.map((item) => (
+                  <View key={item.id} className="bg-red-50 border-2 border-red-100 rounded-3xl p-5 mb-3 shadow-sm">
+                    <View className="flex-row justify-between items-center mb-2">
+                      <Text className="text-red-800 text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-red-200/50 rounded-md">
+                        {item.status}
+                      </Text>
+                      <Text className="text-red-500 text-xs font-bold">{item.priority}</Text>
+                    </View>
+                    <Text className="text-red-950 text-base font-black">{item.itemType}</Text>
+                    <Text className="text-red-800/80 text-sm font-medium mt-1">
+                      {item.passengerName} • {item.route}
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <View className="bg-slate-200/50 rounded-3xl p-6 items-center border border-slate-200 border-dashed">
+                  <Ionicons name="checkmark-circle" size={32} color="#94A3B8" />
+                  <Text className="text-slate-500 font-bold mt-2">No Urgent Requests</Text>
+                  <Text className="text-slate-400 text-xs text-center mt-1">You're all caught up!</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Escalation Queue */}
+            <View className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
+              <Text className="text-slate-900 text-lg font-black mb-4">Escalation Queue</Text>
+              {escalationQueue.length > 0 ? (
+                escalationQueue.map((item, index) => (
+                  <View key={item.id} className={`flex-row justify-between items-center py-3 ${index !== escalationQueue.length - 1 ? 'border-b border-slate-100' : ''}`}>
+                    <View className="flex-1 pr-4">
+                      <Text className="text-slate-900 text-sm font-black">{item.itemType}</Text>
+                      <Text className="text-slate-500 text-xs mt-0.5">{item.passengerName} • {item.route}</Text>
+                    </View>
+                    <View className="bg-slate-100 px-3 py-1.5 rounded-full">
+                      <Text className="text-slate-600 text-[10px] font-bold uppercase">{item.priority}</Text>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <Text className="text-slate-400 text-sm font-medium text-center py-2">Queue is clear.</Text>
+              )}
+            </View>
+
+            {/* Logout Restricted to Dashboard */}
+            <Pressable
+              className="bg-slate-200 mt-2 rounded-2xl py-4 items-center active:bg-slate-300 transition-colors"
+              onPress={onLogout}
+            >
+              <Text className="text-slate-700 font-bold text-sm uppercase tracking-wider">Log Out</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* ---------------- DUTY TAB ---------------- */}
+        {activeView === "duty" && (
+          <View className="gap-5">
             <DutyStatusCard
               onDuty={onDuty}
               syncing={dutySyncing}
-            // ... props
+            // ... pass other props
             />
 
-            <View className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm gap-2 mt-2">
-              <View className="flex-row justify-between items-center mb-1">
-                <Text className="text-slate-900 text-lg font-extrabold">Live tracking</Text>
-                <Text className="bg-slate-100 text-slate-800 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider">
-                  {locationMode}
-                </Text>
+            {/* Modern Live Tracking Card */}
+            <View className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm gap-4">
+              <View className="flex-row justify-between items-center">
+                <Text className="text-slate-900 text-lg font-black">Live Tracking</Text>
+                <View className="bg-emerald-50 px-2 py-1 rounded border border-emerald-100">
+                  <Text className="text-emerald-600 text-[10px] font-black uppercase tracking-wider">
+                    {locationMode}
+                  </Text>
+                </View>
               </View>
-              <Text className="text-emerald-600 text-sm font-semibold mb-2">{locationStatus}</Text>
-              <Text className="text-slate-500 text-xs">Route: {routeContext.routeValue || dutyRoute || "Pending"}</Text>
-              <Text className="text-slate-500 text-xs">Train: {routeContext.trainValue || dutyTrain || "Pending"}</Text>
 
-              <View className="mt-3 rounded-xl bg-slate-900 border border-slate-700 p-3 shadow-md gap-2">
-                <Text className="text-slate-50 font-bold text-sm">Live map placeholder</Text>
-                <Text className="text-blue-300 text-xs">{buildLiveMapLabel(liveLocation)}</Text>
-                <View className="flex-row items-start gap-2 mt-2">
-                  {routeCheckpoints.slice(0, 5).map((checkpoint, index) => {
+              <View className="flex-row flex-wrap gap-2">
+                <View className="bg-slate-50 px-3 py-2 rounded-xl flex-1 border border-slate-100">
+                  <Text className="text-slate-400 text-[10px] font-bold uppercase">Train</Text>
+                  <Text className="text-slate-800 text-sm font-semibold mt-0.5">{routeContext.trainValue || dutyTrain || "--"}</Text>
+                </View>
+                <View className="bg-slate-50 px-3 py-2 rounded-xl flex-1 border border-slate-100">
+                  <Text className="text-slate-400 text-[10px] font-bold uppercase">Route</Text>
+                  <Text className="text-slate-800 text-sm font-semibold mt-0.5">{routeContext.routeValue || dutyRoute || "--"}</Text>
+                </View>
+              </View>
+
+              <View className="rounded-2xl bg-slate-900 overflow-hidden mt-2 p-5 shadow-lg">
+                <View className="flex-row items-center gap-2 mb-4">
+                  <View className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                  <Text className="text-white font-bold text-sm">Active Map Feed</Text>
+                </View>
+                <Text className="text-slate-400 text-xs mb-6">{buildLiveMapLabel(liveLocation)}</Text>
+
+                {/* Visual Route Checkpoints */}
+                <View className="flex-row items-start justify-between relative pt-2">
+                  <View className="absolute top-3 left-0 right-0 h-[2px] bg-slate-800 z-0" />
+                  {routeCheckpoints.slice(0, 4).map((checkpoint, index) => {
                     const active = liveLocation?.checkpoint ? liveLocation.checkpoint === checkpoint : index === 0;
                     return (
-                      <View key={`${checkpoint}-${index}`} className="flex-1 items-center gap-1">
-                        <View className={`w-3 h-3 rounded-full ${active ? 'bg-emerald-500 shadow-emerald-500/50 shadow-lg' : 'bg-slate-600'}`} />
-                        <Text className={`text-[9px] text-center ${active ? 'text-slate-200 font-bold' : 'text-slate-400'}`} numberOfLines={1}>
+                      <View key={index} className="items-center z-10 w-16">
+                        <View className={`w-4 h-4 rounded-full border-2 border-slate-900 mb-2 ${active ? 'bg-blue-400 shadow-md shadow-blue-400/50' : 'bg-slate-700'}`} />
+                        <Text className={`text-[9px] text-center font-bold ${active ? 'text-white' : 'text-slate-500'}`} numberOfLines={2}>
                           {checkpoint}
                         </Text>
                       </View>
@@ -929,25 +1021,24 @@ const OfficerDashboardScreen = ({
 
         {/* ---------------- ALERTS TAB ---------------- */}
         {activeView === "alerts" && (
-          <View className="flex-col gap-4">
-            {/* Metrics restricted to Alerts Tab */}
+          <View className="gap-5">
+            {/* Modern Square Metric Grid */}
             <View className="flex-row flex-wrap justify-between gap-y-3">
-              <View className="w-[48%] bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-                <Text className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wide">Open Complaints</Text>
-                <Text style={{ color: roleAccent }} className="text-2xl font-black mt-1">{openComplaintCount}</Text>
-              </View>
-              <View className="w-[48%] bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-                <Text className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wide">High Priority</Text>
-                <Text className="text-slate-900 text-2xl font-black mt-1">{highPriorityAlerts.length}</Text>
-              </View>
-              <View className="w-[48%] bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-                <Text className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wide">Accepted</Text>
-                <Text className="text-slate-900 text-2xl font-black mt-1">{acceptedCount}</Text>
-              </View>
-              <View className="w-[48%] bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-                <Text className="text-slate-500 text-[10px] font-extrabold uppercase tracking-wide">Resolved Today</Text>
-                <Text className="text-slate-900 text-2xl font-black mt-1">{resolvedTodayCount}</Text>
-              </View>
+              {[
+                { label: "Open Alerts", value: openComplaintCount, color: "text-blue-600", bg: "bg-blue-50/50" },
+                { label: "High Priority", value: highPriorityAlerts.length, color: "text-red-600", bg: "bg-red-50/50" },
+                { label: "Accepted", value: acceptedCount, color: "text-amber-600", bg: "bg-amber-50/50" },
+                { label: "Resolved", value: resolvedTodayCount, color: "text-emerald-600", bg: "bg-emerald-50/50" },
+              ].map((metric, idx) => (
+                <View key={idx} className={`w-[48%] rounded-3xl p-5 border border-slate-200 shadow-sm ${metric.bg}`}>
+                  <Text className="text-slate-500 text-[10px] font-black uppercase tracking-wider mb-2">
+                    {metric.label}
+                  </Text>
+                  <Text className={`text-3xl font-black ${metric.color}`}>
+                    {metric.value}
+                  </Text>
+                </View>
+              ))}
             </View>
 
             <ComplaintAlertListScreen
@@ -963,80 +1054,16 @@ const OfficerDashboardScreen = ({
           </View>
         )}
 
-        {/* ---------------- DASHBOARD TAB ---------------- */}
-        {activeView === "dashboard" && (
-          <View className="flex-col gap-4">
-            {/* Profile Summary */}
-            <View className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-              <Text className="text-slate-900 text-lg font-bold mb-3">Officer Profile</Text>
-              <View className="border-t border-slate-100 pt-3 gap-y-2">
-                <View className="flex-row justify-between"><Text className="text-slate-500 text-xs font-bold uppercase">Name</Text><Text className="text-slate-800 text-sm font-semibold">{officerName}</Text></View>
-                <View className="flex-row justify-between"><Text className="text-slate-500 text-xs font-bold uppercase">Email</Text><Text className="text-slate-800 text-sm font-semibold">{officerEmail || "--"}</Text></View>
-                <View className="flex-row justify-between"><Text className="text-slate-500 text-xs font-bold uppercase">ID</Text><Text className="text-slate-800 text-sm font-semibold">{professionalId || "--"}</Text></View>
-                <View className="flex-row justify-between"><Text className="text-slate-500 text-xs font-bold uppercase">Role</Text><Text className="text-slate-800 text-sm font-semibold">{dutyUnit}</Text></View>
-              </View>
-            </View>
-
-            {/* Urgent Requests */}
-            <View className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-              <Text className="text-slate-900 text-lg font-bold">Urgent Alerts</Text>
-              <Text className="text-slate-500 text-xs mb-3">Require immediate acceptance.</Text>
-              {urgentRequests.length > 0 ? (
-                urgentRequests.map((item) => (
-                  <View key={item.id} className="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-2">
-                    <Text className="text-orange-700 text-[10px] font-black uppercase mb-1">{item.status}</Text>
-                    <Text className="text-orange-900 text-sm font-bold">{item.itemType}</Text>
-                    <Text className="text-orange-800 text-xs mt-1">{item.passengerName} · {item.route}</Text>
-                  </View>
-                ))
-              ) : (
-                <View className="bg-blue-50 border border-blue-100 rounded-xl p-4 items-center mt-2">
-                  <Text className="text-blue-700 font-bold text-sm">No Urgent Requests</Text>
-                  <Text className="text-blue-600/70 text-xs text-center mt-1">High priority complaints will appear here.</Text>
-                </View>
-              )}
-            </View>
-
-            {/* Escalation Queue */}
-            <View className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-              <Text className="text-slate-900 text-lg font-bold mb-3">Escalation Queue</Text>
-              {escalationQueue.length > 0 ? (
-                escalationQueue.map((item) => (
-                  <View key={item.id} className="flex-row justify-between items-center py-2 border-b border-slate-100 last:border-0">
-                    <View className="flex-1">
-                      <Text className="text-slate-900 text-sm font-bold">{item.itemType}</Text>
-                      <Text className="text-slate-500 text-xs">{item.passengerName} · {item.route}</Text>
-                    </View>
-                    <View className="bg-red-50 border border-red-200 px-2 py-1 rounded-full ml-2">
-                      <Text className="text-red-700 text-[10px] font-bold">{item.priority}</Text>
-                    </View>
-                  </View>
-                ))
-              ) : (
-                <Text className="text-slate-500 text-sm italic">Queue is clear.</Text>
-              )}
-            </View>
-
-            {/* Logout Restricted to Dashboard */}
-            <Pressable
-              className="bg-slate-900 mt-4 rounded-xl py-4 items-center shadow-md active:bg-slate-800"
-              onPress={onLogout}
-            >
-              <Text className="text-white font-bold text-sm uppercase tracking-wider">Logout</Text>
-            </Pressable>
-          </View>
-        )}
-
         {/* ---------------- DETAIL TAB ---------------- */}
         {activeView === "detail" && selectedComplaint && (
-          <View className="mt-2">
+          <View className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
             <ComplaintDetailView complaint={selectedComplaint} onOpenReply={() => setActiveView("reply")} />
           </View>
         )}
 
         {/* ---------------- REPLY TAB ---------------- */}
         {activeView === "reply" && (
-          <View className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm mt-2">
+          <View className="bg-white rounded-3xl p-5 shadow-sm border border-slate-200">
             <ReplyStatusUpdateForm
               complaint={selectedComplaint}
               sending={sendingReply}
@@ -1048,14 +1075,15 @@ const OfficerDashboardScreen = ({
 
         {/* ---------------- HISTORY TAB ---------------- */}
         {activeView === "history" && (
-          <DutyHistoryScreen history={dutyHistory} />
+          <View className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <DutyHistoryScreen history={dutyHistory} />
+          </View>
         )}
 
       </ScrollView>
     </SafeAreaView>
   );
-}
-
+};
 
 
 export default OfficerDashboardScreen;
