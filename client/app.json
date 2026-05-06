@@ -3,6 +3,7 @@
     "name": "SafeRide Guardian",
     "slug": "saferide-guardian",
     "version": "1.0.0",
+    "newArchEnabled": false,
     "android": {
       "softwareKeyboardLayoutMode": "pan"
     },
