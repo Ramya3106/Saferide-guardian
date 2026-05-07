@@ -49,6 +49,7 @@ const PassengerDashboard = ({
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [showTrackingModal, setShowTrackingModal] = useState(false);
+  const [showChatModal, setShowChatModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [selectedTrackingComplaint, setSelectedTrackingComplaint] = useState(null);
@@ -332,6 +333,11 @@ const PassengerDashboard = ({
 
   useEffect(() => {
     const onBackPress = () => {
+      if (showChatModal) {
+        setShowChatModal(false);
+        return true;
+      }
+
       if (showTrackingModal) {
         setShowTrackingModal(false);
         setTrackingData(null);
@@ -363,7 +369,7 @@ const PassengerDashboard = ({
     );
 
     return () => subscription.remove();
-  }, [showComplaintModal, showHistoryModal, showNotificationModal, showTrackingModal]);
+  }, [showChatModal, showComplaintModal, showHistoryModal, showNotificationModal, showTrackingModal]);
 
   useEffect(() => {
     if (!showTrackingModal || !selectedTrackingComplaint?._id) {
@@ -516,6 +522,7 @@ const PassengerDashboard = ({
     setShowTrackingModal(false);
     setShowHistoryModal(false);
     setShowNotificationModal(false);
+    setShowChatModal(true);
   };
 
   const handleTransportSelect = (type) => {
@@ -1068,6 +1075,14 @@ const PassengerDashboard = ({
               {new Date(latestUpdate.timestamp).toLocaleString()}
             </Text>
           ) : null}
+          <TouchableOpacity
+            className="mt-3 bg-blue-600 rounded-lg py-3 flex-row items-center justify-center gap-2"
+            onPress={() => handleOpenComplaintChat(currentComplaint)}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="chatbubble-ellipses" size={18} color="#FFFFFF" />
+            <Text className="text-white font-bold text-sm">Reply / Chat with Railway Authority</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -1394,6 +1409,36 @@ const PassengerDashboard = ({
     </Modal>
   );
 
+  const renderChatModal = () => (
+    <Modal visible={showChatModal} transparent animationType="slide" onRequestClose={() => setShowChatModal(false)}>
+      <View className="flex-1 bg-black/50 justify-end">
+        <View className="bg-white rounded-t-2xl overflow-hidden" style={{ height: "88%" }}>
+          <View className="flex-row justify-between items-center px-4 py-3 border-b border-slate-200">
+            <Text className="text-lg font-bold text-slate-800">Railway Chat</Text>
+            <TouchableOpacity onPress={() => setShowChatModal(false)}>
+              <Ionicons name="close" size={24} color="#1E293B" />
+            </TouchableOpacity>
+          </View>
+
+          {currentComplaint ? (
+            <PassengerMessageThread
+              complaint={currentComplaint}
+              userEmail={userEmail}
+              userName={userName}
+              onMessageSent={fetchComplaintHistory}
+              apiBase={API_BASE}
+              authToken={authToken}
+            />
+          ) : (
+            <View className="flex-1 items-center justify-center">
+              <Text className="text-slate-400">No active complaint selected</Text>
+            </View>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
     <Animated.View
       className="flex-1"
@@ -1418,6 +1463,7 @@ const PassengerDashboard = ({
           {renderHistoryModal()}
           {renderNotificationModal()}
           {renderTrackingModal()}
+          {renderChatModal()}
           {renderEmergencyHelp()}
 
           <TouchableOpacity className="bg-slate-500 rounded-lg py-3 flex-row items-center justify-center gap-2 mt-5 mb-5" onPress={onLogout}>
