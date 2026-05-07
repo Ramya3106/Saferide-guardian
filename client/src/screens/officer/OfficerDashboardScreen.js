@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
@@ -229,47 +229,49 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
       case "complaints": return <ComplaintsTab complaints={complaints} loading={loading} onViewComplaint={fetchComplaintDetail} refreshing={refreshing} onRefresh={refresh} />;
       case "profile": return <DutyTab onDuty={onDuty} dutyAttendance={dutyAttendance} dutyUnit={dutyUnit} officerName={officerName} officerEmail={officerEmail} professionalId={professionalId} syncing={syncing} onToggleDuty={syncDuty} onLogout={onLogout} refreshing={refreshing} onRefresh={refresh} />;
       default: return (
-        <View style={s.placeholder}>
+        <View className="flex-1 justify-center items-center gap-3 bg-slate-50">
           <Ionicons name="chatbubble-outline" size={48} color="#CBD5E1" />
-          <Text style={s.placeholderText}>Messages coming soon</Text>
+          <Text className="text-slate-400 text-[15px]">Messages coming soon</Text>
         </View>
       );
     }
   };
 
+  const urgentCount = complaints.filter(c => ["New", "Submitted", "Reported"].includes(c.status)).length;
+
   return (
-    <SafeAreaView style={s.root} edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-blue-700" edges={["top"]}>
       {/* Header */}
-      <View style={s.header}>
+      <View className="bg-blue-700 px-5 py-3.5 flex-row justify-between items-center">
         <View>
-          <Text style={s.headerTitle}>{headerTitle}</Text>
-          <View style={s.headerLoc}>
+          <Text className="text-white text-lg font-extrabold">{headerTitle}</Text>
+          <View className="flex-row items-center gap-1 mt-0.5">
             <Ionicons name="location-outline" size={13} color="#93C5FD" />
-            <Text style={s.headerLocText}>{loc}</Text>
+            <Text className="text-blue-300 text-xs">{loc}</Text>
           </View>
         </View>
-        <TouchableOpacity style={s.notifBtn}>
+        <TouchableOpacity className="relative p-1">
           <Ionicons name="notifications-outline" size={22} color="#fff" />
-          {complaints.filter(c => ["New", "Submitted", "Reported"].includes(c.status)).length > 0 && (
-            <View style={s.notifBadge}>
-              <Text style={s.notifBadgeText}>{complaints.filter(c => ["New", "Submitted", "Reported"].includes(c.status)).length}</Text>
+          {urgentCount > 0 && (
+            <View className="absolute top-0 right-0 bg-red-500 rounded-lg min-w-[16px] h-4 items-center justify-center">
+              <Text className="text-white text-[9px] font-extrabold">{urgentCount}</Text>
             </View>
           )}
         </TouchableOpacity>
       </View>
 
       {/* Content */}
-      <View style={{ flex: 1 }}>{renderContent()}</View>
+      <View className="flex-1">{renderContent()}</View>
 
       {/* Bottom Nav */}
       {!selectedComplaint && (
-        <View style={s.bottomNav}>
+        <View className="flex-row bg-white border-t border-slate-200 py-2">
           {TABS.map(tab => {
             const active = activeTab === tab.key;
             return (
-              <TouchableOpacity key={tab.key} style={s.navItem} onPress={() => setActiveTab(tab.key)}>
+              <TouchableOpacity key={tab.key} className="flex-1 items-center gap-0.5" onPress={() => setActiveTab(tab.key)}>
                 <Ionicons name={active ? tab.icon : `${tab.icon}-outline`} size={22} color={active ? "#1D4ED8" : "#94A3B8"} />
-                <Text style={[s.navLabel, active && s.navLabelActive]}>{tab.label}</Text>
+                <Text className={`text-[11px] font-medium ${active ? "text-blue-700 font-bold" : "text-slate-400"}`}>{tab.label}</Text>
               </TouchableOpacity>
             );
           })}
@@ -278,20 +280,3 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
     </SafeAreaView>
   );
 }
-
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#1D4ED8" },
-  header: { backgroundColor: "#1D4ED8", paddingHorizontal: 20, paddingVertical: 14, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  headerTitle: { color: "#fff", fontSize: 18, fontWeight: "800" },
-  headerLoc: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
-  headerLocText: { color: "#93C5FD", fontSize: 12 },
-  notifBtn: { position: "relative", padding: 4 },
-  notifBadge: { position: "absolute", top: 0, right: 0, backgroundColor: "#EF4444", borderRadius: 8, minWidth: 16, height: 16, alignItems: "center", justifyContent: "center" },
-  notifBadgeText: { color: "#fff", fontSize: 9, fontWeight: "800" },
-  bottomNav: { flexDirection: "row", backgroundColor: "#fff", borderTopWidth: 1, borderColor: "#E2E8F0", paddingBottom: 8, paddingTop: 8 },
-  navItem: { flex: 1, alignItems: "center", gap: 3 },
-  navLabel: { fontSize: 11, color: "#94A3B8", fontWeight: "500" },
-  navLabelActive: { color: "#1D4ED8", fontWeight: "700" },
-  placeholder: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12, backgroundColor: "#F8FAFC" },
-  placeholderText: { color: "#94A3B8", fontSize: 15 },
-});

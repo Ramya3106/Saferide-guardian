@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, ActivityIndicator, RefreshControl,
+  ActivityIndicator, RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -42,27 +42,29 @@ export default function ComplaintsTab({ complaints, loading, onViewComplaint, on
     : complaints.filter((c) => normalizeStatus(c.status) === filter);
 
   return (
-    <View style={s.root}>
+    <View className="flex-1 bg-slate-100">
       {/* ── Filter Tabs ── */}
-      <View style={s.filterBar}>
+      <View className="bg-white border-b border-slate-200">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={s.filterContent}
+          contentContainerStyle={{ flexDirection: "row", paddingHorizontal: 16, paddingTop: 12, gap: 4 }}
         >
           {FILTERS.map((f) => {
             const active = filter === f;
             return (
               <TouchableOpacity
                 key={f}
-                style={[s.filterTab, active && s.filterTabActive]}
+                className="px-3.5 pb-3 items-center relative"
                 onPress={() => setFilter(f)}
                 activeOpacity={0.7}
               >
-                <Text style={[s.filterText, active && s.filterTextActive]}>
+                <Text className={`text-sm font-semibold ${active ? "text-blue-700" : "text-slate-400"}`}>
                   {f} ({counts[f] ?? 0})
                 </Text>
-                {active && <View style={s.filterUnderline} />}
+                {active && (
+                  <View className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-700 rounded-sm" />
+                )}
               </TouchableOpacity>
             );
           })}
@@ -71,7 +73,7 @@ export default function ComplaintsTab({ complaints, loading, onViewComplaint, on
 
       {/* ── List ── */}
       <ScrollView
-        style={s.list}
+        className="flex-1 pt-3 px-3.5"
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing || false} onRefresh={onRefresh} />
@@ -82,9 +84,9 @@ export default function ComplaintsTab({ complaints, loading, onViewComplaint, on
         )}
 
         {!loading && filtered.length === 0 && (
-          <View style={s.emptyWrap}>
+          <View className="items-center mt-16 gap-3">
             <Ionicons name="document-text-outline" size={48} color="#CBD5E1" />
-            <Text style={s.emptyText}>No {filter === "All" ? "" : filter + " "}complaints</Text>
+            <Text className="text-slate-400 text-[15px]">No {filter === "All" ? "" : filter + " "}complaints</Text>
           </View>
         )}
 
@@ -103,45 +105,55 @@ export default function ComplaintsTab({ complaints, loading, onViewComplaint, on
           return (
             <TouchableOpacity
               key={c.id}
-              style={[s.card, { backgroundColor: meta.cardBg, borderLeftColor: meta.color }]}
+              style={{ backgroundColor: meta.cardBg, borderLeftColor: meta.color }}
+              className="rounded-2xl border-l-4 p-3.5 mb-2.5"
               onPress={() => onViewComplaint(c)}
               activeOpacity={0.85}
             >
               {/* Top row: badge + time */}
-              <View style={s.cardTop}>
-                <View style={[s.badge, { backgroundColor: meta.bg, borderColor: meta.border }]}>
-                  <Text style={[s.badgeText, { color: meta.color }]}>{ns.toUpperCase()}</Text>
+              <View className="flex-row justify-between items-center mb-2">
+                <View
+                  style={{ backgroundColor: meta.bg, borderColor: meta.border }}
+                  className="px-2.5 py-0.5 rounded-lg border"
+                >
+                  <Text style={{ color: meta.color }} className="text-[11px] font-extrabold">
+                    {ns.toUpperCase()}
+                  </Text>
                 </View>
-                <Text style={s.timeAgo}>{timeAgo(c.createdAt)}</Text>
+                <Text className="text-xs text-slate-400">{timeAgo(c.createdAt)}</Text>
               </View>
 
               {/* ID */}
-              <Text style={s.cardId}>ID: {c.id?.slice(-10)?.toUpperCase() || "–"}</Text>
+              <Text className="text-[15px] font-extrabold text-slate-900 mb-1">
+                ID: {c.id?.slice(-10)?.toUpperCase() || "–"}
+              </Text>
 
               {/* Train */}
-              <Text style={s.cardLine}>Train: {trainLabel}</Text>
+              <Text className="text-[13px] text-slate-700 mb-0.5">Train: {trainLabel}</Text>
 
-              {/* From → To (if available) */}
+              {/* From → To */}
               {!!fromTo && (
-                <Text style={s.cardLine}>From: {fromTo}</Text>
+                <Text className="text-[13px] text-slate-700 mb-0.5">From: {fromTo}</Text>
               )}
 
               {/* Item */}
-              <Text style={s.cardLine}>Item:  {c.itemType}{c.description ? ` – ${c.description}` : ""}</Text>
+              <Text className="text-[13px] text-slate-700 mb-0.5">
+                Item:  {c.itemType}{c.description ? ` – ${c.description}` : ""}
+              </Text>
 
               {/* Passenger */}
-              <Text style={s.cardLine}>Passenger: {c.passengerName}</Text>
+              <Text className="text-[13px] text-slate-700 mb-0.5">Passenger: {c.passengerName}</Text>
 
-              {/* Coach / Seat with pin icon */}
+              {/* Coach / Seat */}
               {!!coachSeat && (
-                <View style={s.locationRow}>
+                <View className="flex-row items-center gap-1 mt-1.5">
                   <Ionicons name="location-outline" size={13} color="#94A3B8" />
-                  <Text style={s.locationText}>{coachSeat}</Text>
+                  <Text className="text-xs text-slate-400">{coachSeat}</Text>
                 </View>
               )}
 
               {/* Chevron */}
-              <View style={s.chevron}>
+              <View className="absolute right-3.5 top-1/2">
                 <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
               </View>
             </TouchableOpacity>
@@ -153,86 +165,3 @@ export default function ComplaintsTab({ complaints, loading, onViewComplaint, on
     </View>
   );
 }
-
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#F1F5F9" },
-
-  // Filter bar
-  filterBar: {
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  filterContent: {
-    flexDirection: "row",
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    gap: 4,
-  },
-  filterTab: {
-    paddingHorizontal: 14,
-    paddingBottom: 12,
-    alignItems: "center",
-    position: "relative",
-  },
-  filterTabActive: {},
-  filterText: { fontSize: 14, fontWeight: "600", color: "#94A3B8" },
-  filterTextActive: { color: "#1D4ED8" },
-  filterUnderline: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: "#1D4ED8",
-    borderRadius: 2,
-  },
-
-  // List
-  list: { flex: 1, paddingTop: 12, paddingHorizontal: 14 },
-
-  // Card
-  card: {
-    borderRadius: 14,
-    borderLeftWidth: 4,
-    padding: 14,
-    marginBottom: 10,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  cardTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  badgeText: { fontSize: 11, fontWeight: "800" },
-  timeAgo: { fontSize: 12, color: "#94A3B8" },
-  cardId: { fontSize: 15, fontWeight: "800", color: "#0F172A", marginBottom: 5 },
-  cardLine: { fontSize: 13, color: "#334155", marginBottom: 3 },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 6,
-  },
-  locationText: { fontSize: 12, color: "#94A3B8" },
-  chevron: {
-    position: "absolute",
-    right: 14,
-    top: "50%",
-  },
-
-  // Empty
-  emptyWrap: { alignItems: "center", marginTop: 60, gap: 12 },
-  emptyText: { color: "#94A3B8", fontSize: 15 },
-});
