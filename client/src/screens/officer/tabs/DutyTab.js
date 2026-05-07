@@ -1,7 +1,7 @@
 import React from "react";
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, ActivityIndicator, RefreshControl,
+  ActivityIndicator, RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -52,7 +52,6 @@ export default function DutyTab({
       label: "Checked In",
       value: checkIn ? fmtTime(checkIn) : "–",
       done: !!checkIn,
-      active: false,
       dotColor: "#22C55E",
       lineColor: "#22C55E",
     },
@@ -62,7 +61,6 @@ export default function DutyTab({
         ? `${fmtTime(checkIn)} – ${onDuty ? "Till Now" : fmtTime(checkOut)}`
         : "–",
       done: !!checkIn && onDuty,
-      active: true,
       dotColor: "#F59E0B",
       lineColor: "#E2E8F0",
     },
@@ -70,77 +68,82 @@ export default function DutyTab({
       label: "Checked Out",
       value: checkOut ? fmtTime(checkOut) : "–",
       done: !!checkOut,
-      active: false,
       dotColor: "#CBD5E1",
       lineColor: null,
     },
   ];
 
   return (
-    <View style={s.root}>
+    <View className="flex-1 bg-slate-100">
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={s.scroll}
+        contentContainerStyle={{ padding: 16 }}
         refreshControl={
           <RefreshControl refreshing={refreshing || false} onRefresh={onRefresh} />
         }
       >
         {/* ── On Duty Status Card ── */}
-        <View style={[s.card, onDuty ? s.cardOn : s.cardOff]}>
+        <View
+          className={`bg-white rounded-2xl p-[18px] mb-3.5 border ${
+            onDuty ? "border-green-200 bg-green-50" : "border-slate-200"
+          }`}
+        >
           {/* Status Row */}
-          <View style={s.statusRow}>
-            <View style={[s.statusDot, { backgroundColor: onDuty ? "#22C55E" : "#94A3B8" }]}>
-              <View style={s.statusDotInner} />
+          <View className="flex-row items-center gap-2.5 mb-3.5">
+            <View
+              className="w-[22px] h-[22px] rounded-full justify-center items-center"
+              style={{ backgroundColor: onDuty ? "#22C55E" : "#94A3B8" }}
+            >
+              <View className="w-2.5 h-2.5 rounded-full bg-white" />
             </View>
-            <Text style={[s.statusText, { color: onDuty ? "#16A34A" : "#64748B" }]}>
+            <Text
+              className="text-xl font-extrabold"
+              style={{ color: onDuty ? "#16A34A" : "#64748B" }}
+            >
               {onDuty ? "On Duty" : "Off Duty"}
             </Text>
           </View>
 
-          <View style={s.divider} />
+          <View className="h-px bg-slate-200 mb-3.5" />
 
           {/* Info Rows */}
           {infoRows.map(({ label, value }) => (
-            <View key={label} style={s.infoBlock}>
-              <Text style={s.infoLabel}>{label}</Text>
-              <Text style={s.infoValue}>{value}</Text>
+            <View key={label} className="mb-3.5">
+              <Text className="text-[13px] text-slate-500 mb-0.5">{label}</Text>
+              <Text className="text-[15px] font-bold text-slate-900">{value}</Text>
             </View>
           ))}
         </View>
 
         {/* ── Today's Timeline ── */}
-        <View style={s.card}>
-          <Text style={s.cardTitle}>Today's Timeline</Text>
+        <View className="bg-white rounded-2xl p-[18px] mb-3.5">
+          <Text className="text-base font-bold text-slate-900 mb-4">Today's Timeline</Text>
           {timeline.map((item, i) => (
-            <View key={item.label} style={s.timelineRow}>
+            <View key={item.label} className="flex-row mb-0.5">
               {/* Left column: dot + line */}
-              <View style={s.timelineLeft}>
-                <View style={[
-                  s.tlDot,
-                  item.done
-                    ? { backgroundColor: item.dotColor, borderColor: item.dotColor }
-                    : s.tlDotEmpty,
-                ]} />
+              <View className="items-center w-[26px] mr-3.5">
+                <View
+                  className="w-3.5 h-3.5 rounded-full border-2 mt-[3px]"
+                  style={
+                    item.done
+                      ? { backgroundColor: item.dotColor, borderColor: item.dotColor }
+                      : { backgroundColor: "#F1F5F9", borderColor: "#CBD5E1" }
+                  }
+                />
                 {i < timeline.length - 1 && (
-                  <View style={[
-                    s.tlLine,
-                    { backgroundColor: item.done ? item.lineColor : "#E2E8F0" },
-                  ]} />
+                  <View
+                    className="w-0.5 flex-1 min-h-[28px] my-[3px]"
+                    style={{ backgroundColor: item.done ? item.lineColor : "#E2E8F0" }}
+                  />
                 )}
               </View>
 
               {/* Right: label + value */}
-              <View style={s.timelineRight}>
-                <Text style={[
-                  s.tlLabel,
-                  !item.done && s.tlLabelDim,
-                ]}>
+              <View className="flex-1 flex-row justify-between pb-5 items-start">
+                <Text className={`text-sm font-semibold ${item.done ? "text-slate-900" : "text-slate-400"}`}>
                   {item.label}
                 </Text>
-                <Text style={[
-                  s.tlValue,
-                  !item.done && s.tlValueDim,
-                ]}>
+                <Text className={`text-[13px] ${item.done ? "text-slate-600" : "text-slate-300"}`}>
                   {item.value}
                 </Text>
               </View>
@@ -150,11 +153,11 @@ export default function DutyTab({
 
         {/* ── Checkout / Check-in Button ── */}
         <TouchableOpacity
-          style={[
-            s.actionBtn,
-            onDuty ? s.checkoutBtn : s.checkinBtn,
-            syncing && s.btnDisabled,
-          ]}
+          className={`rounded-2xl py-4 items-center mb-3.5 ${
+            onDuty
+              ? "bg-red-50 border-[1.5px] border-red-200"
+              : "bg-blue-700"
+          } ${syncing ? "opacity-60" : ""}`}
           onPress={onToggleDuty}
           disabled={syncing}
           activeOpacity={0.85}
@@ -162,35 +165,39 @@ export default function DutyTab({
           {syncing ? (
             <ActivityIndicator color={onDuty ? "#EF4444" : "#fff"} />
           ) : (
-            <Text style={[
-              s.actionBtnText,
-              { color: onDuty ? "#EF4444" : "#fff" },
-            ]}>
+            <Text
+              className="text-base font-bold"
+              style={{ color: onDuty ? "#EF4444" : "#fff" }}
+            >
               {onDuty ? "Checkout Duty" : "Check In for Duty"}
             </Text>
           )}
         </TouchableOpacity>
 
         {/* ── Officer Info ── */}
-        <View style={s.card}>
-          <Text style={s.cardTitle}>Officer Information</Text>
+        <View className="bg-white rounded-2xl p-[18px] mb-3.5">
+          <Text className="text-base font-bold text-slate-900 mb-4">Officer Information</Text>
           {[
-            { icon: "person-outline", label: officerName || "–" },
-            { icon: "mail-outline", label: officerEmail || "–" },
-            { icon: "id-card-outline", label: professionalId || "–" },
+            { icon: "person-outline",           label: officerName || "–" },
+            { icon: "mail-outline",             label: officerEmail || "–" },
+            { icon: "id-card-outline",          label: professionalId || "–" },
             { icon: "shield-checkmark-outline", label: dutyUnit || "–" },
           ].map(({ icon, label }) => (
-            <View key={icon} style={s.officerRow}>
+            <View key={icon} className="flex-row items-center gap-3 py-2 border-b border-slate-100">
               <Ionicons name={icon} size={17} color="#64748B" />
-              <Text style={s.officerText}>{label}</Text>
+              <Text className="text-[13px] text-slate-700 flex-1">{label}</Text>
             </View>
           ))}
         </View>
 
         {/* ── Logout ── */}
-        <TouchableOpacity style={s.logoutBtn} onPress={onLogout} activeOpacity={0.8}>
+        <TouchableOpacity
+          className="flex-row items-center justify-center gap-2 py-3.5 rounded-2xl bg-red-50 border border-red-200 mb-2"
+          onPress={onLogout}
+          activeOpacity={0.8}
+        >
           <Ionicons name="log-out-outline" size={18} color="#EF4444" />
-          <Text style={s.logoutText}>Logout</Text>
+          <Text className="text-red-500 font-bold text-sm">Logout</Text>
         </TouchableOpacity>
 
         <View style={{ height: 32 }} />
@@ -198,92 +205,3 @@ export default function DutyTab({
     </View>
   );
 }
-
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#F1F5F9" },
-  scroll: { padding: 16 },
-
-  // Cards
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 14,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  cardOn: { borderWidth: 1, borderColor: "#BBF7D0", backgroundColor: "#F0FFF4" },
-  cardOff: { borderWidth: 1, borderColor: "#E2E8F0" },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: "#0F172A", marginBottom: 16 },
-
-  // Status row
-  statusRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 },
-  statusDot: {
-    width: 22, height: 22, borderRadius: 11,
-    justifyContent: "center", alignItems: "center",
-  },
-  statusDotInner: {
-    width: 10, height: 10, borderRadius: 5, backgroundColor: "#fff",
-  },
-  statusText: { fontSize: 20, fontWeight: "800" },
-  divider: { height: 1, backgroundColor: "#E2E8F0", marginBottom: 14 },
-
-  // Info blocks (label above value)
-  infoBlock: { marginBottom: 14 },
-  infoLabel: { fontSize: 13, color: "#64748B", marginBottom: 2 },
-  infoValue: { fontSize: 15, fontWeight: "700", color: "#0F172A" },
-
-  // Timeline
-  timelineRow: { flexDirection: "row", marginBottom: 2 },
-  timelineLeft: { alignItems: "center", width: 26, marginRight: 14 },
-  tlDot: {
-    width: 14, height: 14, borderRadius: 7,
-    borderWidth: 2, marginTop: 3,
-  },
-  tlDotEmpty: {
-    backgroundColor: "#F1F5F9",
-    borderColor: "#CBD5E1",
-  },
-  tlLine: { width: 2, flex: 1, minHeight: 28, marginVertical: 3 },
-  timelineRight: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingBottom: 20,
-    alignItems: "flex-start",
-  },
-  tlLabel: { fontSize: 14, fontWeight: "600", color: "#0F172A" },
-  tlLabelDim: { color: "#94A3B8" },
-  tlValue: { fontSize: 13, color: "#475569" },
-  tlValueDim: { color: "#CBD5E1" },
-
-  // Checkout / Check-in button
-  actionBtn: {
-    borderRadius: 14, paddingVertical: 16,
-    alignItems: "center", marginBottom: 14,
-  },
-  checkoutBtn: {
-    backgroundColor: "#FFF5F5",
-    borderWidth: 1.5,
-    borderColor: "#FECACA",
-  },
-  checkinBtn: { backgroundColor: "#1D4ED8" },
-  btnDisabled: { opacity: 0.6 },
-  actionBtnText: { fontSize: 16, fontWeight: "700" },
-
-  // Officer info rows
-  officerRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8, borderBottomWidth: 1, borderColor: "#F1F5F9" },
-  officerText: { fontSize: 13, color: "#334155", flex: 1 },
-
-  // Logout
-  logoutBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 8, paddingVertical: 14, borderRadius: 14,
-    backgroundColor: "#FFF5F5", borderWidth: 1, borderColor: "#FECACA",
-    marginBottom: 8,
-  },
-  logoutText: { color: "#EF4444", fontWeight: "700", fontSize: 14 },
-});
