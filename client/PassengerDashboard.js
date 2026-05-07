@@ -401,13 +401,38 @@ const PassengerDashboard = ({
       setComplaints(nextComplaints);
 
       setCurrentComplaint((current) => {
-        if (current && nextComplaints.some((item) => String(item?._id || item?.id) === String(current?._id || current?.id))) {
-          return current;
+        if (current) {
+          const latestMatch = nextComplaints.find(
+            (item) => String(item?._id || item?.id) === String(current?._id || current?.id),
+          );
+          if (latestMatch) {
+            return {
+              ...current,
+              ...latestMatch,
+            };
+          }
         }
 
         return nextComplaints.find((item) =>
           ["Accepted", "Staff Notified", "Submitted", "Reported"].includes(String(item?.status || "")),
         ) || nextComplaints[0] || null;
+      });
+
+      setSelectedTrackingComplaint((current) => {
+        if (!current) {
+          return current;
+        }
+
+        const latestMatch = nextComplaints.find(
+          (item) => String(item?._id || item?.id) === String(current?._id || current?.id),
+        );
+
+        return latestMatch
+          ? {
+              ...current,
+              ...latestMatch,
+            }
+          : current;
       });
     } catch (error) {
       console.log("Error fetching complaints:", error.message);
@@ -478,6 +503,12 @@ const PassengerDashboard = ({
     setSelectedTrackingComplaint(complaint);
     await fetchTrackingData(complaint?._id);
     setShowTrackingModal(true);
+  };
+
+  const closeTrackingModal = () => {
+    setShowTrackingModal(false);
+    setTrackingData(null);
+    setSelectedTrackingComplaint(null);
   };
 
   const handleOpenComplaintChat = (complaint) => {
@@ -1009,6 +1040,39 @@ const PassengerDashboard = ({
     );
   };
 
+  const renderLatestStaffResponse = () => {
+    if (!currentComplaint) return null;
+
+    const updates = Array.isArray(currentComplaint.messages) ? currentComplaint.messages : [];
+    const latestUpdate = updates.length > 0 ? updates[updates.length - 1] : null;
+    const latestText =
+      latestUpdate?.text ||
+      currentComplaint.staffResponseStatus ||
+      currentComplaint.officerNotes ||
+      null;
+
+    if (!latestText) {
+      return null;
+    }
+
+    return (
+      <View className="mb-5">
+        <Text className="text-lg font-bold text-slate-800 mb-2.5">📩 Latest Railway Update</Text>
+        <View className="bg-white rounded-xl p-4 border border-slate-200">
+          <Text className="text-sm font-semibold text-slate-800">
+            {latestUpdate?.staffName || currentComplaint.staffName || "Railway authority"}
+          </Text>
+          <Text className="text-[13px] text-slate-600 mt-1.5 leading-5">{latestText}</Text>
+          {latestUpdate?.timestamp ? (
+            <Text className="text-[11px] text-slate-400 mt-2">
+              {new Date(latestUpdate.timestamp).toLocaleString()}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+    );
+  };
+
   const renderLiveTracking = () => {
     if (!currentComplaint) return null;
 
@@ -1084,6 +1148,11 @@ const PassengerDashboard = ({
               <View className="flex-1 pr-3">
                 <Text className="text-sm font-semibold text-slate-800">{complaint.itemType}</Text>
                 <Text className="text-xs text-slate-500 mt-0.5">{complaint.vehicleNumber} • {complaint.route}</Text>
+                {(complaint.messages?.length || complaint.staffResponseStatus) ? (
+                  <Text className="text-[11px] text-blue-700 mt-1" numberOfLines={1}>
+                    {complaint.messages?.[complaint.messages.length - 1]?.text || complaint.staffResponseStatus}
+                  </Text>
+                ) : null}
                 <Text className="text-[11px] text-slate-400 mt-0.5">{new Date(complaint.createdAt).toLocaleDateString()}</Text>
               </View>
               <View className="items-end gap-2">
@@ -1164,6 +1233,11 @@ const PassengerDashboard = ({
                   <Text className="text-xs text-slate-600 mb-1">🚌 {complaint.vehicleNumber}</Text>
                   <Text className="text-xs text-slate-600 mb-1">🛣️ {complaint.route}</Text>
                   <Text className="text-xs text-slate-600 mb-1">📝 {complaint.description}</Text>
+                  {(complaint.messages?.length || complaint.staffResponseStatus) ? (
+                    <Text className="text-xs text-blue-700 mb-1">
+                      📩 {complaint.messages?.[complaint.messages.length - 1]?.text || complaint.staffResponseStatus}
+                    </Text>
+                  ) : null}
                   <Text className="text-[11px] text-slate-400 mt-1.5">{new Date(complaint.createdAt).toLocaleString()}</Text>
                 </View>
               ))
@@ -1209,12 +1283,12 @@ const PassengerDashboard = ({
   );
 
   const renderTrackingModal = () => (
-    <Modal visible={showTrackingModal} transparent animationType="slide" onRequestClose={() => setShowTrackingModal(false)}>
+    <Modal visible={showTrackingModal} transparent animationType="slide" onRequestClose={closeTrackingModal}>
       <View className="flex-1 bg-black/50 justify-end">
         <View className="bg-white rounded-t-2xl p-4 max-h-[90%]">
           <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-slate-200">
             <Text className="text-lg font-bold text-slate-800">Complaint Tracking</Text>
-            <TouchableOpacity onPress={() => { setShowTrackingModal(false); setTrackingData(null); setSelectedTrackingComplaint(null); }}>
+            <TouchableOpacity onPress={closeTrackingModal}>
               <Ionicons name="close" size={24} color="#1E293B" />
             </TouchableOpacity>
           </View>
@@ -1336,6 +1410,7 @@ const PassengerDashboard = ({
           {renderPrimaryAction()}
           {renderComplaintPanel()}
           {renderComplaintTracker()}
+          {renderLatestStaffResponse()}
           {renderLiveTracking()}
           {renderStaffMessages()}
           {renderQRCodePickup()}

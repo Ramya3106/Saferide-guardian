@@ -332,6 +332,15 @@ const DriverConductorDashboard = ({
     }
   };
 
+  const closeAcceptedComplaintFlow = () => {
+    setAcceptedComplaint(null);
+    setItemConfirmation(null);
+    setItemFound(null);
+    setPickupStop("");
+    setPickupTime("");
+    setShowQRModal(false);
+  };
+
   const handleCompleteHandover = () => {
     if (acceptedComplaint) {
       setPerformanceStats({
@@ -908,10 +917,10 @@ const DriverConductorDashboard = ({
       )}
 
       {/* QR Modal */}
-      <Modal visible={showQRModal} transparent={true} animationType="slide">
+      <Modal visible={showQRModal} transparent={true} animationType="slide" onRequestClose={closeAcceptedComplaintFlow}>
         <SafeAreaView className="flex-1 bg-white">
           <View className="flex-row justify-between items-center px-4 py-3 border-b border-slate-200">
-            <TouchableOpacity onPress={() => setShowQRModal(false)}>
+            <TouchableOpacity onPress={closeAcceptedComplaintFlow}>
               <ShakyIcon name="close" size={28} color="#2563EB" />
             </TouchableOpacity>
             <Text className="text-lg font-bold text-slate-800">QR Code Handover</Text>
@@ -960,7 +969,7 @@ const DriverConductorDashboard = ({
       <View className="mb-5">
         <TouchableOpacity
           className="flex-row items-center mb-4"
-          onPress={() => setAcceptedComplaint(null)}
+          onPress={closeAcceptedComplaintFlow}
         >
           <ShakyIcon name="arrow-back" size={24} color="#2563EB" />
           <Text className="text-blue-600 ml-2 font-semibold">Back to Dashboard</Text>
@@ -1091,7 +1100,7 @@ const DriverConductorDashboard = ({
                 setComplaints(
                   complaints.filter((c) => c.id !== acceptedComplaint.id)
                 );
-                setAcceptedComplaint(null);
+                closeAcceptedComplaintFlow();
               }}
             >
               <Text className="text-white font-semibold text-base">Return to Queue</Text>

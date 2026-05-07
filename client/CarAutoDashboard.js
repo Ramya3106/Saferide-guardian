@@ -301,6 +301,15 @@ const ShakyIcon = ({ style, ...props }) => (
     setComplaints(complaints.filter((c) => c.id !== complaintId));
   };
 
+  const closeAcceptedComplaintFlow = () => {
+    setAcceptedComplaint(null);
+    setItemConfirmation(null);
+    setItemFound(null);
+    setMeetingPoint("");
+    setPickupTime("");
+    setShowQRModal(false);
+  };
+
   // Handle complete handover
   const handleCompleteHandover = () => {
     if (acceptedComplaint) {
@@ -704,7 +713,7 @@ const ShakyIcon = ({ style, ...props }) => (
       <View className="mb-5">
         <TouchableOpacity
           className="flex-row items-center mb-4"
-          onPress={() => setAcceptedComplaint(null)}
+          onPress={closeAcceptedComplaintFlow}
         >
           <ShakyIcon name="arrow-back" size={24} color="#2563EB" />
           <Text className="text-blue-600 ml-2 font-semibold">Back to Dashboard</Text>
@@ -838,7 +847,7 @@ const ShakyIcon = ({ style, ...props }) => (
                 setComplaints(
                   complaints.filter((c) => c.id !== acceptedComplaint.id)
                 );
-                setAcceptedComplaint(null);
+                closeAcceptedComplaintFlow();
               }}
             >
               <Text className="text-white font-semibold text-base">
@@ -854,11 +863,12 @@ const ShakyIcon = ({ style, ...props }) => (
         visible={showQRModal}
         transparent={true}
         animationType="slide"
+        onRequestClose={closeAcceptedComplaintFlow}
       >
         <SafeAreaView className="flex-1 bg-white">
           <View className="flex-row justify-between items-center px-4 py-3 border-b border-slate-200">
             <TouchableOpacity
-              onPress={() => setShowQRModal(false)}
+              onPress={closeAcceptedComplaintFlow}
             >
               <ShakyIcon name="close" size={28} color="#2563EB" />
             </TouchableOpacity>
