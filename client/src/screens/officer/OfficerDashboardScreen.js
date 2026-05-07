@@ -165,7 +165,17 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
       if (setOnDuty) setOnDuty(next);
       setDutyAttendance(res.data?.attendance || null);
       if (next) loadComplaints();
-    } catch { /* silent */ } finally { setSyncing(false); }
+      return next;
+    } catch {
+      return null;
+    } finally { setSyncing(false); }
+  };
+
+  const handleDashboardToggleDuty = async () => {
+    const nextDutyState = await syncDuty();
+    if (nextDutyState === true) {
+      setActiveTab("profile");
+    }
   };
 
   const handleReply = async (message) => {
@@ -218,7 +228,7 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
           dutyAttendance={dutyAttendance}
           onDuty={onDuty}
           syncing={syncing}
-          onToggleDuty={syncDuty}
+          onToggleDuty={handleDashboardToggleDuty}
           onViewComplaint={fetchComplaintDetail}
           onViewAll={() => setActiveTab("complaints")}
           loading={loading}
