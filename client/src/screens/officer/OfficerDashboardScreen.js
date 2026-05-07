@@ -198,7 +198,13 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
     } catch { /* silent */ } finally { setSending(false); }
   };
 
-  const roleTitle = { TTR: "TTR Dashboard", TTE: "TTE Dashboard", RPF: "RPF Dashboard", Police: "Police Dashboard" }[dutyUnit] || "Officer Dashboard";
+  const TAB_TITLES = {
+    dashboard: { TTR: "TTR Dashboard", TTE: "TTE Dashboard", RPF: "RPF Dashboard", Police: "Police Dashboard" }[dutyUnit] || "Officer Dashboard",
+    complaints: "All Complaints",
+    messages: "Messages",
+    profile: "Duty Status",
+  };
+  const headerTitle = selectedComplaint ? "Complaint Details" : (TAB_TITLES[activeTab] || "Officer Dashboard");
   const loc = dutyAttendance?.assignedStation || dutyAttendance?.assignedRoute || "Chennai Central (MAS)";
 
   const renderContent = () => {
@@ -220,8 +226,8 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
           onRefresh={refresh}
         />
       );
-      case "complaints": return <ComplaintsTab complaints={complaints} loading={loading} onViewComplaint={fetchComplaintDetail} />;
-      case "profile": return <DutyTab onDuty={onDuty} dutyAttendance={dutyAttendance} dutyUnit={dutyUnit} officerName={officerName} officerEmail={officerEmail} professionalId={professionalId} syncing={syncing} onToggleDuty={syncDuty} onLogout={onLogout} />;
+      case "complaints": return <ComplaintsTab complaints={complaints} loading={loading} onViewComplaint={fetchComplaintDetail} refreshing={refreshing} onRefresh={refresh} />;
+      case "profile": return <DutyTab onDuty={onDuty} dutyAttendance={dutyAttendance} dutyUnit={dutyUnit} officerName={officerName} officerEmail={officerEmail} professionalId={professionalId} syncing={syncing} onToggleDuty={syncDuty} onLogout={onLogout} refreshing={refreshing} onRefresh={refresh} />;
       default: return (
         <View style={s.placeholder}>
           <Ionicons name="chatbubble-outline" size={48} color="#CBD5E1" />
@@ -236,7 +242,7 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
       {/* Header */}
       <View style={s.header}>
         <View>
-          <Text style={s.headerTitle}>{roleTitle}</Text>
+          <Text style={s.headerTitle}>{headerTitle}</Text>
           <View style={s.headerLoc}>
             <Ionicons name="location-outline" size={13} color="#93C5FD" />
             <Text style={s.headerLocText}>{loc}</Text>
