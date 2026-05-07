@@ -25,6 +25,7 @@ const parseRole = (pid, role) => {
 
 const normalizeAlert = (a) => ({
   id: a._id || a.complaintId || a.id || "",
+  complaintId: a.complaintId || a._id || a.id || "",
   status: a.status || "Submitted",
   passengerName: a.passengerName || "Passenger",
   passengerPhone: a.passengerPhone || a.phoneNumber || a.contactNumber || "-",
@@ -45,6 +46,19 @@ const normalizeAlert = (a) => ({
   updatedAt: a.updatedAt || null,
   resolvedAt: a.resolvedAt || null,
   acceptedAt: a.acceptedAt || null,
+  itemFound: Boolean(a.itemFound),
+  meetingScheduled: Boolean(a.meetingScheduled),
+  itemCollected: Boolean(a.itemCollected),
+  staffNotified: Boolean(a.staffNotified),
+  staffEta: a.staffEta || null,
+  staffName: a.staffName || a.assignedOfficerName || null,
+  staffResponseStatus: a.staffResponseStatus || null,
+  officerNotes: a.officerNotes || null,
+  coachRemark: a.coachRemark || null,
+  stationRemark: a.stationRemark || null,
+  meetingPoint: a.meetingPoint || null,
+  meetingTime: a.meetingTime || null,
+  messages: Array.isArray(a.messages) ? a.messages : [],
 });
 
 const TABS = [
@@ -149,6 +163,12 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
   }, [officerEmail, professionalId, headers, setOnDuty]);
 
   const loadComplaints = useCallback(async () => {
+    if (!onDuty) {
+      setComplaints([]);
+      setNewAlertCount(0);
+      return;
+    }
+
     try {
       const res = await axios.get(`${API_BASE}/passenger/live-alerts`, {
         params: { staffRole: dutyUnit },
@@ -160,8 +180,10 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
       if (selectedComplaint) {
         setSelectedComplaint(prev => list.find(c => c.id === prev?.id) || prev);
       }
-    } catch { /* silent */ }
-  }, [dutyUnit, headers, selectedComplaint]);
+    } catch {
+      setComplaints([]);
+    }
+  }, [dutyUnit, headers, onDuty, selectedComplaint]);
 
   // Fetch full complaint detail from DB when user taps a complaint
   const fetchComplaintDetail = useCallback(async (complaint) => {
@@ -184,19 +206,19 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([loadDutyStatus(), loadComplaints()]);
+    await loadDutyStatus();
+    await loadComplaints();
     setRefreshing(false);
   }, [loadDutyStatus, loadComplaints]);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([loadDutyStatus(), loadComplaints()]).finally(() => setLoading(false));
-  }, [officerEmail, professionalId]);
-
-  useEffect(() => {
-    if (!onDuty) return;
-    loadComplaints();
-  }, [onDuty]);
+    (async () => {
+      await loadDutyStatus();
+      await loadComplaints();
+      setLoading(false);
+    })();
+  }, [officerEmail, professionalId, loadDutyStatus, loadComplaints]);
 
   useEffect(() => {
     const SOCKET_BASE = API_BASE.replace(/\/api\/?$/, "");
@@ -208,9 +230,11 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
       // receives all train complaints broadcast to their unit — like a Rapido
       // driver joining the city pool to receive ride requests in real time.
       const joinRooms = () => {
-        socket.emit("join:duty", dutyUnit);
         const officerRoomId = professionalId || officerEmail;
         if (officerRoomId) socket.emit("join:officer", officerRoomId);
+        if (onDuty) {
+          socket.emit("join:duty", dutyUnit);
+        }
       };
       socket.on("connect", joinRooms);
       if (socket.connected) joinRooms();
@@ -275,7 +299,9 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
         if (!isMe) return;
         if (setOnDuty) setOnDuty(Boolean(data?.onDuty));
         if (data?.attendance) setDutyAttendance(data.attendance);
-        if (!data?.onDuty) {
+        if (data?.onDuty) {
+          loadComplaints();
+        } else {
           setComplaints([]);
           setNewAlertCount(0);
         }
@@ -295,7 +321,30 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
         socket.disconnect();
       };
     } catch { return undefined; }
-  }, [officerEmail, professionalId, dutyUnit, onDuty]);
+  }, [officerEmail, professionalId, dutyUnit, onDuty, loadComplaints, setOnDuty]);
+
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket) {
+      return undefined;
+    }
+
+    const officerRoomId = professionalId || officerEmail;
+    if (officerRoomId) {
+      socketService.joinOfficer(officerRoomId);
+    }
+
+    if (onDuty) {
+      socketService.joinDuty(dutyUnit);
+      loadComplaints();
+    } else {
+      socketService.leaveDuty(dutyUnit);
+      setComplaints([]);
+      setNewAlertCount(0);
+    }
+
+    return undefined;
+  }, [dutyUnit, loadComplaints, officerEmail, onDuty, professionalId]);
 
   const syncDuty = async () => {
     const previousOnDuty = Boolean(onDuty);
@@ -368,6 +417,9 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
         loadComplaints();
         setActiveTab("profile");
       } else {
+        setSelectedComplaint(null);
+        setComplaints([]);
+        setNewAlertCount(0);
         setActiveTab("dashboard");
       }
       return next;
@@ -433,7 +485,11 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
     try {
       await axios.patch(
         `${API_BASE}/passenger/complaints/${selectedComplaint.id}/staff/status`,
-        { status, itemFound: status === "Item Found", staffResponseStatus: `Status updated to ${status}` },
+        {
+          status,
+          itemFound: status === "Item Found" || status === "Secured",
+          staffResponseStatus: `Status updated to ${status}`,
+        },
         { headers: headers() }
       );
       // Re-fetch full detail from DB to reflect new status immediately

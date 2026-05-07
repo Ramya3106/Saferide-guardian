@@ -176,7 +176,7 @@ export default function DetailTab({ complaint, sending, detailLoading, onBack, o
       "Confirm this item has been secured/found?",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => onUpdateStatus("Item Found") },
+        { text: "Confirm", onPress: () => onUpdateStatus("Secured") },
       ]
     );
 

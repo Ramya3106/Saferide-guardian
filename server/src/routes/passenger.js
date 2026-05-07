@@ -527,6 +527,7 @@ router.get("/live-alerts", requireStaffRole, async (req, res) => {
   try {
     const { staffRole } = req.query;
     const transportFilters = resolveTransportFilters(staffRole);
+    const requestRole = getUserRole(req);
     const officerIdentity = getRequestOfficerIdentity(req);
 
     // Resolve the current officer from DB
@@ -540,6 +541,14 @@ router.get("/live-alerts", requireStaffRole, async (req, res) => {
       const user = await User.findOne({ professionalId: officerIdentity.professionalId, role: "TTR/RPF/Police" })
         .select("_id email name professionalId role onDutyStatus dutyCheckInAt dutyDesk dutyUnit dutyStation dutyNote jurisdiction");
       if (user) currentOfficer = toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
+    }
+
+    if (requestRole === "TTR/RPF/Police" && (!currentOfficer || !currentOfficer.onDutyStatus)) {
+      return res.json({
+        alerts: [],
+        officer: currentOfficer,
+        message: "Officer is off duty. Check in to receive live complaints.",
+      });
     }
 
     // Build query: all active-status train complaints
