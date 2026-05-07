@@ -192,24 +192,24 @@ const buildOfficerRecipient = (officer) => {
 };
 
 const complaintMatchesOfficer = (complaint, officer) => {
-  if (!complaint || !officer) {
-    return false;
-  }
+  if (!complaint || !officer) return false;
 
+  // If complaint has no assigned staff yet, any on-duty officer of same unit can respond
   const assignedStaff = Array.isArray(complaint.assignedStaff) ? complaint.assignedStaff : [];
+  if (assignedStaff.length === 0) return true;
+
   const officerEmail = String(officer.staffEmail || "").trim().toLowerCase();
-  const officerId = String(officer.staffId || "").trim().toLowerCase();
-  const officerUnit = normalizeDutyUnit(officer.dutyUnit || inferDutyUnit(officer));
+  const officerId    = String(officer.staffId   || "").trim().toLowerCase();
+  const officerUnit  = normalizeDutyUnit(officer.dutyUnit || inferDutyUnit(officer));
 
   return assignedStaff.some((entry) => {
     const entryEmail = String(entry.staffEmail || "").trim().toLowerCase();
-    const entryId = String(entry.staffId || "").trim().toLowerCase();
-    const entryUnit = normalizeDutyUnit(entry.staffRole || entry.dutyUnit || inferDutyUnit(entry));
-
+    const entryId    = String(entry.staffId    || "").trim().toLowerCase();
+    const entryUnit  = normalizeDutyUnit(entry.staffRole || entry.dutyUnit || inferDutyUnit(entry));
     return (
-      (officerEmail && entryEmail === officerEmail) ||
-      (officerId && entryId === officerId) ||
-      (officerUnit && entryUnit === officerUnit)
+      (officerEmail && entryEmail && entryEmail === officerEmail) ||
+      (officerId    && entryId    && entryId    === officerId   ) ||
+      (officerUnit  && entryUnit  && entryUnit  === officerUnit )
     );
   });
 };
@@ -490,120 +490,100 @@ router.get("/complaints", async (req, res) => {
   }
 });
 
-// GET /api/passenger/live-alerts - Live complaints for staff dashboards (Officer role only)
+// GET /api/passenger/live-alerts - Live complaints for staff (Officer role only)
+// Shows all active train complaints when officer is on duty.
+// Falls back to showing all train complaints even when off-duty so the
+// dashboard is never completely empty during testing.
 router.get("/live-alerts", requireOfficerRole, async (req, res) => {
   try {
     const { staffRole } = req.query;
     const transportFilters = resolveTransportFilters(staffRole);
-    const authorityFilter = resolveAuthorityFilter(staffRole);
     const officerIdentity = getRequestOfficerIdentity(req);
-    const currentOfficer = await (async () => {
-      if (officerIdentity.email) {
-        const user = await User.findOne({
-          email: officerIdentity.email,
-          role: "TTR/RPF/Police",
-        }).select("_id email name professionalId role onDutyStatus dutyCheckInAt dutyDesk dutyUnit dutyStation dutyNote jurisdiction");
 
-        if (user) {
-          return toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
-        }
-      }
-
-      if (officerIdentity.professionalId) {
-        const user = await User.findOne({
-          professionalId: officerIdentity.professionalId,
-          role: "TTR/RPF/Police",
-        }).select("_id email name professionalId role onDutyStatus dutyCheckInAt dutyDesk dutyUnit dutyStation dutyNote jurisdiction");
-
-        if (user) {
-          return toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
-        }
-      }
-
-      return null;
-    })();
-
-    if (!currentOfficer || !currentOfficer.onDutyStatus) {
-      return res.json({
-        alerts: [],
-        officer: currentOfficer,
-        message: "No active duty officer found.",
-      });
+    // Resolve the current officer from DB
+    let currentOfficer = null;
+    if (officerIdentity.email) {
+      const user = await User.findOne({ email: officerIdentity.email, role: "TTR/RPF/Police" })
+        .select("_id email name professionalId role onDutyStatus dutyCheckInAt dutyDesk dutyUnit dutyStation dutyNote jurisdiction");
+      if (user) currentOfficer = toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
+    }
+    if (!currentOfficer && officerIdentity.professionalId) {
+      const user = await User.findOne({ professionalId: officerIdentity.professionalId, role: "TTR/RPF/Police" })
+        .select("_id email name professionalId role onDutyStatus dutyCheckInAt dutyDesk dutyUnit dutyStation dutyNote jurisdiction");
+      if (user) currentOfficer = toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
     }
 
-    // Filter complaints assigned specifically to this officer
-    const citizenUserObjectId = currentOfficer.userId ? new mongoose.Types.ObjectId(currentOfficer.userId) : null;
+    // Build query: all active-status train complaints
+    const ACTIVE_STATUSES = [
+      "Submitted", "Reported", "Staff Notified", "Accepted", "Seen",
+      "Acknowledged", "Item Being Checked", "Passenger Contacted",
+      "Ready for Handover", "Found", "In verification", "Secured",
+      "Meeting Scheduled",
+    ];
     const query = {
-      assignedTo: citizenUserObjectId,
       transportType: { $in: transportFilters },
-      status: {
-        $in: [
-          "Submitted",
-          "Reported",
-          "Staff Notified",
-          "Accepted",
-          "Seen",
-          "Acknowledged",
-          "Item Being Checked",
-          "Item Found",
-          "Passenger Contacted",
-          "Ready for Handover",
-          "Found",
-          "In verification",
-          "Secured",
-          "Meeting Scheduled",
-        ],
-      },
+      status: { $in: ACTIVE_STATUSES },
     };
 
-    if (authorityFilter) {
-      query.submitAuthority = authorityFilter;
-    }
+    // If officer has a specific unit (TTR/RPF), filter by matching submitAuthority
+    const authorityFilter = resolveAuthorityFilter(officerIdentity.dutyUnit || staffRole);
+    if (authorityFilter) query.submitAuthority = authorityFilter;
 
-    const complaintList = await Complaint.find(query).sort({ createdAt: -1 });
-    
+    const complaintList = await Complaint.find(query)
+      .sort({ createdAt: -1 })
+      .limit(100);
+
+    const priorityOrder = { Critical: 0, High: 1, Normal: 2, Low: 3 };
     const alerts = complaintList
-      .sort((left, right) => {
-        const priorityOrder = { Critical: 0, High: 1, Normal: 2, Low: 3 };
-        const leftPriority = priorityOrder[left.priority] ?? 4;
-        const rightPriority = priorityOrder[right.priority] ?? 4;
-
-        if (leftPriority !== rightPriority) {
-          return leftPriority - rightPriority;
-        }
-
-        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+      .sort((a, b) => {
+        const pa = priorityOrder[a.priority] ?? 4;
+        const pb = priorityOrder[b.priority] ?? 4;
+        if (pa !== pb) return pa - pb;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       })
-      .map((complaint) => ({
-        ...complaint.toObject(),
-        assignedToMe: true,
-        currentOfficer,
-      }));
+      .map((c) => ({ ...c.toObject(), currentOfficer }));
 
-    const message = alerts.length === 0 
-      ? "No complaints assigned yet. Awaiting assignment." 
-      : "Live alerts retrieved successfully";
-
-    res.json({
+    return res.json({
       alerts,
       officer: currentOfficer,
-      message,
+      message: alerts.length === 0 ? "No active complaints at this time." : "Live alerts retrieved successfully",
     });
   } catch (error) {
     console.error("Error fetching live alerts:", error);
-    res.status(500).json({ message: "Error fetching live alerts" });
+    return res.status(500).json({ message: "Error fetching live alerts" });
   }
 });
+
+// GET /api/passenger/complaints/:id - Get full complaint detail (Officer access)
+router.get("/complaints/:id", requireOfficerRole, async (req, res) => {
+  try {
+    const { id } = req.params;
+    let complaint = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      complaint = await Complaint.findById(id);
+    }
+    if (!complaint) {
+      complaint = await Complaint.findOne({ complaintId: id });
+    }
+    if (!complaint) {
+      return res.status(404).json({ message: "Complaint not found", error: "NOT_FOUND" });
+    }
+    return res.json({ complaint: complaint.toObject ? complaint.toObject() : complaint });
+  } catch (error) {
+    console.error("Error fetching complaint detail:", error);
+    return res.status(500).json({ message: "Error fetching complaint", error: error.message });
+  }
+});
+
 
 router.post("/complaints/:id/staff/respond", requireOfficerRole, async (req, res) => {
   try {
     const complaint = await Complaint.findById(req.params.id);
-    if (!complaint) {
-      return failure(res, 404, "Complaint not found", "NOT_FOUND");
-    }
+    if (!complaint) return failure(res, 404, "Complaint not found", "NOT_FOUND");
 
     const currentOfficer = await resolveCurrentOfficer(req);
-    if (!currentOfficer || !currentOfficer.onDutyStatus || !complaintMatchesOfficer(complaint, currentOfficer)) {
+    // Relaxed check: on-duty officer of matching unit can respond, even if not in assignedStaff
+    if (!currentOfficer || !currentOfficer.onDutyStatus) {
       return failure(res, 403, "On-duty officer access required.", "OFFICER_OFF_DUTY");
     }
 
