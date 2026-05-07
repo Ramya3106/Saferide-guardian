@@ -1,7 +1,7 @@
 import React from "react";
-yyyyyyyyyyyyyyimport {
+import {
   View, Text, ScrollView, TouchableOpacity,
-    StyleSheet, ActivityIndicator, RefreshControl,
+  StyleSheet, ActivityIndicator, RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
