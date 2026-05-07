@@ -845,9 +845,16 @@ router.get("/duty/status", async (req, res) => {
 
   try {
     const attendance = await getLatestAttendance(buildOfficerKey(officer));
+    const normalizedAttendance = normalizeAttendance(attendance);
+    const explicitOnDuty = Boolean(
+      normalizedAttendance &&
+      !normalizedAttendance.checkOutTime &&
+      String(normalizedAttendance.status || "").toUpperCase() === "ACTIVE"
+    );
     return res.json({
       ...toDutyResponse(officer),
-      attendance: normalizeAttendance(attendance),
+      onDuty: explicitOnDuty,
+      attendance: normalizedAttendance,
       assignedTrain:   attendance?.assignedTrain   || officer.assignedTrain   || null,
       assignedRoute:   attendance?.assignedRoute   || officer.assignedRoute   || null,
       assignedStation: attendance?.assignedStation || officer.assignedStation || officer.dutyStation || null,
@@ -981,6 +988,7 @@ router.post("/duty/check-in", async (req, res) => {
 
     return res.json({
       officer,
+      onDuty: true,
       attendance: normalizeAttendance(attendance),
       message: "Checked in successfully.",
     });
@@ -1061,6 +1069,7 @@ router.post("/duty/check-out", async (req, res) => {
 
     return res.json({
       officer,
+      onDuty: false,
       attendance: normalizeAttendance(activeAttendance),
       message: "Checked out successfully.",
     });
