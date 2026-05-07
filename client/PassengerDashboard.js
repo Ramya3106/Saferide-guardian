@@ -3,7 +3,6 @@ import {
   BackHandler,
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   TextInput,
@@ -138,7 +137,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
       <AnimatedIonicon {...props} style={[iconShakeStyle, style]} />
     </Pressable>
   );
-  
+
 
   // State management
   const [activeJourney, setActiveJourney] = useState(null);
@@ -285,9 +284,9 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
       const normalizedPassenger = String(userEmail || "").trim().toLowerCase();
       const candidatePassenger = String(
         incomingComplaint?.passengerEmail ||
-          incomingComplaint?.passengerId ||
-          payload?.passengerId ||
-          "",
+        incomingComplaint?.passengerId ||
+        payload?.passengerId ||
+        "",
       ).trim().toLowerCase();
 
       if (candidatePassenger && normalizedPassenger && candidatePassenger !== normalizedPassenger) {
@@ -333,10 +332,10 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
       setTrackingData((current) =>
         current && String(current?.complaintId || current?._id) === String(complaintId)
           ? {
-              ...current,
-              ...mergedComplaint,
-              status: mergedComplaint.status || current.status,
-            }
+            ...current,
+            ...mergedComplaint,
+            status: mergedComplaint.status || current.status,
+          }
           : current,
       );
     };
@@ -660,19 +659,19 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
 
   // Section 1: Header
   const renderHeader = () => (
-    <View style={styles.headerSection}>
-      <View style={styles.headerContent}>
+    <View className="bg-white pt-3 pb-4 px-4 border-b border-slate-200 flex-row justify-between items-center">
+      <View className="flex-1 flex-row justify-between items-center">
         <View>
-          <Text style={styles.passengerName}>{userName}</Text>
-          <Text style={styles.mobileNumber}>📞 {userPhone}</Text>
+          <Text className="text-lg font-bold text-slate-800">{userName}</Text>
+          <Text className="text-xs text-slate-500 mt-1">📞 {userPhone}</Text>
         </View>
-        <TouchableOpacity style={styles.gpsButton} onPress={handleGpsToggle}>
+        <TouchableOpacity className="flex-row items-center bg-slate-100 px-2.5 py-1.5 rounded-lg gap-1" onPress={handleGpsToggle}>
           <ShakyIcon
             name={gpsEnabled ? "location" : "location-outline"}
             size={20}
             color={gpsEnabled ? "#22C55E" : "#64748B"}
           />
-          <Text style={styles.gpsText}>GPS {gpsEnabled ? "ON" : "OFF"}</Text>
+          <Text className="text-[11px] font-semibold text-slate-600">GPS {gpsEnabled ? "ON" : "OFF"}</Text>
         </TouchableOpacity>
       </View>
 
@@ -689,13 +688,13 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
         }}
       >
         <TouchableOpacity
-          style={styles.notificationBell}
+          className="relative p-2"
           onPress={handleOpenNotifications}
         >
           <Ionicons name="notifications-outline" size={24} color="#1E293B" />
           {notificationCount > 0 && (
-            <View style={styles.notificationBadge}>
-              <Text style={styles.badgeText}>{notificationCount}</Text>
+            <View className="absolute top-0 right-0 bg-red-500 rounded-full min-w-[20px] h-5 justify-center items-center">
+              <Text className="text-white text-[10px] font-bold">{notificationCount}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -705,37 +704,37 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
 
   // Section 2: Active Journey Card
   const renderActiveJourney = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>✈️ Active Journey</Text>
+    <View className="mb-5">
+      <Text className="text-lg font-bold text-slate-800 mb-2.5">✈️ Active Journey</Text>
       {activeJourney ? (
-        <View style={styles.journeyCard}>
-          <View style={styles.journeyHeader}>
-            <Text style={styles.vehicleNumber}>
+        <View className="bg-white rounded-xl p-3.5 border border-slate-200">
+          <View className="flex-row justify-between items-center mb-2">
+            <Text className="text-base font-bold text-slate-800">
               🚌 {activeJourney.vehicleNumber}
             </Text>
-            <Text style={styles.badge}>ACTIVE</Text>
+            <Text className="bg-green-500 text-white px-2.5 py-1 rounded-xl text-[10px] font-bold">ACTIVE</Text>
           </View>
-          <Text style={styles.journeyRoute}>🛣️ {activeJourney.route}</Text>
-          <Text style={styles.journeyTime}>
+          <Text className="text-sm text-slate-600 mb-1.5">🛣️ {activeJourney.route}</Text>
+          <Text className="text-[13px] text-slate-500 mb-1.5">
             ⏰ {activeJourney.estimatedDuration || "2h 15min"}
           </Text>
           {activeJourney.driverName && (
-            <Text style={styles.journeyMeta}>
+            <Text className="text-xs text-slate-400 mb-1">
               👨‍✈️ Driver: {activeJourney.driverName}
             </Text>
           )}
           {activeJourney.conductorName && (
-            <Text style={styles.journeyMeta}>
+            <Text className="text-xs text-slate-400 mb-1">
               👨‍✈️ Conductor: {activeJourney.conductorName}
             </Text>
           )}
-          <Text style={styles.journeyMeta}>
+          <Text className="text-xs text-slate-400 mb-1">
             📍 Current: {activeJourney.currentStop}
           </Text>
         </View>
       ) : (
-        <View style={styles.journeyCard}>
-          <Text style={styles.emptyText}>No active journey</Text>
+        <View className="bg-white rounded-xl p-3.5 border border-slate-200">
+          <Text className="text-sm text-slate-400 text-center py-5">No active journey</Text>
         </View>
       )}
     </View>
@@ -743,7 +742,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
 
   // Section 3: Primary Action Button
   const renderPrimaryAction = () => (
-    <View style={styles.section}>
+    <View className="mb-5">
       <Animated.View
         style={{
           transform: [
@@ -757,11 +756,11 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
         }}
       >
         <TouchableOpacity
-          style={styles.primaryActionButton}
+          className="bg-red-500 rounded-xl py-5 px-4 flex-row items-center justify-center gap-3"
           onPress={() => setShowComplaintModal(true)}
         >
           <ShakyIcon name="alert-circle" size={32} color="#FFFFFF" />
-          <Text style={styles.primaryActionText}>I LEFT SOMETHING</Text>
+          <Text className="text-lg font-bold text-white tracking-wide">I LEFT SOMETHING</Text>
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -775,10 +774,10 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
       animationType="slide"
       onRequestClose={resetComplaintModal}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
+      <View className="flex-1 bg-black/50 justify-end">
+        <View className="bg-white rounded-t-2xl p-4 max-h-[90%]">
+          <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-slate-200">
+            <Text className="text-lg font-bold text-slate-800">
               {modalStep === 1
                 ? "Report Lost Item"
                 : `Lost Item - ${transportType?.toUpperCase()}`}
@@ -788,45 +787,45 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.modalBody}>
+          <ScrollView className="max-h-[400px]">
             {modalStep === 1 ? (
               // STEP 1: Transport Selection
               <View>
-                <Text style={styles.questionText}>
+                <Text className="text-lg font-bold text-slate-800 text-center mb-6 mt-2">
                   In which transport did you lose your item?
                 </Text>
 
-                <View style={styles.transportGrid}>
+                <View className="flex-row flex-wrap justify-between gap-3 mb-5">
                   <TouchableOpacity
-                    style={styles.transportButton}
+                    className="w-[48%] bg-blue-50 border-2 border-blue-200 rounded-xl py-4 px-2.5 items-center justify-center min-h-[120px]"
                     onPress={() => handleTransportSelect("train")}
                   >
                     <ShakyIcon name="train" size={40} color="#2563EB" />
-                    <Text style={styles.transportButtonText}>🚆 Train</Text>
+                    <Text className="mt-2.5 text-sm font-semibold text-slate-800 text-center">🚆 Train</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.transportButton}
+                    className="w-[48%] bg-blue-50 border-2 border-blue-200 rounded-xl py-4 px-2.5 items-center justify-center min-h-[120px]"
                     onPress={() => handleTransportSelect("car")}
                   >
                     <ShakyIcon name="car" size={40} color="#2563EB" />
-                    <Text style={styles.transportButtonText}>🚗 Car</Text>
+                    <Text className="mt-2.5 text-sm font-semibold text-slate-800 text-center">🚗 Car</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.transportButton}
+                    className="w-[48%] bg-blue-50 border-2 border-blue-200 rounded-xl py-4 px-2.5 items-center justify-center min-h-[120px]"
                     onPress={() => handleTransportSelect("bus")}
                   >
                     <ShakyIcon name="bus" size={40} color="#2563EB" />
-                    <Text style={styles.transportButtonText}>🚌 Bus</Text>
+                    <Text className="mt-2.5 text-sm font-semibold text-slate-800 text-center">🚌 Bus</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.transportButton}
+                    className="w-[48%] bg-blue-50 border-2 border-blue-200 rounded-xl py-4 px-2.5 items-center justify-center min-h-[120px]"
                     onPress={() => handleTransportSelect("auto")}
                   >
                     <ShakyIcon name="bicycle" size={40} color="#2563EB" />
-                    <Text style={styles.transportButtonText}>🛺 Auto</Text>
+                    <Text className="mt-2.5 text-sm font-semibold text-slate-800 text-center">🛺 Auto</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -835,16 +834,16 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
               <View>
                 {/* Back Button */}
                 <TouchableOpacity
-                  style={styles.backButton}
+                  className="flex-row items-center gap-1.5 mb-4 py-2"
                   onPress={() => setModalStep(1)}
                 >
                   <ShakyIcon name="arrow-back" size={20} color="#2563EB" />
-                  <Text style={styles.backButtonText}>Change Transport</Text>
+                  <Text className="text-blue-600 text-sm font-semibold">Change Transport</Text>
                 </TouchableOpacity>
 
                 {/* Vehicle Number Field */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>
+                <View className="mb-4">
+                  <Text className="text-xs font-semibold text-slate-600 mb-1.5">
                     {transportType === "train"
                       ? "🚆 Train Number"
                       : transportType === "car"
@@ -854,7 +853,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                           : "🛺 Auto Number"}
                   </Text>
                   <TextInput
-                    style={styles.input}
+                    className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-slate-800 text-sm"
                     placeholder={
                       transportType === "train"
                         ? "e.g., 12345 Chennai Express"
@@ -870,10 +869,10 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                 </View>
 
                 {/* Item Type Dropdown */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>📦 Item Type</Text>
+                <View className="mb-4">
+                  <Text className="text-xs font-semibold text-slate-600 mb-1.5">📦 Item Type</Text>
                   <TextInput
-                    style={styles.input}
+                    className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-slate-800 text-sm"
                     placeholder="Bag / Mobile / Wallet / Documents"
                     value={itemType}
                     onChangeText={setItemType}
@@ -881,10 +880,10 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                 </View>
 
                 {/* Item Description */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>📝 Item Description</Text>
+                <View className="mb-4">
+                  <Text className="text-xs font-semibold text-slate-600 mb-1.5">📝 Item Description</Text>
                   <TextInput
-                    style={[styles.input, styles.textArea]}
+                    className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-slate-800 text-sm min-h-[100px]"
                     placeholder="Color, brand, contents..."
                     value={description}
                     onChangeText={setDescription}
@@ -894,14 +893,14 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                 </View>
 
                 {/* From Location */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>
+                <View className="mb-4">
+                  <Text className="text-xs font-semibold text-slate-600 mb-1.5">
                     {transportType === "train"
                       ? "🚉 From Station"
                       : "📍 From Location"}
                   </Text>
                   <TextInput
-                    style={styles.input}
+                    className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-slate-800 text-sm"
                     placeholder={
                       transportType === "train"
                         ? "e.g., Chennai Central"
@@ -915,14 +914,14 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                 </View>
 
                 {/* To Location */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>
+                <View className="mb-4">
+                  <Text className="text-xs font-semibold text-slate-600 mb-1.5">
                     {transportType === "train"
                       ? "🚉 To Station"
                       : "📍 To Location"}
                   </Text>
                   <TextInput
-                    style={styles.input}
+                    className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-slate-800 text-sm"
                     placeholder={
                       transportType === "train"
                         ? "e.g., Coimbatore Junction"
@@ -936,10 +935,10 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                 </View>
 
                 {/* Departure Time */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>⏰ Departure Time</Text>
+                <View className="mb-4">
+                  <Text className="text-xs font-semibold text-slate-600 mb-1.5">⏰ Departure Time</Text>
                   <TextInput
-                    style={styles.input}
+                    className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-slate-800 text-sm"
                     placeholder="e.g., 10:30 AM"
                     value={departureTime}
                     onChangeText={setDepartureTime}
@@ -947,10 +946,10 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                 </View>
 
                 {/* Arrival Time */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>⏱️ Arrival Time</Text>
+                <View className="mb-4">
+                  <Text className="text-xs font-semibold text-slate-600 mb-1.5">⏱️ Arrival Time</Text>
                   <TextInput
-                    style={styles.input}
+                    className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-slate-800 text-sm"
                     placeholder="e.g., 12:45 PM"
                     value={arrivalTime}
                     onChangeText={setArrivalTime}
@@ -958,36 +957,36 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                 </View>
 
                 {/* Auto-captured Details */}
-                <View style={styles.autoFillSection}>
-                  <Text style={styles.autoFillLabel}>
+                <View className="bg-blue-50 border-l-4 border-blue-400 rounded-lg p-3 mb-4">
+                  <Text className="text-xs font-semibold text-blue-800 mb-2">
                     Auto-captured details:
                   </Text>
-                  <Text style={styles.autoFillText}>
+                  <Text className="text-xs text-blue-700 mb-1">
                     📍 Current Location: {fromLocation || "Pending..."}
                   </Text>
-                  <Text style={styles.autoFillText}>
+                  <Text className="text-xs text-blue-700 mb-1">
                     🕒 Timestamp: {new Date().toLocaleTimeString()}
                   </Text>
                 </View>
 
                 {/* Upload Photo */}
                 <TouchableOpacity
-                  style={styles.uploadPhotoButton}
+                  className="flex-row items-center justify-center gap-2 border border-blue-600 rounded-lg py-3 mb-4"
                   onPress={handleUploadItemPhoto}
                 >
                   <ShakyIcon name="camera" size={20} color="#2563EB" />
-                  <Text style={styles.uploadPhotoText}>
+                  <Text className="text-blue-600 font-semibold">
                     📸 Upload Item Photo (Optional)
                   </Text>
                 </TouchableOpacity>
 
                 {photoUri && (
-                  <View style={styles.photoPreviewWrapper}>
-                    <Image source={{ uri: photoUri }} style={styles.photoPreview} />
-                    <View style={styles.photoPreviewMetaRow}>
-                      <Text style={styles.photoUploadedText}>Photo selected</Text>
+                  <View className="border border-blue-200 bg-blue-50 rounded-lg p-2.5 mb-4">
+                    <Image source={{ uri: photoUri }} className="w-full h-40 rounded-lg bg-slate-200" />
+                    <View className="mt-2 flex-row justify-between items-center">
+                      <Text className="text-blue-700 font-semibold text-xs">Photo selected</Text>
                       <TouchableOpacity onPress={() => setPhotoUri(null)}>
-                        <Text style={styles.removePhotoText}>Remove</Text>
+                        <Text className="text-red-600 font-semibold text-xs">Remove</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -998,14 +997,14 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
 
           {modalStep === 2 && (
             <TouchableOpacity
-              style={styles.submitButton}
+              className="bg-blue-600 rounded-lg py-3.5 items-center mt-2.5"
               onPress={handleCreateComplaint}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.submitButtonText}>
+                <Text className="text-white font-bold text-base">
                   ➡️ Submit to {getSubmitAuthority(transportType)}
                 </Text>
               )}
@@ -1045,27 +1044,21 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     ];
 
     return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📊 Complaint Status</Text>
-        <View style={styles.trackerCard}>
+      <View className="mb-5">
+        <Text className="text-lg font-bold text-slate-800 mb-2.5">📊 Complaint Status</Text>
+        <View className="bg-white rounded-xl p-4 border border-slate-200">
           {statuses.map((status, index) => (
             <View key={status.key}>
-              <View style={styles.statusStep}>
+              <View className="flex-row items-center mb-2">
                 <View
-                  style={[
-                    styles.statusCircle,
-                    status.completed && styles.statusCircleActive,
-                  ]}
+                  className={`w-3 h-3 rounded-full mr-3 ${status.completed ? "bg-blue-600" : "bg-slate-300"}`}
                 >
-                  <Text style={styles.statusStepText}>{status.label}</Text>
+                  <Text className="text-[13px] text-slate-600 flex-1">{status.label}</Text>
                 </View>
               </View>
               {index < statuses.length - 1 && (
                 <View
-                  style={[
-                    styles.statusLine,
-                    status.completed && styles.statusLineActive,
-                  ]}
+                  className={`w-0.5 h-[30px] ml-[5px] mb-1 ${status.completed ? "bg-blue-600" : "bg-slate-300"}`}
                 />
               )}
             </View>
@@ -1080,12 +1073,12 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     if (!currentComplaint) return null;
 
     return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🗺️ Live Tracking</Text>
-        <View style={styles.mapPlaceholder}>
+      <View className="mb-5">
+        <Text className="text-lg font-bold text-slate-800 mb-2.5">🗺️ Live Tracking</Text>
+        <View className="bg-slate-50 rounded-xl p-10 items-center border border-slate-200">
           <ShakyIcon name="map" size={48} color="#CBD5E1" />
-          <Text style={styles.mapText}>Live map view</Text>
-          <Text style={styles.mapSubtext}>
+          <Text className="text-sm font-semibold text-slate-600 mt-3">Live map view</Text>
+          <Text className="text-xs text-slate-400 mt-1">
             Staff location & ETA: {currentComplaint.staffEta || "Pending..."}
           </Text>
         </View>
@@ -1126,8 +1119,8 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     };
 
     return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>💬 Staff Messages</Text>
+      <View className="mb-5">
+        <Text className="text-lg font-bold text-slate-800 mb-2.5">💬 Staff Messages</Text>
         <PassengerMessageThread
           complaint={currentComplaint}
           userEmail={userEmail}
@@ -1145,22 +1138,22 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     if (!currentComplaint || !currentComplaint.itemFound) return null;
 
     return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📱 QR Code Pickup</Text>
-        <View style={styles.qrCard}>
-          <View style={styles.qrPlaceholder}>
+      <View className="mb-5">
+        <Text className="text-lg font-bold text-slate-800 mb-2.5">📱 QR Code Pickup</Text>
+        <View className="bg-white rounded-xl p-4 border border-slate-200">
+          <View className="items-center py-6 border-2 border-blue-200 rounded-xl bg-blue-50 mb-3">
             <ShakyIcon name="qr-code" size={80} color="#2563EB" />
-            <Text style={styles.qrText}>Scan this QR to collect item</Text>
-            <Text style={styles.qrId}>
+            <Text className="text-sm font-semibold text-blue-800 mt-3 text-center">Scan this QR to collect item</Text>
+            <Text className="text-[11px] text-slate-400 mt-1">
               ID: {currentComplaint._id?.substring(0, 8)}
             </Text>
           </View>
           <TouchableOpacity
-            style={styles.scanButton}
+            className="bg-blue-600 rounded-lg py-3 flex-row items-center justify-center gap-2"
             onPress={() => alert("Camera scan coming soon!")}
           >
             <ShakyIcon name="camera" size={20} color="#FFFFFF" />
-            <Text style={styles.scanButtonText}>📷 Scan Item QR</Text>
+            <Text className="text-white font-bold">📷 Scan Item QR</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -1169,17 +1162,17 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
 
   // Section 9: Complaint History
   const renderComplaintHistory = () => (
-    <View style={styles.section}>
-      <View style={styles.historyHeader}>
-        <Text style={styles.sectionTitle}>📋 Complaint History</Text>
+    <View className="mb-5">
+      <View className="flex-row justify-between items-center">
+        <Text className="text-lg font-bold text-slate-800 mb-2.5">📋 Complaint History</Text>
         <TouchableOpacity
-          style={styles.viewAllButton}
+          className="flex-row items-center gap-1"
           onPress={() => {
             setShowHistoryModal(true);
             fetchComplaintHistory();
           }}
         >
-          <Text style={styles.viewAllText}>View All</Text>
+          <Text className="text-blue-600 font-semibold text-[13px]">View All</Text>
           <ShakyIcon name="chevron-forward" size={16} color="#2563EB" />
         </TouchableOpacity>
       </View>
@@ -1187,63 +1180,59 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
       {complaints.length > 0 ? (
         <View>
           {complaints.slice(0, 3).map((complaint) => (
-            <View key={complaint._id} style={styles.historyItem}>
+            <View key={complaint._id} className="bg-white rounded-lg p-3 mb-2.5 flex-row justify-between items-center border border-slate-200">
               <View>
-                <Text style={styles.historyItemTitle}>
+                <Text className="text-sm font-semibold text-slate-800">
                   {complaint.itemType}
                 </Text>
-                <Text style={styles.historyItemMeta}>
+                <Text className="text-xs text-slate-500 mt-0.5">
                   {complaint.vehicleNumber} • {complaint.route}
                 </Text>
-                <Text style={styles.historyItemDate}>
+                <Text className="text-[11px] text-slate-400 mt-0.5">
                   {new Date(complaint.createdAt).toLocaleDateString()}
                 </Text>
               </View>
               <View
-                style={[
-                  styles.statusBadge,
-                  complaint.status === "Recovered" && styles.statusBadgeSuccess,
-                  complaint.status === "Closed" && styles.statusBadgeInfo,
-                ]}
+                className={`px-2.5 py-1.5 rounded-lg ${complaint.status === "Recovered" ? "bg-green-100" : complaint.status === "Closed" ? "bg-indigo-100" : "bg-slate-100"}`}
               >
-                <Text style={styles.statusBadgeText}>{complaint.status}</Text>
+                <Text className="text-[11px] font-semibold text-slate-800">{complaint.status}</Text>
               </View>
             </View>
           ))}
         </View>
       ) : (
-        <Text style={styles.emptyText}>No complaints yet</Text>
+        <Text className="text-sm text-slate-400 text-center py-5">No complaints yet</Text>
       )}
     </View>
   );
 
   // Section 10: Emergency & Help
   const renderEmergencyHelp = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>🆘 Emergency & Help</Text>
-      <View style={styles.emergencyGrid}>
+    <View className="mb-5">
+      <Text className="text-lg font-bold text-slate-800 mb-2.5">🆘 Emergency & Help</Text>
+      <View className="flex-row justify-around gap-3">
         <TouchableOpacity
-          style={styles.emergencyButton}
+          className="flex-1 bg-white rounded-lg p-4 items-center border border-slate-200"
           onPress={() => alert("Calling emergency hotline...")}
         >
           <ShakyIcon name="call" size={28} color="#DC2626" />
-          <Text style={styles.emergencyButtonText}>Emergency Call</Text>
+          <Text className="text-[11px] font-semibold text-slate-800 mt-2 text-center">Emergency Call</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.emergencyButton}
+          className="flex-1 bg-white rounded-lg p-4 items-center border border-slate-200"
           onPress={() => alert("📞 Helpline: +91-XXXX-XXXXX")}
         >
           <ShakyIcon name="information-circle" size={28} color="#2563EB" />
-          <Text style={styles.emergencyButtonText}>Helpline</Text>
+          <Text className="text-[11px] font-semibold text-slate-800 mt-2 text-center">Helpline</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.emergencyButton}
+          className="flex-1 bg-white rounded-lg p-4 items-center border border-slate-200"
           onPress={() => alert("FAQ coming soon!")}
         >
           <ShakyIcon name="help-circle" size={28} color="#7C3AED" />
-          <Text style={styles.emergencyButtonText}>FAQ & Help</Text>
+          <Text className="text-[11px] font-semibold text-slate-800 mt-2 text-center">FAQ & Help</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -1257,16 +1246,16 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
       animationType="slide"
       onRequestClose={() => setShowHistoryModal(false)}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>📋 Complaint History</Text>
+      <View className="flex-1 bg-black/50 justify-end">
+        <View className="bg-white rounded-t-2xl p-4 max-h-[90%]">
+          <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-slate-200">
+            <Text className="text-lg font-bold text-slate-800">📋 Complaint History</Text>
             <TouchableOpacity onPress={() => setShowHistoryModal(false)}>
               <ShakyIcon name="close" size={24} color="#1E293B" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.modalBody}>
+          <ScrollView className="max-h-[400px]">
             {loading ? (
               <ActivityIndicator
                 size="large"
@@ -1275,39 +1264,35 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
               />
             ) : complaints.length > 0 ? (
               complaints.map((complaint) => (
-                <View key={complaint._id} style={styles.historyFullItem}>
-                  <View style={styles.historyFullHeader}>
-                    <Text style={styles.historyFullTitle}>
+                <View key={complaint._id} className="bg-slate-50 rounded-lg p-3.5 mb-3 border border-slate-200">
+                  <View className="flex-row justify-between items-center mb-2">
+                    <Text className="text-sm font-bold text-slate-800">
                       {complaint.itemType}
                     </Text>
                     <View
-                      style={[
-                        styles.statusBadge,
-                        complaint.status === "Recovered" &&
-                          styles.statusBadgeSuccess,
-                      ]}
+                      className={`px-2.5 py-1.5 rounded-lg ${complaint.status === "Recovered" ? "bg-green-100" : "bg-slate-100"}`}
                     >
-                      <Text style={styles.statusBadgeText}>
+                      <Text className="text-[11px] font-semibold text-slate-800">
                         {complaint.status}
                       </Text>
                     </View>
                   </View>
-                  <Text style={styles.historyFullMeta}>
+                  <Text className="text-xs text-slate-600 mb-1">
                     🚌 {complaint.vehicleNumber}
                   </Text>
-                  <Text style={styles.historyFullMeta}>
+                  <Text className="text-xs text-slate-600 mb-1">
                     🛣️ {complaint.route}
                   </Text>
-                  <Text style={styles.historyFullMeta}>
+                  <Text className="text-xs text-slate-600 mb-1">
                     📝 {complaint.description}
                   </Text>
-                  <Text style={styles.historyFullDate}>
+                  <Text className="text-[11px] text-slate-400 mt-1.5">
                     {new Date(complaint.createdAt).toLocaleString()}
                   </Text>
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyText}>No complaints found</Text>
+              <Text className="text-sm text-slate-400 text-center py-5">No complaints found</Text>
             )}
           </ScrollView>
         </View>
@@ -1322,33 +1307,33 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
       animationType="slide"
       onRequestClose={() => setShowNotificationModal(false)}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Notifications</Text>
+      <View className="flex-1 bg-black/50 justify-end">
+        <View className="bg-white rounded-t-2xl p-4 max-h-[90%]">
+          <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-slate-200">
+            <Text className="text-lg font-bold text-slate-800">Notifications</Text>
             <TouchableOpacity onPress={() => setShowNotificationModal(false)}>
               <Ionicons name="close" size={24} color="#1E293B" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.modalBody}>
+          <ScrollView className="max-h-[400px]">
             {acceptedComplaints.length === 0 ? (
-              <Text style={styles.emptyText}>No new notifications</Text>
+              <Text className="text-sm text-slate-400 text-center py-5">No new notifications</Text>
             ) : (
               acceptedComplaints.map((complaint) => (
-                <View key={complaint._id} style={styles.notificationItem}>
-                  <Text style={styles.notificationTitle}>
+                <View key={complaint._id} className="bg-slate-50 rounded-lg p-3 mb-3 border border-slate-200">
+                  <Text className="text-sm font-bold text-slate-900 mb-1">
                     Your complaint has been accepted.
                   </Text>
-                  <Text style={styles.notificationMeta}>
+                  <Text className="text-xs text-slate-600 mb-2.5">
                     Item: {complaint.itemType} • {complaint.vehicleNumber}
                   </Text>
                   <TouchableOpacity
-                    style={styles.liveTrackingButton}
+                    className="bg-blue-600 rounded-lg py-2 px-2.5 flex-row items-center justify-center gap-1.5"
                     onPress={() => handleOpenLiveTracking(complaint)}
                   >
                     <Ionicons name="navigate" size={16} color="#FFFFFF" />
-                    <Text style={styles.liveTrackingButtonText}>
+                    <Text className="text-white text-xs font-bold">
                       Live Tracking
                     </Text>
                   </TouchableOpacity>
@@ -1368,10 +1353,10 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
       animationType="slide"
       onRequestClose={() => setShowTrackingModal(false)}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Complaint Tracking</Text>
+      <View className="flex-1 bg-black/50 justify-end">
+        <View className="bg-white rounded-t-2xl p-4 max-h-[90%]">
+          <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-slate-200">
+            <Text className="text-lg font-bold text-slate-800">Complaint Tracking</Text>
             <TouchableOpacity
               onPress={() => {
                 setShowTrackingModal(false);
@@ -1383,7 +1368,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
             </TouchableOpacity>
           </View>
 
-          <View style={styles.modalBody}>
+          <View className="max-h-[400px]">
             {trackingLoading ? (
               <ActivityIndicator
                 size="large"
@@ -1391,82 +1376,82 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                 style={{ marginTop: 20 }}
               />
             ) : selectedTrackingComplaint ? (
-              <View style={styles.trackingCard}>
-                <Text style={styles.trackingTitle}>Complaint submitted successfully</Text>
-                <Text style={styles.trackingMeta}>
+              <View className="bg-slate-50 border border-slate-200 rounded-lg p-3.5">
+                <Text className="text-[15px] font-bold text-slate-800 mb-2">Complaint submitted successfully</Text>
+                <Text className="text-[13px] text-slate-600 mb-1.5">
                   Complaint ID: {selectedTrackingComplaint.complaintId || selectedTrackingComplaint._id?.substring(0, 10)}
                 </Text>
-                <Text style={styles.trackingMeta}>
+                <Text className="text-[13px] text-slate-600 mb-1.5">
                   Status: {trackingData?.status || selectedTrackingComplaint.status || "Submitted"}
                 </Text>
-                <Text style={styles.trackingMeta}>
+                <Text className="text-[13px] text-slate-600 mb-1.5">
                   Item: {selectedTrackingComplaint.itemType} • {selectedTrackingComplaint.vehicleNumber}
                 </Text>
-                <Text style={styles.trackingMeta}>
+                <Text className="text-[13px] text-slate-600 mb-1.5">
                   Route: {selectedTrackingComplaint.route}
                 </Text>
-                <Text style={styles.trackingMeta}>
+                <Text className="text-[13px] text-slate-600 mb-1.5">
                   Routed to: {selectedTrackingComplaint.submitAuthority || "On-duty officers"}
                 </Text>
-                <Text style={styles.trackingMeta}>
+                <Text className="text-[13px] text-slate-600 mb-1.5">
                   Priority: {trackingData?.priority || selectedTrackingComplaint.priority || "Normal"}
                 </Text>
                 {trackingData?.staffResponseStatus ? (
-                  <Text style={styles.trackingMeta}>
+                  <Text className="text-[13px] text-slate-600 mb-1.5">
                     Officer update: {trackingData.staffResponseStatus}
                   </Text>
                 ) : null}
                 {trackingData?.seenAt ? (
-                  <Text style={styles.trackingMeta}>
+                  <Text className="text-[13px] text-slate-600 mb-1.5">
                     Seen at: {new Date(trackingData.seenAt).toLocaleString()}
                   </Text>
                 ) : null}
                 {trackingData?.acknowledgedAt ? (
-                  <Text style={styles.trackingMeta}>
+                  <Text className="text-[13px] text-slate-600 mb-1.5">
                     Acknowledged at: {new Date(trackingData.acknowledgedAt).toLocaleString()}
                   </Text>
                 ) : null}
                 {trackingData?.officerNotes ? (
-                  <Text style={styles.trackingMeta}>Officer notes: {trackingData.officerNotes}</Text>
+                  <Text className="text-[13px] text-slate-600 mb-1.5">Officer notes: {trackingData.officerNotes}</Text>
                 ) : null}
                 {trackingData?.coachRemark ? (
-                  <Text style={styles.trackingMeta}>Coach remark: {trackingData.coachRemark}</Text>
+                  <Text className="text-[13px] text-slate-600 mb-1.5">Coach remark: {trackingData.coachRemark}</Text>
                 ) : null}
                 {trackingData?.stationRemark ? (
-                  <Text style={styles.trackingMeta}>Station remark: {trackingData.stationRemark}</Text>
+                  <Text className="text-[13px] text-slate-600 mb-1.5">Station remark: {trackingData.stationRemark}</Text>
                 ) : null}
                 {trackingData?.meetingPoint ? (
-                  <Text style={styles.trackingMeta}>Meeting point: {trackingData.meetingPoint}</Text>
+                  <Text className="text-[13px] text-slate-600 mb-1.5">Meeting point: {trackingData.meetingPoint}</Text>
                 ) : null}
                 {trackingData?.meetingTime ? (
-                  <Text style={styles.trackingMeta}>Meeting time: {trackingData.meetingTime}</Text>
+                  <Text className="text-[13px] text-slate-600 mb-1.5">Meeting time: {trackingData.meetingTime}</Text>
                 ) : null}
                 {trackingData?.liveLocationAvailable && trackingData?.staffLocation ? (
                   <View>
-                    <Text style={[styles.trackingMeta, { fontWeight: "700", marginTop: 6 }]}>Live officer location</Text>
-                    <Text style={styles.trackingMeta}>
+                    <Text className="text-[13px] text-slate-600 font-bold mt-1.5 mb-1">Live officer location</Text>
+                    <Text className="text-[13px] text-slate-600 mb-1.5">
                       Latitude: {trackingData.staffLocation.latitude}
                     </Text>
-                    <Text style={styles.trackingMeta}>
+                    <Text className="text-[13px] text-slate-600 mb-1.5">
                       Longitude: {trackingData.staffLocation.longitude}
                     </Text>
-                    <Text style={styles.trackingMeta}>
+                    <Text className="text-[13px] text-slate-600 mb-1.5">
                       Updated: {trackingData.staffLocation.lastUpdated ? new Date(trackingData.staffLocation.lastUpdated).toLocaleTimeString() : "--"}
                     </Text>
                     <TouchableOpacity
-                      style={[styles.liveTrackingButton, { marginTop: 8 }]}
+                      className="bg-blue-600 rounded-lg py-2 px-2.5 flex-row items-center justify-center gap-1.5 mt-2"
                       onPress={() => openDriverLiveMap(trackingData)}
                     >
                       <Ionicons name="navigate" size={16} color="#FFFFFF" />
-                      <Text style={styles.liveTrackingButtonText}>Open live map</Text>
+                      <Text className="text-white text-xs font-bold">Open live map</Text>
                     </TouchableOpacity>
                   </View>
                 ) : null}
                 {Array.isArray(trackingData?.updates) && trackingData.updates.length > 0 ? (
                   <View>
-                    <Text style={[styles.trackingMeta, { fontWeight: "700", marginTop: 6 }]}>Latest timeline</Text>
+                    <Text className="text-[13px] text-slate-600 font-bold mt-1.5 mb-1">Latest timeline</Text>
                     {trackingData.updates.slice(0, 5).map((entry, index) => (
-                      <Text key={`${entry.timestamp || "update"}-${index}`} style={styles.trackingMeta}>
+                      <Text key={`${entry.timestamp || "update"}-${index}`} className="text-[13px] text-slate-600 mb-1.5">
                         - {entry.text || "Status updated"}
                         {entry.staffName ? ` (${entry.staffName})` : ""}
                         {entry.timestamp ? ` at ${new Date(entry.timestamp).toLocaleTimeString()}` : ""}
@@ -1474,33 +1459,33 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                     ))}
                   </View>
                 ) : null}
-                <Text style={styles.trackingMeta}>
+                <Text className="text-[13px] text-slate-600 mb-1.5">
                   Next step: Officers on duty will review, reply, and coordinate recovery.
                 </Text>
               </View>
             ) : trackingData?.liveLocationAvailable ? (
-              <View style={styles.trackingCard}>
-                <Text style={styles.trackingTitle}>Driver Live Location</Text>
-                <Text style={styles.trackingMeta}>
+              <View className="bg-slate-50 border border-slate-200 rounded-lg p-3.5">
+                <Text className="text-[15px] font-bold text-slate-800 mb-2">Driver Live Location</Text>
+                <Text className="text-[13px] text-slate-600 mb-1.5">
                   Latitude: {trackingData.staffLocation.latitude}
                 </Text>
-                <Text style={styles.trackingMeta}>
+                <Text className="text-[13px] text-slate-600 mb-1.5">
                   Longitude: {trackingData.staffLocation.longitude}
                 </Text>
-                <Text style={styles.trackingMeta}>
+                <Text className="text-[13px] text-slate-600 mb-1.5">
                   Updated: {new Date(trackingData.staffLocation.lastUpdated).toLocaleTimeString()}
                 </Text>
-                <Text style={styles.trackingMeta}>
+                <Text className="text-[13px] text-slate-600 mb-1.5">
                   Meeting Point: {trackingData.meetingPoint || "Pending"}
                 </Text>
-                <Text style={styles.trackingMeta}>
+                <Text className="text-[13px] text-slate-600 mb-1.5">
                   Status: {trackingData.status || "Accepted"}
                 </Text>
               </View>
             ) : (
-              <View style={styles.trackingCard}>
-                <Text style={styles.trackingTitle}>Tracking in progress</Text>
-                <Text style={styles.trackingMeta}>
+              <View className="bg-slate-50 border border-slate-200 rounded-lg p-3.5">
+                <Text className="text-[15px] font-bold text-slate-800 mb-2">Tracking in progress</Text>
+                <Text className="text-[13px] text-slate-600 mb-1.5">
                   Waiting for duty officer acknowledgement and live updates.
                 </Text>
               </View>
@@ -1513,18 +1498,17 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
 
   return (
     <Animated.View
-      style={[
-        styles.animatedScreen,
+      className="flex-1" style={[
         {
           opacity: screenFadeAnim,
           transform: [{ translateY: screenSlideAnim }],
         },
       ]}
     >
-      <ScrollView style={styles.container}>
+      <ScrollView className="flex-1 bg-slate-50">
         {renderHeader()}
 
-        <View style={styles.content}>
+        <View className="p-4">
           {renderActiveJourney()}
           {renderPrimaryAction()}
           {renderComplaintPanel()}
@@ -1537,9 +1521,9 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
           {renderTrackingModal()}
           {renderEmergencyHelp()}
 
-          <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+          <TouchableOpacity className="bg-slate-500 rounded-lg py-3 flex-row items-center justify-center gap-2 mt-5 mb-5" onPress={onLogout}>
             <ShakyIcon name="log-out" size={20} color="#FFFFFF" />
-            <Text style={styles.logoutButtonText}>Log Out</Text>
+            <Text className="text-white font-bold p-2.5">Log Out</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -1547,7 +1531,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
   );
 };
 
-const styles = StyleSheet.create({
+const styles = create({
   animatedScreen: {
     flex: 1,
   },
