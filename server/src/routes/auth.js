@@ -785,22 +785,39 @@ router.post("/login", async (req, res) => {
 
 const OFFICER_ROLES = ["TTR", "TTE", "RPF", "Police"];
 
-router.get("/duty/status", requireAuth, requireRoles(OFFICER_ROLES), async (req, res) => {
+// ─── Header-based duty helpers (no JWT required) ───────────────────────────
+// The mobile client sends X-User-Email / X-Professional-Id headers instead of
+// a Bearer token. These endpoints resolve the officer purely from those headers.
+
+const resolveOfficerFromHeaders = async (req) => {
+  const email = normalizeEmail(req.headers["x-user-email"] || req.body?.email || "");
+  const professionalId = normalizeProfessionalId(req.headers["x-professional-id"] || req.body?.professionalId || "");
+  let user = null;
+  if (email) user = await findUserByEmail(email, { role: "TTR/RPF/Police" });
+  if (!user && professionalId) user = await findOfficialByProfessionalId("TTR/RPF/Police", professionalId);
+  if (!user) return null;
+  return toDutyOfficer(user.toSafeObject ? user.toSafeObject() : user);
+};
+
+// GET /api/auth/duty/status  (header-auth)
+router.get("/duty/status", async (req, res) => {
+  // Try JWT first; fall back to header-based resolution
+  let officer = null;
   try {
-    const officer = await resolveOfficerFromAuth(req);
+    officer = await resolveOfficerFromAuth(req);
+  } catch {}
+  if (!officer) officer = await resolveOfficerFromHeaders(req);
+  if (!officer) return res.status(404).json({ message: "Officer not found. Check credentials." });
 
-    if (!officer) {
-      return res.status(404).json({ message: "Duty officer not found." });
-    }
-
+  try {
     const attendance = await getLatestAttendance(buildOfficerKey(officer));
     return res.json({
       ...toDutyResponse(officer),
       attendance: normalizeAttendance(attendance),
-      assignedTrain: attendance?.assignedTrain || officer.assignedTrain || null,
-      assignedRoute: attendance?.assignedRoute || officer.assignedRoute || null,
+      assignedTrain:   attendance?.assignedTrain   || officer.assignedTrain   || null,
+      assignedRoute:   attendance?.assignedRoute   || officer.assignedRoute   || null,
       assignedStation: attendance?.assignedStation || officer.assignedStation || officer.dutyStation || null,
-      assignedShift: attendance?.assignedShift || officer.assignedShift || null,
+      assignedShift:   attendance?.assignedShift   || null,
       message: "Duty status retrieved successfully",
     });
   } catch (error) {
@@ -808,6 +825,74 @@ router.get("/duty/status", requireAuth, requireRoles(OFFICER_ROLES), async (req,
     return res.status(500).json({ message: "Unable to retrieve duty status." });
   }
 });
+
+// POST /api/auth/duty/check-in  (header-auth)
+router.post("/duty/check-in", async (req, res) => {
+  let officer = null;
+  try { officer = await resolveOfficerFromAuth(req); } catch {}
+  if (!officer) officer = await resolveOfficerFromHeaders(req);
+  if (!officer) return res.status(404).json({ message: "Officer not found. Check credentials." });
+
+  try {
+    const officerKey = buildOfficerKey(officer);
+    const existing = await getActiveAttendance(officerKey);
+    if (existing) {
+      // Already checked in — return current session
+      return res.json({ officer, attendance: normalizeAttendance(existing), message: "Already checked in." });
+    }
+    const attendancePayload = getAttendancePayload(req, officer);
+    const attendance = await DutyAttendance.create({
+      ...attendancePayload,
+      checkInTime: new Date(),
+      checkOutTime: null,
+      status: "ACTIVE",
+      source: "header-auth",
+    });
+    if (canLookupUserById(officer.userId)) {
+      const user = await User.findById(officer.userId);
+      if (user) {
+        user.onDutyStatus = true;
+        user.dutyCheckInAt = attendance.checkInTime;
+        user.dutyCheckOutAt = null;
+        user.dutyStation = attendance.assignedStation || user.dutyStation || null;
+        user.dutyUnit = attendance.dutyUnit || user.dutyUnit || null;
+        await user.save();
+      }
+    }
+    return res.json({ officer, attendance: normalizeAttendance(attendance), message: "Checked in successfully." });
+  } catch (error) {
+    console.error("Check-in error:", error.message);
+    return res.status(500).json({ message: "Unable to check in." });
+  }
+});
+
+// POST /api/auth/duty/check-out  (header-auth)
+router.post("/duty/check-out", async (req, res) => {
+  let officer = null;
+  try { officer = await resolveOfficerFromAuth(req); } catch {}
+  if (!officer) officer = await resolveOfficerFromHeaders(req);
+  if (!officer) return res.status(404).json({ message: "Officer not found. Check credentials." });
+
+  try {
+    const officerKey = buildOfficerKey(officer);
+    const activeAttendance = await getActiveAttendance(officerKey);
+    if (!activeAttendance) {
+      return res.status(400).json({ message: "No active duty session to check out from." });
+    }
+    activeAttendance.status = "INACTIVE";
+    activeAttendance.checkOutTime = new Date();
+    await activeAttendance.save();
+    if (canLookupUserById(officer.userId)) {
+      const user = await User.findById(officer.userId);
+      if (user) { user.onDutyStatus = false; user.dutyCheckOutAt = activeAttendance.checkOutTime; await user.save(); }
+    }
+    return res.json({ officer, attendance: normalizeAttendance(activeAttendance), message: "Checked out successfully." });
+  } catch (error) {
+    console.error("Check-out error:", error.message);
+    return res.status(500).json({ message: "Unable to check out." });
+  }
+});
+// ─────────────────────────────────────────────────────────────────────────────
 
 router.get("/duty/roster", requireAuth, requireRoles(OFFICER_ROLES), async (req, res) => {
   try {

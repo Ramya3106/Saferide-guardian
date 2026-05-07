@@ -3,7 +3,6 @@ import {
   BackHandler,
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ScrollView,
   Switch,
@@ -395,48 +394,42 @@ const DriverConductorDashboard = ({
 
   // Render Position Selection Screen
   const renderPositionSelection = () => (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>SafeRide Guardian</Text>
-        <Text style={styles.headerSubtitle}>Select Your Position</Text>
+    <ScrollView contentContainerStyle={{flexGrow:1,padding:16,paddingBottom:24}}>
+      <View className="mb-6">
+        <Text className="text-3xl font-bold text-slate-800 mb-2">SafeRide Guardian</Text>
+        <Text className="text-lg font-semibold text-slate-600">Select Your Position</Text>
       </View>
 
-      <Text style={styles.chooseTitle}>Choose Your Role</Text>
+      <Text className="text-base font-semibold text-slate-600 mb-4">Choose Your Role</Text>
 
-      <View style={styles.selectionContainer}>
+      <View className="mb-6">
         <TouchableOpacity
-          style={[
-            styles.positionCard,
-            position === "driver" && styles.positionCardSelected,
-          ]}
+          className={`rounded-2xl p-6 mb-3 border-2 items-center relative ${position===posType?"bg-blue-50 border-blue-600":"bg-slate-50 border-slate-200"}`}
           onPress={() => handlePositionSelection("driver")}
         >
-          <Text style={styles.positionIcon}>🚌</Text>
-          <Text style={styles.positionTitle}>Bus Driver</Text>
-          <Text style={styles.positionDescription}>
+          <Text className="text-5xl mb-3">🚌</Text>
+          <Text className="text-lg font-bold text-slate-800 mb-1">Bus Driver</Text>
+          <Text className="text-sm text-slate-500 text-center">
             Responsible for vehicle movement
           </Text>
           {position === "driver" && (
-            <View style={styles.checkmark}>
+            <View className="absolute top-3 right-3">
               <ShakyIcon name="checkmark-circle" size={24} color="#2563EB" />
             </View>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[
-            styles.positionCard,
-            position === "conductor" && styles.positionCardSelected,
-          ]}
+          className={`rounded-2xl p-6 mb-3 border-2 items-center relative ${position===posType?"bg-blue-50 border-blue-600":"bg-slate-50 border-slate-200"}`}
           onPress={() => handlePositionSelection("conductor")}
         >
-          <Text style={styles.positionIcon}>🎫</Text>
-          <Text style={styles.positionTitle}>Conductor</Text>
-          <Text style={styles.positionDescription}>
+          <Text className="text-5xl mb-3">🎫</Text>
+          <Text className="text-lg font-bold text-slate-800 mb-1">Conductor</Text>
+          <Text className="text-sm text-slate-500 text-center">
             Responsible for passenger & item custody
           </Text>
           {position === "conductor" && (
-            <View style={styles.checkmark}>
+            <View className="absolute top-3 right-3">
               <ShakyIcon name="checkmark-circle" size={24} color="#2563EB" />
             </View>
           )}
@@ -444,14 +437,11 @@ const DriverConductorDashboard = ({
       </View>
 
       <TouchableOpacity
-        style={[
-          styles.primaryButton,
-          !position && styles.buttonDisabled,
-        ]}
+        className="bg-blue-600 rounded-xl py-3.5 items-center mb-4 opacity-100"
         onPress={handleContinuePositionSelection}
         disabled={!position}
       >
-        <Text style={styles.primaryButtonText}>Continue</Text>
+        <Text className="text-white font-semibold text-base">Continue</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -460,24 +450,24 @@ const DriverConductorDashboard = ({
   const renderDutySetup = () => (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.flex1}
+      className="flex-1"
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
+      <ScrollView contentContainerStyle={{flexGrow:1,padding:16,paddingBottom:24}}>
+        <View className="mb-6">
           <TouchableOpacity
-            style={styles.backButton}
+            className="flex-row items-center mb-4"
             onPress={() => setCurrentStep("positionSelection")}
           >
             <ShakyIcon name="arrow-back" size={24} color="#2563EB" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Start Today's Duty</Text>
+          <Text className="text-3xl font-bold text-slate-800 mb-2">Start Today's Duty</Text>
         </View>
 
-        <View style={styles.formContainer}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>🚌 Bus Number *</Text>
+        <View className="mb-5">
+          <View className="mb-4">
+            <Text className="text-sm font-semibold text-slate-600 mb-2">🚌 Bus Number *</Text>
             <TextInput
-              style={styles.input}
+              className="bg-slate-50 border border-slate-300 rounded-xl py-3 px-3.5 text-sm text-slate-800"
               placeholder="TN-01-AB-1234"
               placeholderTextColor="#CBD5E1"
               value={busNumber}
@@ -485,10 +475,10 @@ const DriverConductorDashboard = ({
             />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>📍 Route (From → To) *</Text>
+          <View className="mb-4">
+            <Text className="text-sm font-semibold text-slate-600 mb-2">📍 Route (From → To) *</Text>
             <TextInput
-              style={styles.input}
+              className="bg-slate-50 border border-slate-300 rounded-xl py-3 px-3.5 text-sm text-slate-800"
               placeholder="Velachery → CMBT"
               placeholderTextColor="#CBD5E1"
               value={route}
@@ -496,10 +486,10 @@ const DriverConductorDashboard = ({
             />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>⏰ Shift Time *</Text>
+          <View className="mb-4">
+            <Text className="text-sm font-semibold text-slate-600 mb-2">⏰ Shift Time *</Text>
             <TextInput
-              style={styles.input}
+              className="bg-slate-50 border border-slate-300 rounded-xl py-3 px-3.5 text-sm text-slate-800"
               placeholder="6:00 AM – 2:00 PM"
               placeholderTextColor="#CBD5E1"
               value={shiftTime}
@@ -507,10 +497,10 @@ const DriverConductorDashboard = ({
             />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>🏢 Current Depot</Text>
+          <View className="mb-4">
+            <Text className="text-sm font-semibold text-slate-600 mb-2">🏢 Current Depot</Text>
             <TextInput
-              style={styles.input}
+              className="bg-slate-50 border border-slate-300 rounded-xl py-3 px-3.5 text-sm text-slate-800"
               placeholder="Depot name"
               placeholderTextColor="#CBD5E1"
               value={depot}
@@ -520,10 +510,10 @@ const DriverConductorDashboard = ({
 
           {position === "conductor" && (
             <>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>🎫 Ticket Machine ID</Text>
+              <View className="mb-4">
+                <Text className="text-sm font-semibold text-slate-600 mb-2">🎫 Ticket Machine ID</Text>
                 <TextInput
-                  style={styles.input}
+                  className="bg-slate-50 border border-slate-300 rounded-xl py-3 px-3.5 text-sm text-slate-800"
                   placeholder="TM-12345"
                   placeholderTextColor="#CBD5E1"
                   value={ticketMachineId}
@@ -531,10 +521,10 @@ const DriverConductorDashboard = ({
                 />
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>👥 Passengers Onboard</Text>
+              <View className="mb-4">
+                <Text className="text-sm font-semibold text-slate-600 mb-2">👥 Passengers Onboard</Text>
                 <TextInput
-                  style={styles.input}
+                  className="bg-slate-50 border border-slate-300 rounded-xl py-3 px-3.5 text-sm text-slate-800"
                   placeholder="0"
                   placeholderTextColor="#CBD5E1"
                   value={passengersOnboard}
@@ -547,10 +537,10 @@ const DriverConductorDashboard = ({
         </View>
 
         <TouchableOpacity
-          style={styles.primaryButton}
+          className="bg-blue-600 rounded-xl py-3.5 items-center mb-4"
           onPress={handleStartDuty}
         >
-          <Text style={styles.primaryButtonText}>🔵 Start Duty</Text>
+          <Text className="text-white font-semibold text-base">🔵 Start Duty</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -558,16 +548,16 @@ const DriverConductorDashboard = ({
 
   // Render Driver Dashboard
   const renderDriverDashboard = () => (
-    <ScrollView contentContainerStyle={styles.dashboardContent}>
+    <ScrollView contentContainerStyle={{flexGrow:1,padding:16,paddingBottom:24}}>
       {/* Header */}
-      <View style={styles.dashboardHeader}>
-        <View style={styles.driverInfo}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>D</Text>
+      <View className="flex-row justify-between items-center mb-5">
+        <View className="flex-row items-center flex-1">
+          <View className="w-[50px] h-[50px] rounded-full bg-blue-600 items-center justify-center mr-3">
+            <Text className="text-white text-2xl font-bold">D</Text>
           </View>
-          <View style={styles.driverDetails}>
-            <Text style={styles.driverName}>Driver Name</Text>
-            <Text style={styles.busNumberText}>🚌 {busNumber}</Text>
+          <View className="flex-1">
+            <Text className="text-base font-bold text-slate-800">Driver Name</Text>
+            <Text className="text-sm text-slate-500">🚌 {busNumber}</Text>
           </View>
         </View>
         <Animated.View
@@ -582,11 +572,11 @@ const DriverConductorDashboard = ({
             ],
           }}
         >
-          <TouchableOpacity style={styles.notificationBell}>
+          <TouchableOpacity className="relative p-2">
             <ShakyIcon name="notifications" size={24} color="#2563EB" />
             {complaints.length > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{complaints.length}</Text>
+              <View className="absolute top-0 right-0 bg-red-500 rounded-full w-5 h-5 items-center justify-center">
+                <Text className="text-white text-xs font-bold">{complaints.length}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -594,12 +584,12 @@ const DriverConductorDashboard = ({
       </View>
 
       {/* Duty Status Toggle */}
-      <View style={styles.statusCard}>
-        <View style={styles.statusLeft}>
+      <View className="bg-slate-50 rounded-xl p-4 flex-row justify-between items-center mb-5 border border-slate-200">
+        <View className="flex-row items-center">
           <View
-            style={[styles.statusIndicator, isOnline && styles.statusOnline]}
+            className={`w-3 h-3 rounded-full mr-2.5 ${isOnline?"bg-green-500":"bg-red-500"}`}
           />
-          <Text style={styles.statusText}>{isOnline ? "On Duty" : "Off Duty"}</Text>
+          <Text className="text-base font-semibold text-slate-800">{isOnline ? "On Duty" : "Off Duty"}</Text>
         </View>
         <Switch
           value={isOnline}
@@ -610,125 +600,125 @@ const DriverConductorDashboard = ({
       </View>
 
       {/* Active Route Card */}
-      <View style={styles.routeCard}>
-        <Text style={styles.cardTitle}>📍 Active Route</Text>
-        <View style={styles.routeInfo}>
-          <View style={styles.routeRow}>
-            <Text style={styles.routeLabel}>Bus:</Text>
-            <Text style={styles.routeValue}>{busNumber}</Text>
+      <View className="bg-slate-50 rounded-xl p-4 mb-5 border border-slate-200">
+        <Text className="text-base font-bold text-slate-800 mb-3">📍 Active Route</Text>
+        <View className="gap-2">
+          <View className="flex-row justify-between py-2 border-b border-slate-200">
+            <Text className="text-sm text-slate-500 font-medium">Bus:</Text>
+            <Text className="text-sm font-semibold text-slate-800">{busNumber}</Text>
           </View>
-          <View style={styles.routeRow}>
-            <Text style={styles.routeLabel}>Route:</Text>
-            <Text style={styles.routeValue}>{route}</Text>
+          <View className="flex-row justify-between py-2 border-b border-slate-200">
+            <Text className="text-sm text-slate-500 font-medium">Route:</Text>
+            <Text className="text-sm font-semibold text-slate-800">{route}</Text>
           </View>
-          <View style={styles.routeRow}>
-            <Text style={styles.routeLabel}>Current Stop:</Text>
-            <Text style={styles.routeValue}>Medavakkam</Text>
+          <View className="flex-row justify-between py-2 border-b border-slate-200">
+            <Text className="text-sm text-slate-500 font-medium">Current Stop:</Text>
+            <Text className="text-sm font-semibold text-slate-800">Medavakkam</Text>
           </View>
-          <View style={styles.routeRow}>
-            <Text style={styles.routeLabel}>Next Stop:</Text>
-            <Text style={styles.routeValue}>Guindy</Text>
+          <View className="flex-row justify-between py-2 border-b border-slate-200">
+            <Text className="text-sm text-slate-500 font-medium">Next Stop:</Text>
+            <Text className="text-sm font-semibold text-slate-800">Guindy</Text>
           </View>
-          <View style={styles.routeRow}>
-            <Text style={styles.routeLabel}>Shift:</Text>
-            <Text style={styles.routeValue}>{shiftTime}</Text>
+          <View className="flex-row justify-between py-2 border-b border-slate-200">
+            <Text className="text-sm text-slate-500 font-medium">Shift:</Text>
+            <Text className="text-sm font-semibold text-slate-800">{shiftTime}</Text>
           </View>
-          <View style={styles.routeRow}>
-            <Text style={styles.routeLabel}>GPS:</Text>
-            <Text style={[styles.routeValue, styles.gpsActive]}>🟢 Active</Text>
+          <View className="flex-row justify-between py-2 border-b border-slate-200">
+            <Text className="text-sm text-slate-500 font-medium">GPS:</Text>
+            <Text className="text-sm font-semibold text-green-500">🟢 Active</Text>
           </View>
         </View>
       </View>
 
       {/* Lost Item Alerts */}
-      <View style={styles.alertsSection}>
-        <Text style={styles.sectionTitle}>🚨 Lost Item Alerts ({complaints.length})</Text>
+      <View className="mb-5">
+        <Text className="text-base font-bold text-slate-800 mb-3">🚨 Lost Item Alerts ({complaints.length})</Text>
         {complaints.length > 0 ? (
           <FlatList
             data={complaints}
             keyExtractor={(item) => item.id.toString()}
             scrollEnabled={false}
             renderItem={({ item }) => (
-              <View style={styles.driverAlertCard}>
-                <View style={styles.alertHeader}>
-                  <Text style={styles.alertTitle}>⚠ LOST ITEM ALERT</Text>
-                  <Text style={styles.alertTime}>{item.reportedTime}</Text>
+              <View className="bg-orange-50 rounded-xl p-3.5 mb-3 border border-orange-300">
+                <View className="flex-row justify-between items-center mb-2">
+                  <Text className="text-sm font-bold text-orange-900">⚠ LOST ITEM ALERT</Text>
+                  <Text className="text-xs text-orange-800 font-medium">{item.reportedTime}</Text>
                 </View>
-                <Text style={styles.alertDetail}>
-                  👤 Passenger: <Text style={styles.bold}>{item.passengerName}</Text>
+                <Text className="text-[13px] text-orange-800 mb-1">
+                  👤 Passenger: <Text className="font-bold">{item.passengerName}</Text>
                 </Text>
-                <Text style={styles.alertDetail}>
-                  📦 Item: <Text style={styles.bold}>{item.item}</Text>
+                <Text className="text-[13px] text-orange-800 mb-1">
+                  📦 Item: <Text className="font-bold">{item.item}</Text>
                 </Text>
                 {item.seat && (
-                  <Text style={styles.alertDetail}>
-                    💺 Seat: <Text style={styles.bold}>{item.seat}</Text>
+                  <Text className="text-[13px] text-orange-800 mb-1">
+                    💺 Seat: <Text className="font-bold">{item.seat}</Text>
                   </Text>
                 )}
-                <View style={styles.driverActions}>
+                <View className="flex-row gap-2.5 mt-3">
                   <TouchableOpacity
-                    style={styles.viewButton}
+                    className="flex-1 bg-blue-100 rounded-lg py-2.5 items-center border border-blue-300"
                     onPress={() => Alert.alert("Item Details", `${item.item} from seat ${item.seat}`)}
                   >
-                    <Text style={styles.viewButtonText}>📋 VIEW DETAILS</Text>
+                    <Text className="text-blue-700 font-bold text-xs">📋 VIEW DETAILS</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.forwardButton}
+                    className="flex-1 bg-green-100 rounded-lg py-2.5 items-center border border-green-300"
                     onPress={() => handleForwardToConductor(item)}
                   >
-                    <Text style={styles.forwardButtonText}>➡️ FORWARD</Text>
+                    <Text className="text-green-700 font-bold text-xs">➡️ FORWARD</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             )}
           />
         ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No alerts at the moment</Text>
+          <View className="bg-slate-50 rounded-xl p-6 items-center">
+            <Text className="text-sm text-slate-500">No alerts at the moment</Text>
           </View>
         )}
 
         {!busChecked && (
           <TouchableOpacity
-            style={styles.checkBusButton}
+            className="bg-blue-100 rounded-xl py-3 items-center mt-3 border border-blue-300"
             onPress={handleCheckBus}
           >
-            <Text style={styles.checkBusButtonText}>🔍 Mark Bus Checked</Text>
+            <Text className="text-blue-700 font-bold">🔍 Mark Bus Checked</Text>
           </TouchableOpacity>
         )}
         {busChecked && (
-          <View style={styles.checkedBadge}>
-            <Text style={styles.checkedBadgeText}>✅ Bus Checked</Text>
+          <View className="bg-green-100 rounded-xl py-3 items-center mt-3 border border-green-300">
+            <Text className="text-green-700 font-bold">✅ Bus Checked</Text>
           </View>
         )}
       </View>
 
       {/* Driver Summary */}
-      <View style={styles.summaryPanel}>
-        <Text style={styles.sectionTitle}>📊 Driver Summary</Text>
-        <View style={styles.summaryGrid}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryNumber}>{performanceStats.totalToday}</Text>
-            <Text style={styles.summaryLabel}>Alerts Today</Text>
+      <View className="bg-slate-50 rounded-xl p-4 mb-5 border border-slate-200">
+        <Text className="text-base font-bold text-slate-800 mb-3">📊 Driver Summary</Text>
+        <View className="flex-row flex-wrap gap-2.5">
+          <View className="flex-1 bg-white rounded-lg p-3 items-center border border-slate-200">
+            <Text className="text-xl font-bold text-blue-600 mb-1">{performanceStats.totalToday}</Text>
+            <Text className="text-xs text-slate-500">Alerts Today</Text>
           </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryNumber}>{forwardedComplaints.length}</Text>
-            <Text style={styles.summaryLabel}>Forwarded</Text>
+          <View className="flex-1 bg-white rounded-lg p-3 items-center border border-slate-200">
+            <Text className="text-xl font-bold text-blue-600 mb-1">{forwardedComplaints.length}</Text>
+            <Text className="text-xs text-slate-500">Forwarded</Text>
           </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryNumber}>{performanceStats.recovered}</Text>
-            <Text style={styles.summaryLabel}>Resolved</Text>
+          <View className="flex-1 bg-white rounded-lg p-3 items-center border border-slate-200">
+            <Text className="text-xl font-bold text-blue-600 mb-1">{performanceStats.recovered}</Text>
+            <Text className="text-xs text-slate-500">Resolved</Text>
           </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryNumber}>{performanceStats.pending}</Text>
-            <Text style={styles.summaryLabel}>Pending</Text>
+          <View className="flex-1 bg-white rounded-lg p-3 items-center border border-slate-200">
+            <Text className="text-xl font-bold text-blue-600 mb-1">{performanceStats.pending}</Text>
+            <Text className="text-xs text-slate-500">Pending</Text>
           </View>
         </View>
       </View>
 
       {/* End Duty Button */}
       <TouchableOpacity
-        style={styles.logoutButton}
+        className="bg-red-100 rounded-xl py-3.5 items-center border border-red-200"
         onPress={() => {
           setCurrentStep("positionSelection");
           setDutyStarted(false);
@@ -736,7 +726,7 @@ const DriverConductorDashboard = ({
           onLogout?.();
         }}
       >
-        <Text style={styles.logoutButtonText}>🚪 End Duty</Text>
+        <Text className="text-red-600 font-semibold text-base">🚪 End Duty</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -745,16 +735,16 @@ const DriverConductorDashboard = ({
   const renderConductorDashboard = () => (
     <>
       {!acceptedComplaint ? (
-        <ScrollView contentContainerStyle={styles.dashboardContent}>
+        <ScrollView contentContainerStyle={{flexGrow:1,padding:16,paddingBottom:24}}>
           {/* Header */}
-          <View style={styles.dashboardHeader}>
-            <View style={styles.driverInfo}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>C</Text>
+          <View className="flex-row justify-between items-center mb-5">
+            <View className="flex-row items-center flex-1">
+              <View className="w-[50px] h-[50px] rounded-full bg-blue-600 items-center justify-center mr-3">
+                <Text className="text-white text-2xl font-bold">C</Text>
               </View>
-              <View style={styles.driverDetails}>
-                <Text style={styles.driverName}>Conductor Name</Text>
-                <Text style={styles.busNumberText}>🚌 {busNumber}</Text>
+              <View className="flex-1">
+                <Text className="text-base font-bold text-slate-800">Conductor Name</Text>
+                <Text className="text-sm text-slate-500">🚌 {busNumber}</Text>
               </View>
             </View>
             <Animated.View
@@ -769,11 +759,11 @@ const DriverConductorDashboard = ({
                 ],
               }}
             >
-              <TouchableOpacity style={styles.notificationBell}>
+              <TouchableOpacity className="relative p-2">
                 <ShakyIcon name="notifications" size={24} color="#2563EB" />
                 {complaints.length > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{complaints.length}</Text>
+                  <View className="absolute top-0 right-0 bg-red-500 rounded-full w-5 h-5 items-center justify-center">
+                    <Text className="text-white text-xs font-bold">{complaints.length}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -781,12 +771,12 @@ const DriverConductorDashboard = ({
           </View>
 
           {/* Duty Status Toggle */}
-          <View style={styles.statusCard}>
-            <View style={styles.statusLeft}>
+          <View className="bg-slate-50 rounded-xl p-4 flex-row justify-between items-center mb-5 border border-slate-200">
+            <View className="flex-row items-center">
               <View
-                style={[styles.statusIndicator, isOnline && styles.statusOnline]}
+                className={`w-3 h-3 rounded-full mr-2.5 ${isOnline?"bg-green-500":"bg-red-500"}`}
               />
-              <Text style={styles.statusText}>
+              <Text className="text-base font-semibold text-slate-800">
                 {isOnline ? "On Duty" : "Off Duty"}
               </Text>
             </View>
@@ -799,109 +789,109 @@ const DriverConductorDashboard = ({
           </View>
 
           {/* Duty Information */}
-          <View style={styles.dutyInfoCard}>
-            <Text style={styles.cardTitle}>🚍 Duty Information</Text>
-            <View style={styles.dutyInfoRow}>
-              <Text style={styles.dutyLabel}>Bus:</Text>
-              <Text style={styles.dutyValue}>{busNumber}</Text>
+          <View className="bg-slate-50 rounded-xl p-4 mb-5 border border-slate-200">
+            <Text className="text-base font-bold text-slate-800 mb-3">🚍 Duty Information</Text>
+            <View className="flex-row justify-between py-2.5 border-b border-slate-200">
+              <Text className="text-sm text-slate-500 font-medium">Bus:</Text>
+              <Text className="text-sm font-semibold text-slate-800">{busNumber}</Text>
             </View>
-            <View style={styles.dutyInfoRow}>
-              <Text style={styles.dutyLabel}>Route:</Text>
-              <Text style={styles.dutyValue}>{route}</Text>
+            <View className="flex-row justify-between py-2.5 border-b border-slate-200">
+              <Text className="text-sm text-slate-500 font-medium">Route:</Text>
+              <Text className="text-sm font-semibold text-slate-800">{route}</Text>
             </View>
-            <View style={styles.dutyInfoRow}>
-              <Text style={styles.dutyLabel}>Shift:</Text>
-              <Text style={styles.dutyValue}>{shiftTime}</Text>
+            <View className="flex-row justify-between py-2.5 border-b border-slate-200">
+              <Text className="text-sm text-slate-500 font-medium">Shift:</Text>
+              <Text className="text-sm font-semibold text-slate-800">{shiftTime}</Text>
             </View>
-            <View style={styles.dutyInfoRow}>
-              <Text style={styles.dutyLabel}>Passengers:</Text>
-              <Text style={styles.dutyValue}>{passengersOnboard || "—"}</Text>
+            <View className="flex-row justify-between py-2.5 border-b border-slate-200">
+              <Text className="text-sm text-slate-500 font-medium">Passengers:</Text>
+              <Text className="text-sm font-semibold text-slate-800">{passengersOnboard || "—"}</Text>
             </View>
           </View>
 
           {/* Complaint Queue */}
-          <View style={styles.complaintQueueSection}>
-            <Text style={styles.sectionTitle}>🚨 Live Complaint Queue ({complaints.length})</Text>
+          <View className="mb-5">
+            <Text className="text-base font-bold text-slate-800 mb-3">🚨 Live Complaint Queue ({complaints.length})</Text>
             {complaints.length > 0 ? (
               <FlatList
                 data={complaints}
                 keyExtractor={(item) => item.id.toString()}
                 scrollEnabled={false}
                 renderItem={({ item }) => (
-                  <View style={styles.queueCard}>
-                    <View style={styles.queueHeader}>
-                      <Text style={styles.queueId}>Complaint #{item.id}</Text>
-                      <Text style={styles.queueTime}>{item.reportedTime}</Text>
+                  <View className="bg-blue-50 rounded-xl p-3.5 mb-3 border border-blue-200">
+                    <View className="flex-row justify-between items-center mb-2">
+                      <Text className="text-sm font-bold text-blue-800">Complaint #{item.id}</Text>
+                      <Text className="text-xs text-blue-700">{item.reportedTime}</Text>
                     </View>
-                    <View style={styles.queueContent}>
-                      <Text style={styles.queueDetail}>
-                        👤 <Text style={styles.bold}>{item.passengerName}</Text>
+                    <View className="mb-2">
+                      <Text className="text-[13px] text-blue-700 mb-1">
+                        👤 <Text className="font-bold">{item.passengerName}</Text>
                       </Text>
-                      <Text style={styles.queueDetail}>
-                        📦 <Text style={styles.bold}>{item.item}</Text>
+                      <Text className="text-[13px] text-blue-700 mb-1">
+                        📦 <Text className="font-bold">{item.item}</Text>
                       </Text>
-                      <Text style={styles.queueDetail}>
-                        💺 Seat: <Text style={styles.bold}>{item.seat}</Text>
+                      <Text className="text-[13px] text-blue-700 mb-1">
+                        💺 Seat: <Text className="font-bold">{item.seat}</Text>
                       </Text>
                     </View>
-                    <View style={styles.queueActions}>
+                    <View className="flex-row gap-2">
                       <TouchableOpacity
-                        style={styles.checkButton}
+                        className="flex-1 bg-blue-100 rounded-lg py-2.5 items-center border border-blue-300"
                         onPress={() => handleCheckBus()}
                       >
-                        <Text style={styles.checkButtonText}>🔍 CHECK BUS</Text>
+                        <Text className="text-blue-700 font-bold text-xs">🔍 CHECK BUS</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={styles.acceptCheckButton}
+                        className="flex-1 bg-green-100 rounded-lg py-2.5 items-center border border-green-300"
                         onPress={() => handleAcceptComplaint(item)}
                       >
-                        <Text style={styles.acceptCheckButtonText}>✅ ACCEPT</Text>
+                        <Text className="text-green-700 font-bold text-xs">✅ ACCEPT</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
                 )}
               />
             ) : (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>No complaints</Text>
+              <View className="bg-slate-50 rounded-xl p-6 items-center">
+                <Text className="text-sm text-slate-500">No complaints</Text>
               </View>
             )}
           </View>
 
           {/* Performance Dashboard */}
-          <View style={styles.performancePanel}>
-            <Text style={styles.sectionTitle}>📊 Performance Dashboard</Text>
-            <View style={styles.performanceGrid}>
-              <View style={styles.perfCard}>
-                <Text style={styles.perfNumber}>{performanceStats.totalToday}</Text>
-                <Text style={styles.perfLabel}>Total Today</Text>
+          <View className="bg-slate-50 rounded-xl p-4 mb-5 border border-slate-200">
+            <Text className="text-base font-bold text-slate-800 mb-3">📊 Performance Dashboard</Text>
+            <View className="flex-row flex-wrap gap-2.5">
+              <View className="flex-1 bg-white rounded-lg p-2.5 items-center border border-slate-200">
+                <Text className="text-lg font-bold text-blue-600 mb-1">{performanceStats.totalToday}</Text>
+                <Text className="text-[11px] text-slate-500 text-center">Total Today</Text>
               </View>
-              <View style={styles.perfCard}>
-                <Text style={styles.perfNumber}>{performanceStats.recovered}</Text>
-                <Text style={styles.perfLabel}>Recovered</Text>
+              <View className="flex-1 bg-white rounded-lg p-2.5 items-center border border-slate-200">
+                <Text className="text-lg font-bold text-blue-600 mb-1">{performanceStats.recovered}</Text>
+                <Text className="text-[11px] text-slate-500 text-center">Recovered</Text>
               </View>
-              <View style={styles.perfCard}>
-                <Text style={styles.perfNumber}>{performanceStats.escalated}</Text>
-                <Text style={styles.perfLabel}>Escalated</Text>
+              <View className="flex-1 bg-white rounded-lg p-2.5 items-center border border-slate-200">
+                <Text className="text-lg font-bold text-blue-600 mb-1">{performanceStats.escalated}</Text>
+                <Text className="text-[11px] text-slate-500 text-center">Escalated</Text>
               </View>
-              <View style={styles.perfCard}>
-                <Text style={styles.perfNumber}>{performanceStats.successRate}%</Text>
-                <Text style={styles.perfLabel}>Success</Text>
+              <View className="flex-1 bg-white rounded-lg p-2.5 items-center border border-slate-200">
+                <Text className="text-lg font-bold text-blue-600 mb-1">{performanceStats.successRate}%</Text>
+                <Text className="text-[11px] text-slate-500 text-center">Success</Text>
               </View>
-              <View style={styles.perfCard}>
-                <Text style={styles.perfNumber}>{performanceStats.avgResponseTime}</Text>
-                <Text style={styles.perfLabel}>Avg Response</Text>
+              <View className="flex-1 bg-white rounded-lg p-2.5 items-center border border-slate-200">
+                <Text className="text-lg font-bold text-blue-600 mb-1">{performanceStats.avgResponseTime}</Text>
+                <Text className="text-[11px] text-slate-500 text-center">Avg Response</Text>
               </View>
-              <View style={styles.perfCard}>
-                <Text style={styles.perfNumber}>{performanceStats.pending}</Text>
-                <Text style={styles.perfLabel}>Pending</Text>
+              <View className="flex-1 bg-white rounded-lg p-2.5 items-center border border-slate-200">
+                <Text className="text-lg font-bold text-blue-600 mb-1">{performanceStats.pending}</Text>
+                <Text className="text-[11px] text-slate-500 text-center">Pending</Text>
               </View>
             </View>
           </View>
 
           {/* End Duty Button */}
           <TouchableOpacity
-            style={styles.logoutButton}
+            className="bg-red-100 rounded-xl py-3.5 items-center border border-red-200"
             onPress={() => {
               setCurrentStep("positionSelection");
               setDutyStarted(false);
@@ -909,7 +899,7 @@ const DriverConductorDashboard = ({
               onLogout?.();
             }}
           >
-            <Text style={styles.logoutButtonText}>🚪 End Duty</Text>
+            <Text className="text-red-600 font-semibold text-base">🚪 End Duty</Text>
           </TouchableOpacity>
         </ScrollView>
       ) : (
@@ -918,44 +908,44 @@ const DriverConductorDashboard = ({
 
       {/* QR Modal */}
       <Modal visible={showQRModal} transparent={true} animationType="slide">
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
+        <SafeAreaView className="flex-1 bg-white">
+          <View className="flex-row justify-between items-center px-4 py-3 border-b border-slate-200">
             <TouchableOpacity onPress={() => setShowQRModal(false)}>
               <ShakyIcon name="close" size={28} color="#2563EB" />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>QR Code Handover</Text>
+            <Text className="text-lg font-bold text-slate-800">QR Code Handover</Text>
             <View style={{ width: 28 }} />
           </View>
 
-          <ScrollView contentContainerStyle={styles.modalContent}>
-            <View style={styles.qrSection}>
-              <Text style={styles.qrTitle}>📲 Scan Passenger's QR</Text>
-              <View style={styles.qrPlaceholder}>
+          <ScrollView contentContainerStyle={{flexGrow:1,padding:16}}>
+            <View className="items-center mb-6">
+              <Text className="text-base font-bold text-slate-800 mb-4">📲 Scan Passenger's QR</Text>
+              <View className="w-[200px] h-[200px] bg-slate-50 rounded-xl border-2 border-slate-300 items-center justify-center mb-4">
                 <ShakyIcon name="qr-code" size={80} color="#CBD5E1" />
               </View>
-              <TouchableOpacity style={styles.scanButton}>
+              <TouchableOpacity className="bg-blue-600 rounded-xl flex-row py-3.5 px-6 items-center justify-center">
                 <ShakyIcon name="camera" size={24} color="#FFFFFF" />
-                <Text style={styles.scanButtonText}>Scan QR Code</Text>
+                <Text className="text-white font-semibold ml-2">Scan QR Code</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.divider} />
+            <View className="h-px bg-slate-200 my-6" />
 
-            <View style={styles.qrSection}>
-              <Text style={styles.qrTitle}>🎫 Or Show Your QR</Text>
-              <View style={styles.qrPlaceholder}>
+            <View className="items-center mb-6">
+              <Text className="text-base font-bold text-slate-800 mb-4">🎫 Or Show Your QR</Text>
+              <View className="w-[200px] h-[200px] bg-slate-50 rounded-xl border-2 border-slate-300 items-center justify-center mb-4">
                 <ShakyIcon name="qr-code" size={80} color="#CBD5E1" />
               </View>
-              <Text style={styles.driverQRText}>
+              <Text className="text-[13px] text-slate-500 mt-3">
                 Conductor QR - Let passenger scan this
               </Text>
             </View>
 
             <TouchableOpacity
-              style={styles.completeButton}
+              className="bg-green-500 rounded-xl py-3.5 items-center mt-4"
               onPress={handleCompleteHandover}
             >
-              <Text style={styles.completeButtonText}>✅ Complete Handover</Text>
+              <Text className="text-white font-semibold text-base">✅ Complete Handover</Text>
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
@@ -965,55 +955,55 @@ const DriverConductorDashboard = ({
 
   // Render Accepted Complaint Flow
   const renderAcceptedComplaintFlow = () => (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
-      <View style={styles.backButtonContainer}>
+    <ScrollView contentContainerStyle={{flexGrow:1,padding:16,paddingBottom:24}}>
+      <View className="mb-5">
         <TouchableOpacity
-          style={styles.backButton}
+          className="flex-row items-center mb-4"
           onPress={() => setAcceptedComplaint(null)}
         >
           <ShakyIcon name="arrow-back" size={24} color="#2563EB" />
-          <Text style={styles.backButtonText}>Back to Dashboard</Text>
+          <Text className="text-blue-600 ml-2 font-semibold">Back to Dashboard</Text>
         </TouchableOpacity>
       </View>
 
       {/* Item Photo Step */}
       {itemConfirmation === "itemPhoto" && (
         <View>
-          <Text style={styles.formTitle}>📸 Item Verification</Text>
-          <View style={styles.formContainer}>
-            <View style={styles.complaintSummary}>
-              <Text style={styles.summaryTitle}>Complaint Details</Text>
-              <Text style={styles.summaryText}>
+          <Text className="text-2xl font-bold text-slate-800 mb-4">📸 Item Verification</Text>
+          <View className="mb-5">
+            <View className="bg-blue-50 rounded-xl p-3.5 mb-4 border border-blue-200">
+              <Text className="text-sm font-bold text-blue-800 mb-2">Complaint Details</Text>
+              <Text className="text-[13px] text-blue-700 mb-1">
                 📦 Item: {acceptedComplaint.item}
               </Text>
-              <Text style={styles.summaryText}>
+              <Text className="text-[13px] text-blue-700 mb-1">
                 👤 Passenger: {acceptedComplaint.passengerName}
               </Text>
-              <Text style={styles.summaryText}>
+              <Text className="text-[13px] text-blue-700 mb-1">
                 💺 Seat: {acceptedComplaint.seat}
               </Text>
             </View>
 
-            <TouchableOpacity style={styles.uploadPhotoButton}>
+            <TouchableOpacity className="bg-slate-50 border-2 border-blue-600 border-dashed rounded-xl py-10 items-center justify-center mb-4">
               <ShakyIcon name="camera" size={40} color="#2563EB" />
-              <Text style={styles.uploadPhotoText}>Tap to Take Photo</Text>
-              <Text style={styles.photoHint}>
+              <Text className="text-blue-600 font-semibold mt-3">Tap to Take Photo</Text>
+              <Text className="text-xs text-slate-500 mt-1.5">
                 Photo will be timestamped and GPS tagged
               </Text>
             </TouchableOpacity>
 
-            <View style={styles.confirmationButtons}>
+            <View className="flex-row gap-3 mt-4">
               <TouchableOpacity
-                style={styles.confirmButton}
+                className="flex-1 bg-green-100 rounded-xl py-3.5 items-center border border-green-300"
                 onPress={() => handleItemConfirmed(true)}
               >
-                <Text style={styles.confirmButtonText}>✅ Item Found</Text>
+                <Text className="text-green-700 font-bold">✅ Item Found</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.denyButton}
+                className="flex-1 bg-red-100 rounded-xl py-3.5 items-center border border-red-200"
                 onPress={() => handleItemConfirmed(false)}
               >
-                <Text style={styles.denyButtonText}>❌ Not Found</Text>
+                <Text className="text-red-600 font-bold">❌ Not Found</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1023,12 +1013,12 @@ const DriverConductorDashboard = ({
       {/* Meeting Details Step */}
       {itemConfirmation === "meetingDetails" && itemFound && (
         <View>
-          <Text style={styles.formTitle}>� Meeting Details</Text>
-          <View style={styles.formContainer}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Meeting Point</Text>
+          <Text className="text-2xl font-bold text-slate-800 mb-4">� Meeting Details</Text>
+          <View className="mb-5">
+            <View className="mb-4">
+              <Text className="text-sm font-semibold text-slate-600 mb-2">Meeting Point</Text>
               <TextInput
-                style={styles.input}
+                className="bg-slate-50 border border-slate-300 rounded-xl py-3 px-3.5 text-sm text-slate-800"
                 placeholder="Enter meeting location"
                 placeholderTextColor="#CBD5E1"
                 value={pickupStop}
@@ -1036,10 +1026,10 @@ const DriverConductorDashboard = ({
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Pickup Time</Text>
+            <View className="mb-4">
+              <Text className="text-sm font-semibold text-slate-600 mb-2">Pickup Time</Text>
               <TextInput
-                style={styles.input}
+                className="bg-slate-50 border border-slate-300 rounded-xl py-3 px-3.5 text-sm text-slate-800"
                 placeholder="Enter pickup time"
                 placeholderTextColor="#CBD5E1"
                 value={pickupTime}
@@ -1049,28 +1039,28 @@ const DriverConductorDashboard = ({
 
 
             <TouchableOpacity
-              style={[styles.locationButton, isShareingLocation && styles.locationButtonDisabled]}
+              className={`bg-blue-600 rounded-xl py-3.5 flex-row items-center justify-center mb-3 ${isShareingLocation?"opacity-50":""}`}
               onPress={handleShareLiveLocation}
               disabled={isShareingLocation}
             >
               {isShareingLocation ? (
                 <>
                   <ActivityIndicator size="small" color="#FFFFFF" />
-                  <Text style={styles.locationButtonText}>Sharing...</Text>
+                  <Text className="text-white font-semibold ml-2">Sharing...</Text>
                 </>
               ) : (
                 <>
                   <Ionicons name="location" size={24} color="#FFFFFF" />
-                  <Text style={styles.locationButtonText}>Share Live Location</Text>
+                  <Text className="text-white font-semibold ml-2">Share Live Location</Text>
                 </>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.primaryButton}
+              className="bg-blue-600 rounded-xl py-3.5 items-center mb-4"
               onPress={() => setShowQRModal(true)}
             >
-              <Text style={styles.primaryButtonText}>📍 Next: QR Handover</Text>
+              <Text className="text-white font-semibold text-base">📍 Next: QR Handover</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1078,18 +1068,18 @@ const DriverConductorDashboard = ({
 
       {itemConfirmation === "notFound" && !itemFound && (
         <View>
-          <Text style={styles.formTitle}>❌ Item Not Found</Text>
-          <View style={styles.formContainer}>
-            <View style={styles.notFoundCard}>
-              <Text style={styles.notFoundTitle}>Item Not Found</Text>
-              <Text style={styles.notFoundText}>
+          <Text className="text-2xl font-bold text-slate-800 mb-4">❌ Item Not Found</Text>
+          <View className="mb-5">
+            <View className="bg-red-100 rounded-xl p-4 mb-4 border border-red-200">
+              <Text className="text-base font-bold text-red-600 mb-2">Item Not Found</Text>
+              <Text className="text-sm text-red-600 leading-5">
                 Item was not found in the bus. This incident has been recorded
                 and will be flagged for further investigation.
               </Text>
             </View>
 
             <TouchableOpacity
-              style={styles.primaryButton}
+              className="bg-blue-600 rounded-xl py-3.5 items-center mb-4"
               onPress={() => {
                 setComplaints(
                   complaints.filter((c) => c.id !== acceptedComplaint.id)
@@ -1097,7 +1087,7 @@ const DriverConductorDashboard = ({
                 setAcceptedComplaint(null);
               }}
             >
-              <Text style={styles.primaryButtonText}>Return to Queue</Text>
+              <Text className="text-white font-semibold text-base">Return to Queue</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1107,18 +1097,16 @@ const DriverConductorDashboard = ({
 
   return (
     <Animated.View
-      style={[
-        styles.animatedScreen,
+      className="flex-1" style={[
         {
           opacity: screenFadeAnim,
           transform: [{ translateY: screenSlideAnim }],
         },
       ]}
     >
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView className="flex-1 bg-white">
         <Animated.View
-          style={[
-            styles.flex1,
+          className="flex-1" style={[
             {
               opacity: stepFadeAnim,
               transform: [
@@ -1142,824 +1130,3 @@ const DriverConductorDashboard = ({
   );
 };
 
-const styles = StyleSheet.create({
-  animatedScreen: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  flex1: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 16,
-    paddingBottom: 24,
-  },
-  dashboardContent: {
-    flexGrow: 1,
-    padding: 16,
-    paddingBottom: 24,
-  },
-
-  // Header Styles
-  header: {
-    marginBottom: 24,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 8,
-  },
-  headerSubtitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#475569",
-  },
-  chooseTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#475569",
-    marginBottom: 16,
-  },
-
-  // Position Selection Styles
-  selectionContainer: {
-    marginBottom: 24,
-  },
-  positionCard: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: "#E2E8F0",
-    alignItems: "center",
-    position: "relative",
-  },
-  positionCardSelected: {
-    backgroundColor: "#EFF6FF",
-    borderColor: "#2563EB",
-  },
-  positionIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  positionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 4,
-  },
-  positionDescription: {
-    fontSize: 14,
-    color: "#64748B",
-    textAlign: "center",
-  },
-  checkmark: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-  },
-
-  // Form Styles
-  formContainer: {
-    marginBottom: 20,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#475569",
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: "#F8FAFC",
-    borderWidth: 1,
-    borderColor: "#CBD5E1",
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    fontSize: 14,
-    color: "#1E293B",
-  },
-
-  // Button Styles
-  primaryButton: {
-    backgroundColor: "#2563EB",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  backButtonText: {
-    color: "#2563EB",
-    marginLeft: 8,
-    fontWeight: "600",
-  },
-  backButtonContainer: {
-    marginBottom: 20,
-  },
-
-  // Dashboard Header Styles
-  dashboardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  driverInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#2563EB",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  avatarText: {
-    color: "#FFFFFF",
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  driverDetails: {
-    flex: 1,
-  },
-  driverName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
-  },
-  busNumberText: {
-    fontSize: 14,
-    color: "#64748B",
-  },
-  notificationBell: {
-    position: "relative",
-    padding: 8,
-  },
-  badge: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    backgroundColor: "#EF4444",
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-
-  // Status Card
-  statusCard: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  statusLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  statusIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#EF4444",
-    marginRight: 10,
-  },
-  statusOnline: {
-    backgroundColor: "#22C55E",
-  },
-  statusText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1E293B",
-  },
-
-  // Route Card (Driver)
-  routeCard: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 12,
-  },
-  routeInfo: {
-    gap: 10,
-  },
-  routeRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-  },
-  routeLabel: {
-    fontSize: 14,
-    color: "#64748B",
-    fontWeight: "500",
-  },
-  routeValue: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1E293B",
-  },
-  gpsActive: {
-    color: "#22C55E",
-  },
-
-  // Driver Alert Card
-  alertsSection: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 12,
-  },
-  driverAlertCard: {
-    backgroundColor: "#FFF7ED",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#FDBA74",
-  },
-  alertHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  alertTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#9A3412",
-  },
-  alertTime: {
-    fontSize: 12,
-    color: "#9A3412",
-    fontWeight: "500",
-  },
-  alertDetail: {
-    fontSize: 13,
-    color: "#9A3412",
-    marginBottom: 6,
-  },
-  bold: {
-    fontWeight: "700",
-  },
-  driverActions: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 12,
-  },
-  viewButton: {
-    flex: 1,
-    backgroundColor: "#DBEAFE",
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#93C5FD",
-  },
-  viewButtonText: {
-    color: "#1D4ED8",
-    fontWeight: "700",
-    fontSize: 12,
-  },
-  forwardButton: {
-    flex: 1,
-    backgroundColor: "#DCFCE7",
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#86EFAC",
-  },
-  forwardButtonText: {
-    color: "#16A34A",
-    fontWeight: "700",
-    fontSize: 12,
-  },
-
-  // Conductor Styles
-  dutyInfoCard: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  dutyInfoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-  },
-  dutyLabel: {
-    fontSize: 14,
-    color: "#64748B",
-    fontWeight: "500",
-  },
-  dutyValue: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1E293B",
-  },
-
-  // Complaint Queue
-  complaintQueueSection: {
-    marginBottom: 20,
-  },
-  queueCard: {
-    backgroundColor: "#EFF6FF",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-  },
-  queueHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  queueId: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#1E40AF",
-  },
-  queueTime: {
-    fontSize: 12,
-    color: "#1E40AF",
-  },
-  queueContent: {
-    marginBottom: 10,
-  },
-  queueDetail: {
-    fontSize: 13,
-    color: "#1E40AF",
-    marginBottom: 6,
-  },
-  queueActions: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  checkButton: {
-    flex: 1,
-    backgroundColor: "#DBEAFE",
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#93C5FD",
-  },
-  checkButtonText: {
-    color: "#1D4ED8",
-    fontWeight: "700",
-    fontSize: 11,
-  },
-  acceptCheckButton: {
-    flex: 1,
-    backgroundColor: "#DCFCE7",
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#86EFAC",
-  },
-  acceptCheckButtonText: {
-    color: "#16A34A",
-    fontWeight: "700",
-    fontSize: 11,
-  },
-
-  // Performance Panel
-  performancePanel: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  performanceGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  perfCard: {
-    flex: 1,
-    minWidth: "31%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    padding: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  perfNumber: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#2563EB",
-    marginBottom: 4,
-  },
-  perfLabel: {
-    fontSize: 11,
-    color: "#64748B",
-    textAlign: "center",
-  },
-
-  // Summary Panel
-  summaryPanel: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  summaryGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  summaryCard: {
-    flex: 1,
-    minWidth: "48%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    padding: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  summaryNumber: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#2563EB",
-    marginBottom: 4,
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: "#64748B",
-  },
-
-  // Check Bus Button
-  checkBusButton: {
-    backgroundColor: "#DBEAFE",
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: "#93C5FD",
-  },
-  checkBusButtonText: {
-    color: "#1D4ED8",
-    fontWeight: "700",
-  },
-  checkedBadge: {
-    backgroundColor: "#DCFCE7",
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: "#86EFAC",
-  },
-  checkedBadgeText: {
-    color: "#16A34A",
-    fontWeight: "700",
-  },
-
-  // Empty State
-  emptyState: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: 24,
-    alignItems: "center",
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: "#64748B",
-  },
-
-  // Logout Button
-  logoutButton: {
-    backgroundColor: "#FEE2E2",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#FECACA",
-  },
-  logoutButtonText: {
-    color: "#DC2626",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-
-  // Complaint Flow Styles
-  formTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 16,
-  },
-  complaintSummary: {
-    backgroundColor: "#EFF6FF",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-  },
-  summaryTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#1E40AF",
-    marginBottom: 8,
-  },
-  summaryText: {
-    fontSize: 13,
-    color: "#1E40AF",
-    marginBottom: 6,
-  },
-  uploadPhotoButton: {
-    backgroundColor: "#F8FAFC",
-    borderWidth: 2,
-    borderColor: "#2563EB",
-    borderStyle: "dashed",
-    borderRadius: 12,
-    paddingVertical: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  uploadPhotoText: {
-    color: "#2563EB",
-    fontWeight: "600",
-    marginTop: 12,
-  },
-  photoHint: {
-    color: "#64748B",
-    fontSize: 12,
-    marginTop: 6,
-  },
-  confirmationButtons: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 16,
-  },
-  confirmButton: {
-    flex: 1,
-    backgroundColor: "#DCFCE7",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#86EFAC",
-  },
-  confirmButtonText: {
-    color: "#16A34A",
-    fontWeight: "700",
-  },
-  denyButton: {
-    flex: 1,
-    backgroundColor: "#FEE2E2",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#FECACA",
-  },
-  denyButtonText: {
-    color: "#DC2626",
-    fontWeight: "700",
-  },
-
-  // Item Secured Card
-  itemSecuredCard: {
-    backgroundColor: "#DCFCE7",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#86EFAC",
-    alignItems: "center",
-  },
-  itemSecuredTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#16A34A",
-    marginBottom: 8,
-  },
-  itemSecuredText: {
-    fontSize: 14,
-    color: "#16A34A",
-  },
-
-  // Chat Box
-  chatBox: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  chatMessage: {
-    backgroundColor: "#2563EB",
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginBottom: 8,
-    alignSelf: "flex-start",
-    marginRight: 20,
-  },
-  chatText: {
-    color: "#FFFFFF",
-    fontSize: 13,
-  },
-
-  // Buttons
-  locationButton: {
-    backgroundColor: "#2563EB",
-    borderRadius: 12,
-    paddingVertical: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  locationButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    marginLeft: 8,
-  },
-  notifyButton: {
-    backgroundColor: "#059669",
-    borderRadius: 12,
-    paddingVertical: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  notifyButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    marginLeft: 8,
-  },
-
-  // Not Found Card
-  notFoundCard: {
-    backgroundColor: "#FEE2E2",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#FECACA",
-  },
-  notFoundTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#DC2626",
-    marginBottom: 8,
-  },
-  notFoundText: {
-    fontSize: 14,
-    color: "#DC2626",
-    lineHeight: 20,
-  },
-
-  // Modal Styles
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1E293B",
-  },
-  modalContent: {
-    flexGrow: 1,
-    padding: 16,
-  },
-  qrSection: {
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  qrTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 16,
-  },
-  qrPlaceholder: {
-    width: 200,
-    height: 200,
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "#CBD5E1",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  scanButton: {
-    backgroundColor: "#2563EB",
-    borderRadius: 12,
-    flexDirection: "row",
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  scanButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    marginLeft: 8,
-  },
-  driverQRText: {
-    fontSize: 13,
-    color: "#64748B",
-    marginTop: 12,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#E2E8F0",
-    marginVertical: 24,
-  },
-  completeButton: {
-    backgroundColor: "#22C55E",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 16,
-  },
-  completeButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-});
-
-export default DriverConductorDashboard;

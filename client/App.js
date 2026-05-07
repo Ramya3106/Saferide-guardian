@@ -11,11 +11,9 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import {
@@ -140,27 +138,24 @@ const AnimatedLabel = ({ text, iconName }) => {
   }, [iconPulse]);
 
   return (
-    <View style={styles.labelWithIcon}>
+    <View className="flex-row items-center gap-1.5 mb-1.5">
       <Animated.View style={{ transform: [{ scale: iconPulse }] }}>
         <Ionicons name={iconName} size={16} color="#2563EB" />
       </Animated.View>
-      <Text style={styles.label}>{text}</Text>
+      <Text className="text-[#475569] text-xs mb-1.5 font-medium">{text}</Text>
     </View>
   );
 };
 
 const MeridiemSelector = ({ value, onChange }) => (
-  <View style={styles.timePeriodRow}>
+  <View className="flex-row gap-2.5">
     {MERIDIEM_OPTIONS.map((option) => {
       const selected = value === option;
 
       return (
         <TouchableOpacity
           key={option}
-          style={[
-            styles.timePeriodOption,
-            selected && styles.timePeriodOptionActive,
-          ]}
+          className={`flex-row items-center gap-1.5 border-[1px] border-[#CBD5E1] bg-[#F8FAFC] rounded-3 py-2.5 px-3 ${selected ? "border-[#93C5FD] bg-[#EFF6FF]" : ""}`}
           onPress={() => onChange(option)}
           activeOpacity={0.8}
         >
@@ -170,10 +165,7 @@ const MeridiemSelector = ({ value, onChange }) => (
             color={selected ? "#2563EB" : "#64748B"}
           />
           <Text
-            style={[
-              styles.timePeriodText,
-              selected && styles.timePeriodTextActive,
-            ]}
+            className={`text-[#475569] text-xs font-semibold ${selected ? "text-[#1D4ED8]" : ""}`}
           >
             {option}
           </Text>
@@ -581,104 +573,87 @@ const EmptyOpsDashboard = ({
   };
 
   return (
-    <SafeAreaView style={styles.opsShell}>
-      <ScrollView contentContainerStyle={styles.opsContent}>
-        <View style={styles.opsHero}>
+    <SafeAreaView className="flex-[1] bg-[#07101C]">
+      <ScrollView contentContainerClassName="p-5 gap-4">
+        <View className="min-h-[240] justify-center items-center gap-2.5 p-[18px] rounded-7 bg-[#0D1726] border-[1px] border-[#1E293B]">
           <Animated.View
-            style={[
-              styles.opsPulse,
-              { backgroundColor: roleTheme.accent, shadowColor: roleTheme.glow },
-              {
-                transform: [
-                  {
-                    scale: pulse.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [1, 1.14],
-                    }),
-                  },
-                ],
-              },
-            ]}
+            className={`${"w-[68px] h-[68px] rounded-[34px] bg-[#F59E0B] shadow-lg"}`}
           />
-          <Text style={[styles.opsKicker, { color: roleTheme.accent }]}>Priority duty board</Text>
-          <Text style={[styles.opsTitle, { color: roleTheme.accent }]}>{roleLabel}</Text>
-          <Text style={styles.opsSubtitle}>
+          <Text className="text-[#FBBF24] text-xs font-extrabold text-transform-[uppercase] letter-spacing-[1.4]" style={{ color: roleTheme.accent }}>Priority duty board</Text>
+          <Text className="text-[#FFFFFF] text-[28px] line-height-[34] font-black letter-spacing-[0.4] text-center" style={{ color: roleTheme.accent }}>{roleLabel}</Text>
+          <Text className="text-[#B4C1D6] text-[13px] text-center line-height-[19] max-width-[300]">
             Live lost-item complaints for on-duty railway protection staff.
           </Text>
-          <View style={styles.opsHeroTag}>
-            <Text style={[styles.opsHeroTagText, { color: roleTheme.accent }]}>{officerLabel}</Text>
+          <View className="mt-1 px-3 py-[7px] rounded-[999px] bg-[rgba(15, 23, 42, 0.82)] border-[1px] border-[#334155]">
+            <Text className="text-[#E2E8F0] text-[11px] font-bold letter-spacing-[0.4]" style={{ color: roleTheme.accent }}>{officerLabel}</Text>
           </View>
           <Pressable
-            style={[
-              styles.opsDutyToggle,
-              onDuty ? styles.opsDutyOn : styles.opsDutyOff,
-              onDuty && { backgroundColor: roleTheme.accent, borderColor: roleTheme.accent },
-            ]}
+            className={`${"mt-2.5 px-4 py-[11px] rounded-[999px] border-[1px] items-center"} ${onDuty ? "bg-[#0F5132] border-[#34D399]" : "bg-[#3F1D1D] border-[#FCA5A5]"}`}
             onPress={() => syncDutyStatus(!onDuty)}
             disabled={dutySyncing}
           >
-            <Text style={styles.opsDutyToggleText}>
+            <Text className="text-[#FFFFFF] text-xs font-black letter-spacing-[0.4]">
               Duty {onDuty ? "ON" : "OFF"}{dutySyncing ? " ..." : ""}
             </Text>
           </Pressable>
-          <View style={styles.opsDutyActionRow}>
+          <View className="flex-row gap-2.5 w-[100%]">
             <Pressable
-              style={[styles.opsDutyActionButton, { borderColor: roleTheme.accent }]}
+              className="flex-[1] py-2.5 rounded-3 border-[1px] bg-[#0F172A] items-center" style={{ borderColor: roleTheme.accent }}
               onPress={() => syncDutyStatus(true)}
               disabled={dutySyncing || onDuty}
             >
-              <Text style={styles.opsDutyActionText}>Check-In</Text>
+              <Text className="text-[#E2E8F0] font-extrabold text-xs">Check-In</Text>
             </Pressable>
             <Pressable
-              style={[styles.opsDutyActionButton, styles.opsDutyActionDanger]}
+              className="flex-[1] py-2.5 rounded-3 border-[1px] bg-[#0F172A] items-center border-[#F87171]"
               onPress={() => syncDutyStatus(false)}
               disabled={dutySyncing || !onDuty}
             >
-              <Text style={styles.opsDutyActionText}>Check-Out</Text>
+              <Text className="text-[#E2E8F0] font-extrabold text-xs">Check-Out</Text>
             </Pressable>
           </View>
         </View>
 
-        <View style={styles.opsDetailCard}>
-          <View style={styles.opsSectionHeader}>
-            <Text style={styles.opsSectionTitle}>Duty attendance</Text>
-            <Text style={styles.opsSectionSubtitle}>One active duty session per officer.</Text>
+        <View className="bg-[#0B1628] rounded-6 p-[18px] border-[1px] border-[#203047] gap-3.5">
+          <View className="gap-1">
+            <Text className="text-[#FFFFFF] text-lg font-black">Duty attendance</Text>
+            <Text className="text-[#94A3B8] text-xs">One active duty session per officer.</Text>
           </View>
-          <View style={styles.opsDetailGrid}>
-            <View style={styles.opsDetailBlock}>
-              <Text style={styles.opsDetailLabel}>Assigned train</Text>
+          <View className="flex-row flex-wrap gap-3">
+            <View className="flex-basis-[48%] bg-[#0F172A] rounded-4 p-3 border-[1px] border-[#1E293B] gap-1">
+              <Text className="text-[#94A3B8] text-[11px] font-extrabold text-transform-[uppercase] letter-spacing-[0.7]">Assigned train</Text>
               <TextInput
-                style={styles.opsFieldInput}
+                className="mt-1 border-[1px] border-[#334155] rounded-2.5 bg-[#0B1322] text-[#FFFFFF] px-2.5 py-2 text-xs"
                 value={dutyTrain}
                 onChangeText={setDutyTrain}
                 placeholder="2241 City Express"
                 placeholderTextColor="#64748B"
               />
             </View>
-            <View style={styles.opsDetailBlock}>
-              <Text style={styles.opsDetailLabel}>Assigned route</Text>
+            <View className="flex-basis-[48%] bg-[#0F172A] rounded-4 p-3 border-[1px] border-[#1E293B] gap-1">
+              <Text className="text-[#94A3B8] text-[11px] font-extrabold text-transform-[uppercase] letter-spacing-[0.7]">Assigned route</Text>
               <TextInput
-                style={styles.opsFieldInput}
+                className="mt-1 border-[1px] border-[#334155] rounded-2.5 bg-[#0B1322] text-[#FFFFFF] px-2.5 py-2 text-xs"
                 value={dutyRoute}
                 onChangeText={setDutyRoute}
                 placeholder="Chennai Central -> Tambaram"
                 placeholderTextColor="#64748B"
               />
             </View>
-            <View style={styles.opsDetailBlock}>
-              <Text style={styles.opsDetailLabel}>Assigned station</Text>
+            <View className="flex-basis-[48%] bg-[#0F172A] rounded-4 p-3 border-[1px] border-[#1E293B] gap-1">
+              <Text className="text-[#94A3B8] text-[11px] font-extrabold text-transform-[uppercase] letter-spacing-[0.7]">Assigned station</Text>
               <TextInput
-                style={styles.opsFieldInput}
+                className="mt-1 border-[1px] border-[#334155] rounded-2.5 bg-[#0B1322] text-[#FFFFFF] px-2.5 py-2 text-xs"
                 value={dutyStation}
                 onChangeText={setDutyStation}
                 placeholder="Tambaram"
                 placeholderTextColor="#64748B"
               />
             </View>
-            <View style={styles.opsDetailBlock}>
-              <Text style={styles.opsDetailLabel}>Assigned shift</Text>
+            <View className="flex-basis-[48%] bg-[#0F172A] rounded-4 p-3 border-[1px] border-[#1E293B] gap-1">
+              <Text className="text-[#94A3B8] text-[11px] font-extrabold text-transform-[uppercase] letter-spacing-[0.7]">Assigned shift</Text>
               <TextInput
-                style={styles.opsFieldInput}
+                className="mt-1 border-[1px] border-[#334155] rounded-2.5 bg-[#0B1322] text-[#FFFFFF] px-2.5 py-2 text-xs"
                 value={dutyShift}
                 onChangeText={setDutyShift}
                 placeholder="06:00 - 14:00"
@@ -686,67 +661,67 @@ const EmptyOpsDashboard = ({
               />
             </View>
           </View>
-          <View style={styles.opsInfoPanel}>
-            <Text style={styles.opsInfoHint}>
+          <View className="bg-[#101C2E] rounded-[18px] p-3.5 border-[1px] border-[#243449] gap-1">
+            <Text className="text-[#CBD5E1] text-xs line-height-[17]">
               Session status: {dutyAttendance?.status || (onDuty ? "ACTIVE" : "INACTIVE")}
             </Text>
-            <Text style={styles.opsInfoHint}>
+            <Text className="text-[#CBD5E1] text-xs line-height-[17]">
               Check-In: {dutyAttendance?.checkInTime ? new Date(dutyAttendance.checkInTime).toLocaleString() : "Not checked in"}
             </Text>
-            <Text style={styles.opsInfoHint}>
+            <Text className="text-[#CBD5E1] text-xs line-height-[17]">
               Check-Out: {dutyAttendance?.checkOutTime ? new Date(dutyAttendance.checkOutTime).toLocaleString() : "Not checked out"}
             </Text>
           </View>
         </View>
 
-        <View style={styles.opsDetailGrid}>
-          <View style={styles.opsDetailBlock}>
-            <Text style={styles.opsDetailLabel}>Officer profile</Text>
-            <Text style={styles.opsDetailValue}>{officerLabel}</Text>
-            <Text style={styles.opsInfoHint}>Unit: {dutyUnit}</Text>
-            <Text style={styles.opsInfoHint}>Email: {officerEmail || "demo.officer@railnet.gov.in"}</Text>
+        <View className="flex-row flex-wrap gap-3">
+          <View className="flex-basis-[48%] bg-[#0F172A] rounded-4 p-3 border-[1px] border-[#1E293B] gap-1">
+            <Text className="text-[#94A3B8] text-[11px] font-extrabold text-transform-[uppercase] letter-spacing-[0.7]">Officer profile</Text>
+            <Text className="text-[#FFFFFF] text-[13px] line-height-[18] font-bold">{officerLabel}</Text>
+            <Text className="text-[#CBD5E1] text-xs line-height-[17]">Unit: {dutyUnit}</Text>
+            <Text className="text-[#CBD5E1] text-xs line-height-[17]">Email: {officerEmail || "demo.officer@railnet.gov.in"}</Text>
           </View>
-          <View style={styles.opsDetailBlock}>
-            <Text style={styles.opsDetailLabel}>Current assignment</Text>
-            <Text style={styles.opsDetailValue}>{selectedRosterOfficer?.dutyStation || "Chennai Central"}</Text>
-            <Text style={styles.opsInfoHint}>Desk: {selectedRosterOfficer?.dutyDesk || "Passenger recovery desk"}</Text>
-            <Text style={styles.opsInfoHint}>Badge: {onDuty ? "ON DUTY" : "OFF DUTY"}</Text>
+          <View className="flex-basis-[48%] bg-[#0F172A] rounded-4 p-3 border-[1px] border-[#1E293B] gap-1">
+            <Text className="text-[#94A3B8] text-[11px] font-extrabold text-transform-[uppercase] letter-spacing-[0.7]">Current assignment</Text>
+            <Text className="text-[#FFFFFF] text-[13px] line-height-[18] font-bold">{selectedRosterOfficer?.dutyStation || "Chennai Central"}</Text>
+            <Text className="text-[#CBD5E1] text-xs line-height-[17]">Desk: {selectedRosterOfficer?.dutyDesk || "Passenger recovery desk"}</Text>
+            <Text className="text-[#CBD5E1] text-xs line-height-[17]">Badge: {onDuty ? "ON DUTY" : "OFF DUTY"}</Text>
           </View>
         </View>
 
         {alertError ? (
-          <View style={styles.opsErrorBanner}>
-            <Text style={styles.opsErrorText}>{alertError}</Text>
+          <View className="bg-[#3F1D1D] border-[1px] border-[#FCA5A5] rounded-4 p-3">
+            <Text className="text-[#FEE2E2] text-xs font-bold">{alertError}</Text>
           </View>
         ) : null}
 
-        <View style={styles.opsMetricRow}>
-          <View style={styles.opsMetricCard}>
-            <Text style={styles.opsMetricLabel}>Open cases</Text>
-            <Text style={styles.opsMetricValue}>{statusSummary.openCount}</Text>
+        <View className="flex-row gap-3">
+          <View className="flex-[1] bg-[#0F172A] rounded-[18px] p-3.5 border-[1px] border-[#1F2937]">
+            <Text className="text-[#94A3B8] text-[11px] font-extrabold text-transform-[uppercase]">Open cases</Text>
+            <Text className="text-[#FFFFFF] text-xl font-black mt-1.5">{statusSummary.openCount}</Text>
           </View>
-          <View style={styles.opsMetricCard}>
-            <Text style={styles.opsMetricLabel}>Priority alerts</Text>
-            <Text style={styles.opsMetricValue}>{statusSummary.priorityCount}</Text>
+          <View className="flex-[1] bg-[#0F172A] rounded-[18px] p-3.5 border-[1px] border-[#1F2937]">
+            <Text className="text-[#94A3B8] text-[11px] font-extrabold text-transform-[uppercase]">Priority alerts</Text>
+            <Text className="text-[#FFFFFF] text-xl font-black mt-1.5">{statusSummary.priorityCount}</Text>
           </View>
-          <View style={styles.opsMetricCard}>
-            <Text style={styles.opsMetricLabel}>Recovered / secured</Text>
-            <Text style={styles.opsMetricValue}>{statusSummary.securedCount}</Text>
+          <View className="flex-[1] bg-[#0F172A] rounded-[18px] p-3.5 border-[1px] border-[#1F2937]">
+            <Text className="text-[#94A3B8] text-[11px] font-extrabold text-transform-[uppercase]">Recovered / secured</Text>
+            <Text className="text-[#FFFFFF] text-xl font-black mt-1.5">{statusSummary.securedCount}</Text>
           </View>
         </View>
 
-        <View style={styles.opsSection}>
-          <View style={styles.opsSectionHeader}>
-            <Text style={styles.opsSectionTitle}>Live complaint queue</Text>
-            <Text style={styles.opsSectionSubtitle}>
+        <View className="gap-3">
+          <View className="gap-1">
+            <Text className="text-[#FFFFFF] text-lg font-black">Live complaint queue</Text>
+            <Text className="text-[#94A3B8] text-xs">
               {onDuty ? "Priority complaints assigned to you only." : "Check in to receive priority alerts."}
             </Text>
           </View>
 
           {!onDuty ? (
-            <View style={styles.opsEmptyState}>
-              <Text style={styles.opsEmptyTitle}>Not on duty</Text>
-              <Text style={styles.opsEmptyText}>
+            <View className="bg-[#0F172A] rounded-[18px] p-4 border-[1px] border-[#1F2937] gap-1.5">
+              <Text className="text-[#FFFFFF] text-[15px] font-black">Not on duty</Text>
+              <Text className="text-[#CBD5E1] text-xs line-height-[18]">
                 Check in to receive live passenger complaints, replies, and handover actions.
               </Text>
             </View>
@@ -758,96 +733,90 @@ const EmptyOpsDashboard = ({
             return (
               <Pressable
                 key={item.id}
-                style={[styles.opsCaseCard, isSelected && styles.opsCaseCardActive]}
+                className={`bg-[#0F172A] rounded-5 p-4 border-[1px] border-[#1F2937] gap-2.5 ${isSelected ? "border-[#F59E0B] bg-[#111B2D]" : ""}`}
                 onPress={() => setSelectedAlertId(item.id)}
               >
-                <View style={styles.opsCaseTopRow}>
-                  <View style={styles.opsCaseMetaGroup}>
-                    <Text style={styles.opsCaseId}>{item.id}</Text>
-                    <Text style={styles.opsCaseTitle}>{item.itemType}</Text>
+                <View className="flex-row justify-space-between items-start gap-3">
+                  <View className="flex-[1] gap-1">
+                    <Text className="text-[#FBBF24] text-[11px] font-extrabold letter-spacing-[1.1]">{item.id}</Text>
+                    <Text className="text-[#FFFFFF] text-base font-extrabold">{item.itemType}</Text>
                   </View>
                   <View
-                    style={[
-                      styles.opsStatusChip,
-                      item.status === "Item Found" && styles.opsStatusFound,
-                      item.status === "Item Being Checked" && styles.opsStatusReview,
-                      (item.status === "Passenger Contacted" || item.status === "Acknowledged") && styles.opsStatusSecured,
-                      item.status === "Ready for Handover" && styles.opsStatusHandover,
-                    ]}
+                    className={`${"px-2.5 py-1.5 rounded-[999px] self-start"} ${item.status === "Item Found" ? "bg-[#1D4ED8]" : ""} ${item.status === "Item Being Checked" ? "bg-[#F59E0B]" : ""} ${(item.status === "Passenger Contacted" || item.status === "Acknowledged") ? "bg-[#059669]" : ""} ${item.status === "Ready for Handover" ? "bg-[#7C3AED]" : ""}`}
                   >
-                    <Text style={styles.opsStatusText}>{item.status}</Text>
+                    <Text className="text-[#FFFFFF] text-[11px] font-extrabold text-transform-[uppercase] letter-spacing-[0.6]">{item.status}</Text>
                   </View>
                 </View>
 
-                <Text style={styles.opsCaseSummary}>{item.summary}</Text>
+                <Text className="text-[#C7D2FE] text-[13px] line-height-[19]">{item.summary}</Text>
 
-                <View style={styles.opsCaseMetaRow}>
-                  <Text style={styles.opsCaseMetaText}>{item.vehicleNumber}</Text>
-                  <Text style={styles.opsCaseMetaText}>{item.route}</Text>
-                  <Text style={styles.opsCaseMetaText}>Priority: {item.priority}</Text>
+                <View className="flex-row flex-wrap gap-2">
+                  <Text className="text-[#94A3B8] text-xs">{item.vehicleNumber}</Text>
+                  <Text className="text-[#94A3B8] text-xs">{item.route}</Text>
+                  <Text className="text-[#94A3B8] text-xs">Priority: {item.priority}</Text>
                 </View>
               </Pressable>
             );
           })}
 
           {isLoadingAlerts ? (
-            <Text style={styles.opsSectionSubtitle}>Refreshing complaint feed...</Text>
+            <Text className="text-[#94A3B8] text-xs">Refreshing complaint feed...</Text>
           ) : null}
         </View>
 
         {selectedAlert ? (
-          <View style={styles.opsDetailCard}>
-            <View style={styles.opsSectionHeader}>
-              <Text style={styles.opsSectionTitle}>Case detail</Text>
-              <Text style={styles.opsSectionSubtitle}>Assigned to the current on-duty officer.</Text>
+          <View className="bg-[#0B1628] rounded-6 p-[18px] border-[1px] border-[#203047] gap-3.5">
+            <View className="gap-1">
+              <Text className="text-[#FFFFFF] text-lg font-black">Case detail</Text>
+              <Text className="text-[#94A3B8] text-xs">Assigned to the current on-duty officer.</Text>
             </View>
 
-            <View style={styles.opsDetailGrid}>
-              <View style={styles.opsDetailBlock}>
-                <Text style={styles.opsDetailLabel}>Passenger</Text>
-                <Text style={styles.opsDetailValue}>{selectedAlert.passengerName}</Text>
+            <View className="flex-row flex-wrap gap-3">
+              <View className="flex-basis-[48%] bg-[#0F172A] rounded-4 p-3 border-[1px] border-[#1E293B] gap-1">
+                <Text className="text-[#94A3B8] text-[11px] font-extrabold text-transform-[uppercase] letter-spacing-[0.7]">Passenger</Text>
+                <Text className="text-[#FFFFFF] text-[13px] line-height-[18] font-bold">{selectedAlert.passengerName}</Text>
               </View>
-              <View style={styles.opsDetailBlock}>
-                <Text style={styles.opsDetailLabel}>Train / vehicle</Text>
-                <Text style={styles.opsDetailValue}>{selectedAlert.vehicleNumber}</Text>
+              <View className="flex-basis-[48%] bg-[#0F172A] rounded-4 p-3 border-[1px] border-[#1E293B] gap-1">
+                <Text className="text-[#94A3B8] text-[11px] font-extrabold text-transform-[uppercase] letter-spacing-[0.7]">Train / vehicle</Text>
+                <Text className="text-[#FFFFFF] text-[13px] line-height-[18] font-bold">{selectedAlert.vehicleNumber}</Text>
               </View>
-              <View style={styles.opsDetailBlock}>
-                <Text style={styles.opsDetailLabel}>Route</Text>
-                <Text style={styles.opsDetailValue}>{selectedAlert.route}</Text>
+              <View className="flex-basis-[48%] bg-[#0F172A] rounded-4 p-3 border-[1px] border-[#1E293B] gap-1">
+                <Text className="text-[#94A3B8] text-[11px] font-extrabold text-transform-[uppercase] letter-spacing-[0.7]">Route</Text>
+                <Text className="text-[#FFFFFF] text-[13px] line-height-[18] font-bold">{selectedAlert.route}</Text>
               </View>
-              <View style={styles.opsDetailBlock}>
-                <Text style={styles.opsDetailLabel}>Next station</Text>
-                <Text style={styles.opsDetailValue}>{selectedAlert.nextStation}</Text>
+              <View className="flex-basis-[48%] bg-[#0F172A] rounded-4 p-3 border-[1px] border-[#1E293B] gap-1">
+                <Text className="text-[#94A3B8] text-[11px] font-extrabold text-transform-[uppercase] letter-spacing-[0.7]">Next station</Text>
+                <Text className="text-[#FFFFFF] text-[13px] line-height-[18] font-bold">{selectedAlert.nextStation}</Text>
               </View>
             </View>
 
-            <View style={styles.opsInfoPanel}>
-              <Text style={styles.opsDetailLabel}>Issue details</Text>
-              <Text style={styles.opsInfoValue}>{selectedAlert.itemType}</Text>
-              <Text style={styles.opsInfoHint}>{selectedAlert.description}</Text>
-              <Text style={styles.opsInfoHint}>Priority: {selectedAlert.priority}</Text>
-              <Text style={styles.opsInfoHint}>{selectedAlert.handoverState}</Text>
-              <Text style={styles.opsInfoHint}>Last action: {selectedAlert.lastAction}</Text>
+            <View className="bg-[#101C2E] rounded-[18px] p-3.5 border-[1px] border-[#243449] gap-1">
+              <Text className="text-[#94A3B8] text-[11px] font-extrabold text-transform-[uppercase] letter-spacing-[0.7]">Issue details</Text>
+              <Text className="text-[#F8FAFC] text-lg font-black">{selectedAlert.itemType}</Text>
+              <Text className="text-[#CBD5E1] text-xs line-height-[17]">{selectedAlert.description}</Text>
+              <Text className="text-[#CBD5E1] text-xs line-height-[17]">Priority: {selectedAlert.priority}</Text>
+              <Text className="text-[#CBD5E1] text-xs line-height-[17]">{selectedAlert.handoverState}</Text>
+              <Text className="text-[#CBD5E1] text-xs line-height-[17]">Last action: {selectedAlert.lastAction}</Text>
             </View>
 
-            <View style={styles.opsReplyBlock}>
-              <Text style={styles.opsDetailLabel}>Officer updates</Text>
+            <View className="gap-2.5">
+              <Text className="text-[#94A3B8] text-[11px] font-extrabold text-transform-[uppercase] letter-spacing-[0.7]">Officer updates</Text>
               <TextInput
-                style={styles.opsFieldInput}
+                className="mt-1 border-[1px] border-[#334155] rounded-2.5 bg-[#0B1322] text-[#FFFFFF] px-2.5 py-2 text-xs"
                 value={officerNotes}
                 onChangeText={setOfficerNotes}
                 placeholder="Internal note for passenger timeline"
                 placeholderTextColor="#6B7280"
               />
               <TextInput
-                style={styles.opsFieldInput}
+                className="mt-1 border-[1px] border-[#334155] rounded-2.5 bg-[#0B1322] text-[#FFFFFF] px-2.5 py-2 text-xs"
                 value={coachRemark}
                 onChangeText={setCoachRemark}
                 placeholder="Coach or berth remark"
                 placeholderTextColor="#6B7280"
               />
               <TextInput
-                style={styles.opsFieldInput}
+                className="mt-1 border-[1px] border-[#334155] rounded-2.5 bg-[#0B1322] text-[#FFFFFF] px-2.5 py-2 text-xs"
                 value={stationRemark}
                 onChangeText={setStationRemark}
                 placeholder="Station remark"
@@ -855,25 +824,25 @@ const EmptyOpsDashboard = ({
               />
             </View>
 
-            <View style={styles.opsReplyBlock}>
-              <Text style={styles.opsDetailLabel}>Reply to passenger</Text>
+            <View className="gap-2.5">
+              <Text className="text-[#94A3B8] text-[11px] font-extrabold text-transform-[uppercase] letter-spacing-[0.7]">Reply to passenger</Text>
               <TextInput
-                style={styles.opsReplyInput}
+                className="min-h-[92] rounded-[18px] border-[1px] border-[#334155] bg-[#0F172A] text-[#FFFFFF] px-3.5 py-3 text-align-vertical-[top]"
                 value={replyDraft}
                 onChangeText={setReplyDraft}
                 placeholder="Write a duty reply to the passenger"
                 placeholderTextColor="#6B7280"
                 multiline
               />
-              <View style={styles.opsActionRow}>
+              <View className="flex-row gap-2.5">
                 <Pressable
-                  style={[styles.opsActionButton, { backgroundColor: roleTheme.accent }]}
+                  className="flex-[1] bg-[#F59E0B] rounded-3.5 py-3 items-center" style={{ backgroundColor: roleTheme.accent }}
                   onPress={sendReply}
                 >
-                  <Text style={styles.opsActionButtonText}>Send reply</Text>
+                  <Text className="text-[#111827] font-black">Send reply</Text>
                 </Pressable>
                 <Pressable
-                  style={styles.opsActionButtonSecondary}
+                  className="flex-[1] bg-[#0F172A] rounded-3.5 py-3 items-center border-[1px] border-[#334155]"
                   onPress={() => {
                     setReplyDraft(selectedAlert.replyDraft || "");
                     setOfficerNotes(selectedAlert.officerNotes || "");
@@ -881,67 +850,67 @@ const EmptyOpsDashboard = ({
                     setStationRemark(selectedAlert.stationRemark || "");
                   }}
                 >
-                  <Text style={styles.opsActionButtonSecondaryText}>Reset text</Text>
+                  <Text className="text-[#E2E8F0] font-extrabold">Reset text</Text>
                 </Pressable>
               </View>
             </View>
 
-            <View style={styles.opsActionPills}>
-              <Pressable style={styles.opsStatusAction} onPress={() => markAcknowledgement("Seen")}>
-                <Text style={styles.opsStatusActionText}>Seen</Text>
+            <View className="flex-row flex-wrap gap-2.5">
+              <Pressable className="px-3.5 py-2.5 rounded-[999px] bg-[#12233A] border-[1px] border-[#27415E]" onPress={() => markAcknowledgement("Seen")}>
+                <Text className="text-[#E2E8F0] text-xs font-extrabold">Seen</Text>
               </Pressable>
               <Pressable
-                style={styles.opsStatusAction}
+                className="px-3.5 py-2.5 rounded-[999px] bg-[#12233A] border-[1px] border-[#27415E]"
                 onPress={() => markAcknowledgement("Acknowledged")}
               >
-                <Text style={styles.opsStatusActionText}>Acknowledged</Text>
+                <Text className="text-[#E2E8F0] text-xs font-extrabold">Acknowledged</Text>
               </Pressable>
-              <Pressable style={styles.opsStatusAction} onPress={() => applyStatus("Item Being Checked")}>
-                <Text style={styles.opsStatusActionText}>Item Being Checked</Text>
+              <Pressable className="px-3.5 py-2.5 rounded-[999px] bg-[#12233A] border-[1px] border-[#27415E]" onPress={() => applyStatus("Item Being Checked")}>
+                <Text className="text-[#E2E8F0] text-xs font-extrabold">Item Being Checked</Text>
               </Pressable>
-              <Pressable style={styles.opsStatusAction} onPress={() => applyStatus("Item Found")}>
-                <Text style={styles.opsStatusActionText}>Item Found</Text>
+              <Pressable className="px-3.5 py-2.5 rounded-[999px] bg-[#12233A] border-[1px] border-[#27415E]" onPress={() => applyStatus("Item Found")}>
+                <Text className="text-[#E2E8F0] text-xs font-extrabold">Item Found</Text>
               </Pressable>
-              <Pressable style={styles.opsStatusAction} onPress={() => applyStatus("Passenger Contacted")}>
-                <Text style={styles.opsStatusActionText}>Passenger Contacted</Text>
+              <Pressable className="px-3.5 py-2.5 rounded-[999px] bg-[#12233A] border-[1px] border-[#27415E]" onPress={() => applyStatus("Passenger Contacted")}>
+                <Text className="text-[#E2E8F0] text-xs font-extrabold">Passenger Contacted</Text>
               </Pressable>
-              <Pressable style={styles.opsStatusAction} onPress={coordinateHandover}>
-                <Text style={styles.opsStatusActionText}>Ready for Handover</Text>
+              <Pressable className="px-3.5 py-2.5 rounded-[999px] bg-[#12233A] border-[1px] border-[#27415E]" onPress={coordinateHandover}>
+                <Text className="text-[#E2E8F0] text-xs font-extrabold">Ready for Handover</Text>
               </Pressable>
-              <Pressable style={styles.opsStatusAction} onPress={() => applyStatus("Closed")}>
-                <Text style={styles.opsStatusActionText}>Closed</Text>
+              <Pressable className="px-3.5 py-2.5 rounded-[999px] bg-[#12233A] border-[1px] border-[#27415E]" onPress={() => applyStatus("Closed")}>
+                <Text className="text-[#E2E8F0] text-xs font-extrabold">Closed</Text>
               </Pressable>
             </View>
           </View>
         ) : null}
 
-        <View style={styles.opsSection}>
-          <View style={styles.opsSectionHeader}>
-            <Text style={styles.opsSectionTitle}>Recent responses</Text>
-            <Text style={styles.opsSectionSubtitle}>Latest officer-to-passenger replies.</Text>
+        <View className="gap-3">
+          <View className="gap-1">
+            <Text className="text-[#FFFFFF] text-lg font-black">Recent responses</Text>
+            <Text className="text-[#94A3B8] text-xs">Latest officer-to-passenger replies.</Text>
           </View>
           {recentResponses.length > 0 ? (
             recentResponses.map((entry, index) => (
-              <View key={`${entry.alertId}-${index}`} style={styles.opsCaseCard}>
-                <Text style={styles.opsCaseId}>{entry.alertId}</Text>
-                <Text style={styles.opsCaseSummary}>{entry.text}</Text>
-                <View style={styles.opsCaseMetaRow}>
-                  <Text style={styles.opsCaseMetaText}>{entry.staffName || dutyUnit}</Text>
-                  <Text style={styles.opsCaseMetaText}>{entry.passengerName}</Text>
+              <View key={`${entry.alertId}-${index}`} className="bg-[#0F172A] rounded-5 p-4 border-[1px] border-[#1F2937] gap-2.5">
+                <Text className="text-[#FBBF24] text-[11px] font-extrabold letter-spacing-[1.1]">{entry.alertId}</Text>
+                <Text className="text-[#C7D2FE] text-[13px] line-height-[19]">{entry.text}</Text>
+                <View className="flex-row flex-wrap gap-2">
+                  <Text className="text-[#94A3B8] text-xs">{entry.staffName || dutyUnit}</Text>
+                  <Text className="text-[#94A3B8] text-xs">{entry.passengerName}</Text>
                 </View>
               </View>
             ))
           ) : (
-            <View style={styles.opsEmptyState}>
-              <Text style={styles.opsEmptyText}>No response messages yet for this duty shift.</Text>
+            <View className="bg-[#0F172A] rounded-[18px] p-4 border-[1px] border-[#1F2937] gap-1.5">
+              <Text className="text-[#CBD5E1] text-xs line-height-[18]">No response messages yet for this duty shift.</Text>
             </View>
           )}
         </View>
 
 
 
-        <Pressable style={styles.opsLogoutButton} onPress={onLogout}>
-          <Text style={styles.opsLogoutText}>Logout</Text>
+        <Pressable className="mt-1.5 bg-[#F97316] rounded-4 py-3.5 items-center" onPress={onLogout}>
+          <Text className="text-[#FFFFFF] font-black">Logout</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -2307,56 +2276,32 @@ const AppContent = () => {
   };
 
   const renderRoleSelector = () => (
-    <View style={styles.roleSelectorBlock}>
+    <View className="gap-2.5">
       {isOfficialRole ? (
-        <View style={styles.officerRoleGrid}>
-          {OFFICER_ROLES.map((item) => {
-            const selected = specificRole === item.key;
-
-            return (
-              <TouchableOpacity
-                key={item.key}
-                style={[
-                  styles.officerRoleCard,
-                  selected && styles.officerRoleCardActive,
-                ]}
-                onPress={() => setSpecificRole(item.key)}
-                activeOpacity={0.9}
-              >
-                <Text style={styles.officerRoleKey}>{item.key}</Text>
-                <Text
-                  style={[
-                    styles.officerRoleTitle,
-                    selected && styles.officerRoleTitleActive,
-                  ]}
-                >
-                  {item.title}
-                </Text>
-                <Text
-                  style={[
-                    styles.officerRoleDescription,
-                    selected && styles.officerRoleDescriptionActive,
-                  ]}
-                >
-                  {item.description}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+        <View className="bg-[#EFF6FF] border-[1.5px] border-[#BFDBFE] rounded-4 p-3.5 gap-2.5">
+          <View className="flex-row items-center gap-3">
+            <Ionicons name="shield-checkmark" size={28} color="#2563EB" />
+            <View className="flex-[1]">
+              <Text className="text-base font-extrabold text-[#1E40AF] letter-spacing-[0.2]">Railway Authority</Text>
+              <Text className="text-xs font-semibold text-[#3B82F6] mt-0.5">
+                TTR / RPF / TTE / Police
+              </Text>
+            </View>
+          </View>
+          <Text className="text-[11px] text-[#64748B] font-style-[italic]">
+            Your specific role will be detected from your Professional ID.
+          </Text>
         </View>
       ) : (
-        <View style={styles.roleRow}>
+        <View className="flex-row flex-wrap mx-[-4px]">
           {ROLES.map((item) => (
             <TouchableOpacity
               key={item}
-              style={[styles.roleChip, role === item && styles.roleChipActive]}
+              className={`${"border-[1px] border-[#CBD5E1] bg-[#F8FAFC] py-1.5 px-2.5 rounded-[999px] m-1"} ${role === item ? "bg-[#2563EB] border-[#2563EB]" : ""}`}
               onPress={() => handleRoleChange(item)}
             >
               <Text
-                style={[
-                  styles.roleChipText,
-                  role === item && styles.roleChipTextActive,
-                ]}
+                className={`${"text-[#475569] text-xs"} ${role === item ? "text-[#F8FAFC] font-semibold" : ""}`}
               >
                 {item}
               </Text>
@@ -2364,102 +2309,69 @@ const AppContent = () => {
           ))}
         </View>
       )}
-      {isOfficialRole && (
-        <Text style={styles.officerRoleHint}>
-          Select your officer unit before signing in.
-        </Text>
-      )}
     </View>
   );
 
   const renderPassengerDashboard = () => (
     <View>
-      <Text style={styles.sectionTitle}>Passenger Command Center</Text>
-      <Text style={styles.sectionSubtitle}>
+      <Text className="text-xl font-bold text-[#1E293B] mb-1.5">Passenger Command Center</Text>
+      <Text className="text-[#94A3B8] mb-4 line-height-[20]">
         Live complaint matching + recovery tracking for your trip.
       </Text>
 
-      <View style={styles.cardBlock}>
-        <Text style={styles.cardTitle}>Report Lost Item</Text>
-        <Text style={styles.label}>
+      <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+        <Text className="text-[#1E293B] font-semibold mb-2.5">Report Lost Item</Text>
+        <Text className="text-[#475569] text-xs mb-1.5 font-medium">
           In which transport did you lose your item?
         </Text>
-        <View style={styles.transportGrid}>
-          <View style={styles.transportRow}>
+        <View className="mt-3 gap-3">
+          <View className="flex-row gap-3 mb-3">
             <TouchableOpacity
-              style={[
-                styles.transportButton,
-                selectedTransport === "Train" && styles.transportButtonSelected,
-              ]}
+              className={`${"flex-[1] bg-[#F8FAFC] rounded-4 border-0.5 border-[#E2E8F0] p-5 items-center justify-center min-h-[100]"} ${selectedTransport === "Train" ? "bg-[#EFF6FF] border-[#3B82F6]" : ""}`}
               onPress={() => setSelectedTransport("Train")}
               activeOpacity={0.7}
             >
-              <Text style={styles.transportIcon}>🚆</Text>
+              <Text className="text-[40px] mb-2">🚆</Text>
               <Text
-                style={[
-                  styles.transportButtonText,
-                  selectedTransport === "Train" &&
-                  styles.transportButtonTextSelected,
-                ]}
+                className={`${"text-base font-semibold text-[#64748B]"} ${selectedTransport === "Train" ? "text-[#3B82F6]" : ""}`}
               >
                 Train
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[
-                styles.transportButton,
-                selectedTransport === "Car" && styles.transportButtonSelected,
-              ]}
+              className={`${"flex-[1] bg-[#F8FAFC] rounded-4 border-0.5 border-[#E2E8F0] p-5 items-center justify-center min-h-[100]"} ${selectedTransport === "Car" ? "bg-[#EFF6FF] border-[#3B82F6]" : ""}`}
               onPress={() => setSelectedTransport("Car")}
               activeOpacity={0.7}
             >
-              <Text style={styles.transportIcon}>🚗</Text>
+              <Text className="text-[40px] mb-2">🚗</Text>
               <Text
-                style={[
-                  styles.transportButtonText,
-                  selectedTransport === "Car" &&
-                  styles.transportButtonTextSelected,
-                ]}
+                className={`${"text-base font-semibold text-[#64748B]"} ${selectedTransport === "Car" ? "text-[#3B82F6]" : ""}`}
               >
                 Car
               </Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.transportRow}>
+          <View className="flex-row gap-3 mb-3">
             <TouchableOpacity
-              style={[
-                styles.transportButton,
-                selectedTransport === "Bus" && styles.transportButtonSelected,
-              ]}
+              className={`${"flex-[1] bg-[#F8FAFC] rounded-4 border-0.5 border-[#E2E8F0] p-5 items-center justify-center min-h-[100]"} ${selectedTransport === "Bus" ? "bg-[#EFF6FF] border-[#3B82F6]" : ""}`}
               onPress={() => setSelectedTransport("Bus")}
               activeOpacity={0.7}
             >
-              <Text style={styles.transportIcon}>🚌</Text>
+              <Text className="text-[40px] mb-2">🚌</Text>
               <Text
-                style={[
-                  styles.transportButtonText,
-                  selectedTransport === "Bus" &&
-                  styles.transportButtonTextSelected,
-                ]}
+                className={`${"text-base font-semibold text-[#64748B]"} ${selectedTransport === "Bus" ? "text-[#3B82F6]" : ""}`}
               >
                 Bus
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[
-                styles.transportButton,
-                selectedTransport === "Auto" && styles.transportButtonSelected,
-              ]}
+              className={`${"flex-[1] bg-[#F8FAFC] rounded-4 border-0.5 border-[#E2E8F0] p-5 items-center justify-center min-h-[100]"} ${selectedTransport === "Auto" ? "bg-[#EFF6FF] border-[#3B82F6]" : ""}`}
               onPress={() => setSelectedTransport("Auto")}
               activeOpacity={0.7}
             >
-              <Text style={styles.transportIcon}>🛺</Text>
+              <Text className="text-[40px] mb-2">🛺</Text>
               <Text
-                style={[
-                  styles.transportButtonText,
-                  selectedTransport === "Auto" &&
-                  styles.transportButtonTextSelected,
-                ]}
+                className={`${"text-base font-semibold text-[#64748B]"} ${selectedTransport === "Auto" ? "text-[#3B82F6]" : ""}`}
               >
                 Auto
               </Text>
@@ -2469,43 +2381,43 @@ const AppContent = () => {
       </View>
 
       {selectedTransport && (
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Raise Geo-Tagged Complaint</Text>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Lost item</Text>
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">Raise Geo-Tagged Complaint</Text>
+          <View className="mb-3.5">
+            <Text className="text-[#475569] text-xs mb-1.5 font-medium">Lost item</Text>
             <TextInput
-              style={styles.input}
+              className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
               placeholder="Backpack / Phone / Documents"
               placeholderTextColor="#94A3B8"
               value={complaintItem}
               onChangeText={setComplaintItem}
             />
           </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Description</Text>
+          <View className="mb-3.5">
+            <Text className="text-[#475569] text-xs mb-1.5 font-medium">Description</Text>
             <TextInput
-              style={styles.input}
+              className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
               placeholder="Color, brand, contents"
               placeholderTextColor="#94A3B8"
               value={complaintDesc}
               onChangeText={setComplaintDesc}
             />
           </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Last seen location</Text>
+          <View className="mb-3.5">
+            <Text className="text-[#475569] text-xs mb-1.5 font-medium">Last seen location</Text>
             <TextInput
-              style={styles.input}
+              className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
               placeholder="Medavakkam / Stop name"
               placeholderTextColor="#94A3B8"
               value={complaintLocation}
               onChangeText={setComplaintLocation}
             />
           </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Time</Text>
-            <View style={styles.timeFieldRow}>
+          <View className="mb-3.5">
+            <Text className="text-[#475569] text-xs mb-1.5 font-medium">Time</Text>
+            <View className="gap-2.5">
               <TextInput
-                style={[styles.input, styles.timeInput]}
+                className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B] w-[100%]"
                 placeholder="10:05"
                 placeholderTextColor="#94A3B8"
                 value={complaintTime}
@@ -2519,33 +2431,33 @@ const AppContent = () => {
             </View>
           </View>
           <TouchableOpacity
-            style={styles.primaryButton}
+            className="bg-[#2563EB] rounded-3 py-3.5 items-center mt-1.5 shadow-md"
             onPress={handleSubmitComplaint}
           >
-            <Text style={styles.primaryButtonText}>Submit complaint</Text>
+            <Text className="text-[#F8FAFC] font-semibold letter-spacing-[0.3]">Submit complaint</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {complaintSubmitted && (
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Complaint Status</Text>
-          <Text style={styles.successText}>
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">Complaint Status</Text>
+          <Text className="text-[#16A34A] mt-2.5 font-semibold">
             ✅ Complaint submitted successfully
           </Text>
-          <Text style={styles.cardText}>Your complaint ID has been generated and assigned.</Text>
-          <Text style={styles.cardText}>Status: Awaiting staff assignment</Text>
-          <View style={styles.statusRow}>
-            <View style={styles.statusDotLarge} />
-            <Text style={styles.statusText}>
+          <Text className="text-[#475569] mb-1.5">Your complaint ID has been generated and assigned.</Text>
+          <Text className="text-[#475569] mb-1.5">Status: Awaiting staff assignment</Text>
+          <View className="flex-row items-center mt-2 mb-3">
+            <View className="w-2.5 h-2.5 rounded-[5px] bg-[#22C55E] mr-2" />
+            <Text className="text-[#A7F3D0] flex-[1] line-height-[18]">
               Our on-duty staff will receive your complaint and respond within minutes. You will receive updates via notifications.
             </Text>
           </View>
           <TouchableOpacity
-            style={styles.secondaryButton}
+            className="border-[1px] border-[#38BDF8] rounded-3 py-3 items-center"
             onPress={handleStaffConfirm}
           >
-            <Text style={styles.secondaryButtonText}>
+            <Text className="text-[#38BDF8] font-semibold">
               Proceed to tracking
             </Text>
           </TouchableOpacity>
@@ -2553,26 +2465,26 @@ const AppContent = () => {
       )}
 
       {staffConfirmed && (
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Item Status</Text>
-          <Text style={styles.cardText}>Status: Staff has acknowledged receipt</Text>
-          <Text style={styles.cardText}>Your item is now in the custody of railway staff.</Text>
-          <View style={styles.timelineRow}>
-            <View style={styles.timelineDotActive} />
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">Item Status</Text>
+          <Text className="text-[#475569] mb-1.5">Status: Staff has acknowledged receipt</Text>
+          <Text className="text-[#475569] mb-1.5">Your item is now in the custody of railway staff.</Text>
+          <View className="flex-row items-start mt-2.5">
+            <View className="w-2.5 h-2.5 rounded-[5px] bg-[#38BDF8] mr-2.5 mt-1" />
             <View>
-              <Text style={styles.timelineTitle}>
+              <Text className="text-[#E2E8F0] font-semibold">
                 Complaint → Staff Confirmation
               </Text>
-              <Text style={styles.timelineSubtitle}>
+              <Text className="text-[#94A3B8] mt-1">
                 Your complaint was matched with on-duty staff.
               </Text>
             </View>
           </View>
-          <View style={styles.timelineRow}>
-            <View style={styles.timelineDot} />
+          <View className="flex-row items-start mt-2.5">
+            <View className="w-2.5 h-2.5 rounded-[5px] bg-[#334155] mr-2.5 mt-1" />
             <View>
-              <Text style={styles.timelineTitle}>Item Pickup</Text>
-              <Text style={styles.timelineSubtitle}>
+              <Text className="text-[#E2E8F0] font-semibold">Item Pickup</Text>
+              <Text className="text-[#94A3B8] mt-1">
                 Staff will coordinate a secure handoff location.
               </Text>
             </View>
@@ -2580,35 +2492,35 @@ const AppContent = () => {
         </View>
       )}
 
-      <View style={styles.cardBlock}>
-        <Text style={styles.cardTitle}>Complaint About TTR/TTE Staff</Text>
-        <Text style={styles.sectionSubtitle}>
+      <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+        <Text className="text-[#1E293B] font-semibold mb-2.5">Complaint About TTR/TTE Staff</Text>
+        <Text className="text-[#94A3B8] mb-4 line-height-[20]">
           Report misconduct or issues with railway staff members
         </Text>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Complaint Type</Text>
+        <View className="mb-3.5">
+          <Text className="text-[#475569] text-xs mb-1.5 font-medium">Complaint Type</Text>
           <TextInput
-            style={styles.input}
+            className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
             placeholder="Misbehavior / Negligence / Corruption / Other"
             placeholderTextColor="#94A3B8"
             value={staffComplaintType}
             onChangeText={setStaffComplaintType}
           />
         </View>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Staff Member (TTR/TTE)</Text>
+        <View className="mb-3.5">
+          <Text className="text-[#475569] text-xs mb-1.5 font-medium">Staff Member (TTR/TTE)</Text>
           <TextInput
-            style={styles.input}
+            className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
             placeholder="Name / Badge Number / Physical description"
             placeholderTextColor="#94A3B8"
             value={staffComplaintTarget}
             onChangeText={setStaffComplaintTarget}
           />
         </View>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Details of Incident</Text>
+        <View className="mb-3.5">
+          <Text className="text-[#475569] text-xs mb-1.5 font-medium">Details of Incident</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
+            className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B] min-h-[100] text-align-vertical-[top]"
             placeholder="Describe the incident in detail..."
             placeholderTextColor="#94A3B8"
             value={staffComplaintDetails}
@@ -2618,34 +2530,34 @@ const AppContent = () => {
           />
         </View>
         <TouchableOpacity
-          style={styles.primaryButton}
+          className="bg-[#2563EB] rounded-3 py-3.5 items-center mt-1.5 shadow-md"
           onPress={handleSubmitStaffComplaint}
         >
-          <Text style={styles.primaryButtonText}>Submit Staff Complaint</Text>
+          <Text className="text-[#F8FAFC] font-semibold letter-spacing-[0.3]">Submit Staff Complaint</Text>
         </TouchableOpacity>
       </View>
 
       {staffComplaintSubmitted && (
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Complaint Status</Text>
-          <Text style={styles.successText}>
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">Complaint Status</Text>
+          <Text className="text-[#16A34A] mt-2.5 font-semibold">
             ✅ Complaint submitted successfully
           </Text>
-          <Text style={styles.cardText}>
+          <Text className="text-[#475569] mb-1.5">
             Complaint ID: SC-{Math.floor(Math.random() * 100000)}
           </Text>
-          <Text style={styles.cardText}>Status: Under Review</Text>
-          <Text style={styles.cardText}>
+          <Text className="text-[#475569] mb-1.5">Status: Under Review</Text>
+          <Text className="text-[#475569] mb-1.5">
             Assigned to: Railway Grievance Cell
           </Text>
-          <View style={styles.statusRow}>
-            <View style={styles.statusDotLarge} />
-            <Text style={styles.statusText}>
+          <View className="flex-row items-center mt-2 mb-3">
+            <View className="w-2.5 h-2.5 rounded-[5px] bg-[#22C55E] mr-2" />
+            <Text className="text-[#A7F3D0] flex-[1] line-height-[18]">
               Your complaint has been forwarded to senior railway authorities.
               You will receive updates via SMS and email.
             </Text>
           </View>
-          <Text style={styles.cardText}>
+          <Text className="text-[#475569] mb-1.5">
             Expected resolution: 7-10 working days
           </Text>
         </View>
@@ -2666,98 +2578,98 @@ const AppContent = () => {
     return (
       <View>
         {/* Staff Profile Card */}
-        <View style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            <View style={styles.profileAvatar}>
-              <Text style={styles.profileAvatarText}>
+        <View className="bg-[#FFFFFF] rounded-4 p-5 mb-5 border-[1px] border-[#E2E8F0] shadow">
+          <View className="flex-row items-center mb-4 pb-4 border-b-[1] border-b-[#E2E8F0]">
+            <View className="w-[60px] h-[60px] rounded-[30px] bg-[#2563EB] items-center justify-center mr-4">
+              <Text className="text-[#FFFFFF] text-2xl font-bold">
                 {displayName.charAt(0).toUpperCase()}
               </Text>
             </View>
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{displayName}</Text>
-              <Text style={styles.profileRole}>{role}</Text>
+            <View className="flex-[1]">
+              <Text className="text-xl font-bold text-[#1E293B] mb-1">{displayName}</Text>
+              <Text className="text-sm text-[#64748B] font-medium">{role}</Text>
             </View>
           </View>
 
-          <View style={styles.profileDetails}>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Email:</Text>
-              <Text style={styles.profileDetailValue}>{displayEmail}</Text>
+          <View className="mt-0">
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">Email:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">{displayEmail}</Text>
             </View>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Phone:</Text>
-              <Text style={styles.profileDetailValue}>{displayPhone}</Text>
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">Phone:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">{displayPhone}</Text>
             </View>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Vehicle:</Text>
-              <Text style={styles.profileDetailValue}>
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">Vehicle:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">
                 {displayVehicleNumber}
               </Text>
             </View>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Route:</Text>
-              <Text style={styles.profileDetailValue}>{displayRoute}</Text>
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">Route:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">{displayRoute}</Text>
             </View>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Shift:</Text>
-              <Text style={styles.profileDetailValue}>{displayShift}</Text>
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">Shift:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">{displayShift}</Text>
             </View>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Stops:</Text>
-              <Text style={styles.profileDetailValue}>
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">Stops:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">
                 {displayFromStop} → {displayToStop}
               </Text>
             </View>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>{role} Duty Dashboard</Text>
-        <Text style={styles.sectionSubtitle}>
+        <Text className="text-xl font-bold text-[#1E293B] mb-1.5">{role} Duty Dashboard</Text>
+        <Text className="text-[#94A3B8] mb-4 line-height-[20]">
           Live queue, QR handoffs, and custody logs for your duty roster.
         </Text>
 
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Active Complaint Queue</Text>
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">Active Complaint Queue</Text>
           {Array.isArray(displayAlerts) && displayAlerts.length > 0 ? (
             displayAlerts.slice(0, 5).map((alert) => (
-              <View key={alert.id} style={styles.queueItem}>
+              <View key={alert.id} className="flex-row justify-space-between items-center py-2.5 border-b-[1] border-b-[#1E2A44]">
                 <View>
-                  <Text style={styles.queueTitle}>{alert.itemType || "Item"}</Text>
-                  <Text style={styles.queueMeta}>
+                  <Text className="text-[#F8FAFC] font-semibold">{alert.itemType || "Item"}</Text>
+                  <Text className="text-[#94A3B8] mt-1">
                     {alert.vehicleNumber || "Train"} • {alert.nextStation || alert.route || "Transit"}
                   </Text>
                 </View>
-                <Text style={alert.priority === "High" ? styles.queueStatusAmber : styles.queueStatus}>
+                <Text className={alert.priority === "High" ? "text-[#F59E0B] font-bold" : "text-[#22C55E] font-bold"}>
                   {alert.priority || "NORMAL"}
                 </Text>
               </View>
             ))
           ) : (
-            <Text style={styles.emptyQueueText}>No active complaints assigned. Check back for new assignments.</Text>
+            <Text className="text-slate-500 text-center italic py-2">No active complaints assigned. Check back for new assignments.</Text>
           )}
           {Array.isArray(displayAlerts) && displayAlerts.length > 0 && (
             <TouchableOpacity
-              style={styles.primaryButton}
+              className="bg-[#2563EB] rounded-3 py-3.5 items-center mt-1.5 shadow-md"
               onPress={handleStaffConfirm}
             >
-              <Text style={styles.primaryButtonText}>Mark item SAFE</Text>
+              <Text className="text-[#F8FAFC] font-semibold letter-spacing-[0.3]">Mark item SAFE</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {staffConfirmed && (
-          <View style={styles.cardBlock}>
-            <Text style={styles.cardTitle}>Custody & Handoff</Text>
-            <Text style={styles.cardText}>Item custody logged.</Text>
-            <Text style={styles.cardText}>Ready for passenger pickup or handover coordination.</Text>
+          <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+            <Text className="text-[#1E293B] font-semibold mb-2.5">Custody & Handoff</Text>
+            <Text className="text-[#475569] mb-1.5">Item custody logged.</Text>
+            <Text className="text-[#475569] mb-1.5">Ready for passenger pickup or handover coordination.</Text>
             <TouchableOpacity
-              style={styles.secondaryButton}
+              className="border-[1px] border-[#38BDF8] rounded-3 py-3 items-center"
               onPress={handleHandoffComplete}
             >
-              <Text style={styles.secondaryButtonText}>Complete Handoff</Text>
+              <Text className="text-[#38BDF8] font-semibold">Complete Handoff</Text>
             </TouchableOpacity>
             {handoffComplete && (
-              <Text style={styles.successText}>
+              <Text className="text-[#16A34A] mt-2.5 font-semibold">
                 Handoff complete. Custody log updated.
               </Text>
             )}
@@ -2780,126 +2692,116 @@ const AppContent = () => {
 
     return (
       <View>
-        <View style={styles.authorityHeaderCard}>
-          <View style={styles.authorityHeaderTop}>
+        <View className="bg-[#0F172A] rounded-[18px] p-[18px] mb-[18px] border-[1px] border-[#1E293B]">
+          <View className="flex-row justify-space-between items-center">
             <View>
-              <Text style={styles.authorityTitle}>{displayName}</Text>
-              <Text style={styles.authoritySubtitle}>
+              <Text className="text-[#F8FAFC] text-xl font-bold mb-1">{displayName}</Text>
+              <Text className="text-[#CBD5F5] text-xs font-semibold">
                 🎫 TTR - Train Ticket Examiner
               </Text>
             </View>
-            <View style={styles.notificationBadge}>
+            <View className="flex-row items-center bg-[#E0E7FF] rounded-[999px] py-1 px-2.5">
               <Ionicons
                 name="notifications"
                 size={16}
                 color="#1E40AF"
-                style={styles.notificationIcon}
+                className="mr-1.5"
               />
-              <Text style={styles.notificationText}>3</Text>
+              <Text className="text-[#1E40AF] font-bold">3</Text>
             </View>
           </View>
-          <View style={styles.authorityMetaRow}>
-            <View style={styles.metaPill}>
-              <Text style={styles.metaPillText}>Train {trainNumber}</Text>
+          <View className="flex-row flex-wrap mt-3">
+            <View className="bg-[#1E293B] rounded-[999px] py-1.5 px-3 mr-2 mb-2 border-[1px] border-[#334155]">
+              <Text className="text-[#E2E8F0] text-xs font-semibold">Train {trainNumber}</Text>
             </View>
-            <View style={styles.metaPill}>
-              <Text style={styles.metaPillText}>Coach {coachAllotted}</Text>
+            <View className="bg-[#1E293B] rounded-[999px] py-1.5 px-3 mr-2 mb-2 border-[1px] border-[#334155]">
+              <Text className="text-[#E2E8F0] text-xs font-semibold">Coach {coachAllotted}</Text>
             </View>
-            <View style={styles.metaPill}>
-              <Text style={styles.metaPillText}>Shift {shiftTime}</Text>
+            <View className="bg-[#1E293B] rounded-[999px] py-1.5 px-3 mr-2 mb-2 border-[1px] border-[#334155]">
+              <Text className="text-[#E2E8F0] text-xs font-semibold">Shift {shiftTime}</Text>
             </View>
           </View>
-          <View style={styles.dutyRow}>
-            <Text style={styles.dutyLabel}>On Duty</Text>
+          <View className="mt-3 flex-row items-center justify-space-between">
+            <Text className="text-[#E2E8F0] font-semibold">On Duty</Text>
             <TouchableOpacity
-              style={[
-                styles.dutyToggle,
-                onDuty ? styles.dutyToggleActive : styles.dutyToggleInactive,
-              ]}
+              className={`w-[52px] h-7 rounded-4 p-[3px] justify-center ${onDuty ? "bg-[#22C55E]" : "bg-[#334155]"}`}
               onPress={() => setOnDuty((prev) => !prev)}
             >
               <View
-                style={[
-                  styles.dutyKnob,
-                  onDuty ? styles.dutyKnobActive : styles.dutyKnobInactive,
-                ]}
+                className={`w-[22px] h-[22px] rounded-[11px] bg-[#F8FAFC] ${onDuty ? "self-end" : "self-start"}`}
               />
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            <View style={styles.profileAvatar}>
-              <Text style={styles.profileAvatarText}>
+        <View className="bg-[#FFFFFF] rounded-4 p-5 mb-5 border-[1px] border-[#E2E8F0] shadow">
+          <View className="flex-row items-center mb-4 pb-4 border-b-[1] border-b-[#E2E8F0]">
+            <View className="w-[60px] h-[60px] rounded-[30px] bg-[#2563EB] items-center justify-center mr-4">
+              <Text className="text-[#FFFFFF] text-2xl font-bold">
                 {displayName.charAt(0).toUpperCase()}
               </Text>
             </View>
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{displayName}</Text>
-              <Text style={styles.profileRole}>{displayRole} Officer</Text>
+            <View className="flex-[1]">
+              <Text className="text-xl font-bold text-[#1E293B] mb-1">{displayName}</Text>
+              <Text className="text-sm text-[#64748B] font-medium">{displayRole} Officer</Text>
             </View>
           </View>
 
-          <View style={styles.profileDetails}>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Professional ID:</Text>
-              <Text style={styles.profileDetailValue}>
+          <View className="mt-0">
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">Professional ID:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">
                 {displayProfessionalId}
               </Text>
             </View>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Official Email:</Text>
-              <Text style={styles.profileDetailValue}>{displayEmail}</Text>
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">Official Email:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">{displayEmail}</Text>
             </View>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Jurisdiction:</Text>
-              <Text style={styles.profileDetailValue}>
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">Jurisdiction:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">
                 {displayJurisdiction}
               </Text>
             </View>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>PNR Range:</Text>
-              <Text style={styles.profileDetailValue}>{displayPnrRange}</Text>
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">PNR Range:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">{displayPnrRange}</Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Active Assignments</Text>
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">Active Assignments</Text>
           {Array.isArray(displayAlerts) && displayAlerts.length > 0 ? (
             <View>
-              <Text style={styles.cardText}>
+              <Text className="text-[#475569] mb-1.5">
                 You have {displayAlerts.length} assigned complaint{displayAlerts.length !== 1 ? "s" : ""}.
               </Text>
-              <View style={styles.alertCard}>
+              <View className="bg-[#FEF2F2] rounded-4 p-4 mb-4 border-[1px] border-[#FECACA]">
                 {displayAlerts[0] && (
                   <View>
-                    <Text style={styles.alertTitle}>CURRENT ASSIGNMENT</Text>
-                    <Text style={styles.alertText}>Passenger: {displayAlerts[0].passengerName || "Passenger"}</Text>
-                    <Text style={styles.alertText}>Item: {displayAlerts[0].itemType || "Item"}</Text>
+                    <Text className="text-[#B91C1C] font-bold mb-2">CURRENT ASSIGNMENT</Text>
+                    <Text className="text-[#7F1D1D] mb-1">Passenger: {displayAlerts[0].passengerName || "Passenger"}</Text>
+                    <Text className="text-[#7F1D1D] mb-1">Item: {displayAlerts[0].itemType || "Item"}</Text>
                     {displayAlerts[0].vehicleNumber && (
-                      <Text style={styles.alertText}>Vehicle: {displayAlerts[0].vehicleNumber}</Text>
+                      <Text className="text-[#7F1D1D] mb-1">Vehicle: {displayAlerts[0].vehicleNumber}</Text>
                     )}
                     {displayAlerts[0].nextStation && (
-                      <Text style={styles.alertText}>Location: {displayAlerts[0].nextStation}</Text>
+                      <Text className="text-[#7F1D1D] mb-1">Location: {displayAlerts[0].nextStation}</Text>
                     )}
-                    <Text style={styles.alertText}>Status: {displayAlerts[0].status || "Pending"}</Text>
-                    <View style={styles.actionRow}>
+                    <Text className="text-[#7F1D1D] mb-1">Status: {displayAlerts[0].status || "Pending"}</Text>
+                    <View className="flex-row mt-3">
                       <TouchableOpacity
-                        style={[styles.actionButton, styles.actionButtonSecondary]}
+                        className="flex-[1] rounded-3 py-3 items-center border-[1px] border-[#2563EB] bg-[#EFF6FF]"
                       >
-                        <Text style={styles.actionButtonSecondaryText}>View details</Text>
+                        <Text className="text-[#1D4ED8] font-semibold">View details</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={[
-                          styles.actionButton,
-                          styles.actionButtonPrimary,
-                          styles.actionButtonSpacing,
-                        ]}
+                        className={`${"flex-[1] rounded-3 py-3 items-center"} ${"bg-[#2563EB]"} ${"ml-2.5"}`}
                         onPress={handleStaffConfirm}
                       >
-                        <Text style={styles.actionButtonPrimaryText}>Action</Text>
+                        <Text className="text-[#F8FAFC] font-semibold">Action</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -2907,100 +2809,92 @@ const AppContent = () => {
               </View>
             </View>
           ) : (
-            <Text style={styles.cardText}>No active assignments. Check back for new cases.</Text>
+            <Text className="text-[#475569] mb-1.5">No active assignments. Check back for new cases.</Text>
           )}
         </View>
 
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Complaint Resolution</Text>
-          <View style={styles.optionList}>
-            <Text style={styles.optionItem}>✅ Item found and documented</Text>
-            <Text style={styles.optionItem}>❌ Item not located</Text>
-            <Text style={styles.optionItem}>🔁 Escalate for further investigation</Text>
-            <Text style={styles.optionItem}>📞 Passenger contacted</Text>
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">Complaint Resolution</Text>
+          <View className="mb-2">
+            <Text className="text-[#475569] mb-1.5">✅ Item found and documented</Text>
+            <Text className="text-[#475569] mb-1.5">❌ Item not located</Text>
+            <Text className="text-[#475569] mb-1.5">🔁 Escalate for further investigation</Text>
+            <Text className="text-[#475569] mb-1.5">📞 Passenger contacted</Text>
           </View>
-          <Text style={styles.helperText}>
+          <Text className="text-[#64748B] text-xs mt-1.5">
             Update status to keep passenger informed of progress.
           </Text>
-          <View style={styles.actionRow}>
+          <View className="flex-row mt-3">
             <TouchableOpacity
-              style={[styles.actionButton, styles.actionButtonSecondary]}
+              className="flex-[1] rounded-3 py-3 items-center border-[1px] border-[#2563EB] bg-[#EFF6FF]"
             >
-              <Text style={styles.actionButtonSecondaryText}>View Case</Text>
+              <Text className="text-[#1D4ED8] font-semibold">View Case</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[
-                styles.actionButton,
-                styles.actionButtonPrimary,
-                styles.actionButtonSpacing,
-              ]}
+              className={`${"flex-[1] rounded-3 py-3 items-center"} ${"bg-[#2563EB]"} ${"ml-2.5"}`}
             >
-              <Text style={styles.actionButtonPrimaryText}>Update Status</Text>
+              <Text className="text-[#F8FAFC] font-semibold">Update Status</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Officer Communication</Text>
-          <View style={styles.messageRow}>
-            <View style={styles.messageChip}>
-              <Text style={styles.messageChipText}>"Item secured in S3"</Text>
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">Officer Communication</Text>
+          <View className="flex-row flex-wrap mb-3">
+            <View className="bg-[#E2E8F0] py-1.5 px-2.5 rounded-[999px] mr-2 mb-2">
+              <Text className="text-[#1E293B] text-xs font-semibold">"Item secured in S3"</Text>
             </View>
-            <View style={styles.messageChip}>
-              <Text style={styles.messageChipText}>
+            <View className="bg-[#E2E8F0] py-1.5 px-2.5 rounded-[999px] mr-2 mb-2">
+              <Text className="text-[#1E293B] text-xs font-semibold">
                 "Collect at Trichy station"
               </Text>
             </View>
-            <View style={styles.messageChip}>
-              <Text style={styles.messageChipText}>"Bring ID proof"</Text>
+            <View className="bg-[#E2E8F0] py-1.5 px-2.5 rounded-[999px] mr-2 mb-2">
+              <Text className="text-[#1E293B] text-xs font-semibold">"Bring ID proof"</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>Send update</Text>
+          <TouchableOpacity className="border-[1px] border-[#38BDF8] rounded-3 py-3 items-center">
+            <Text className="text-[#38BDF8] font-semibold">Send update</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>QR Handover</Text>
-          <Text style={styles.cardText}>
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">QR Handover</Text>
+          <Text className="text-[#475569] mb-1.5">
             Generate and scan for custody log.
           </Text>
-          <View style={styles.actionRow}>
+          <View className="flex-row mt-3">
             <TouchableOpacity
-              style={[styles.actionButton, styles.actionButtonPrimary]}
+              className="flex-[1] rounded-3 py-3 items-center bg-[#2563EB]"
             >
-              <Text style={styles.actionButtonPrimaryText}>Generate QR</Text>
+              <Text className="text-[#F8FAFC] font-semibold">Generate QR</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[
-                styles.actionButton,
-                styles.actionButtonSecondary,
-                styles.actionButtonSpacing,
-              ]}
+              className={`${"flex-[1] rounded-3 py-3 items-center"} ${"border-[1px] border-[#2563EB] bg-[#EFF6FF]"} ${"ml-2.5"}`}
             >
-              <Text style={styles.actionButtonSecondaryText}>Scan QR</Text>
+              <Text className="text-[#1D4ED8] font-semibold">Scan QR</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>TTR Performance</Text>
-          <View style={styles.metricGrid}>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>8</Text>
-              <Text style={styles.metricLabel}>Cases handled</Text>
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">TTR Performance</Text>
+          <View className="flex-row flex-wrap justify-space-between">
+            <View className="w-[48%] bg-[#FFFFFF] rounded-3 p-3 mb-2.5 border-[1px] border-[#E2E8F0]">
+              <Text className="text-[#1E293B] text-lg font-bold">8</Text>
+              <Text className="text-[#64748B] text-xs mt-1">Cases handled</Text>
             </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>5</Text>
-              <Text style={styles.metricLabel}>Items secured</Text>
+            <View className="w-[48%] bg-[#FFFFFF] rounded-3 p-3 mb-2.5 border-[1px] border-[#E2E8F0]">
+              <Text className="text-[#1E293B] text-lg font-bold">5</Text>
+              <Text className="text-[#64748B] text-xs mt-1">Items secured</Text>
             </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>2</Text>
-              <Text style={styles.metricLabel}>Escalated</Text>
+            <View className="w-[48%] bg-[#FFFFFF] rounded-3 p-3 mb-2.5 border-[1px] border-[#E2E8F0]">
+              <Text className="text-[#1E293B] text-lg font-bold">2</Text>
+              <Text className="text-[#64748B] text-xs mt-1">Escalated</Text>
             </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>6m</Text>
-              <Text style={styles.metricLabel}>Avg response</Text>
+            <View className="w-[48%] bg-[#FFFFFF] rounded-3 p-3 mb-2.5 border-[1px] border-[#E2E8F0]">
+              <Text className="text-[#1E293B] text-lg font-bold">6m</Text>
+              <Text className="text-[#64748B] text-xs mt-1">Avg response</Text>
             </View>
           </View>
         </View>
@@ -3016,158 +2910,148 @@ const AppContent = () => {
 
     return (
       <View>
-        <View style={styles.authorityHeaderCard}>
-          <View style={styles.authorityHeaderTop}>
+        <View className="bg-[#0F172A] rounded-[18px] p-[18px] mb-[18px] border-[1px] border-[#1E293B]">
+          <View className="flex-row justify-space-between items-center">
             <View>
-              <Text style={styles.authorityTitle}>{displayName}</Text>
-              <Text style={styles.authoritySubtitle}>
+              <Text className="text-[#F8FAFC] text-xl font-bold mb-1">{displayName}</Text>
+              <Text className="text-[#CBD5F5] text-xs font-semibold">
                 🛡 RPF - Railway Protection Force
               </Text>
             </View>
-            <View style={styles.notificationBadge}>
+            <View className="flex-row items-center bg-[#E0E7FF] rounded-[999px] py-1 px-2.5">
               <Ionicons
                 name="notifications"
                 size={16}
                 color="#1E40AF"
-                style={styles.notificationIcon}
+                className="mr-1.5"
               />
-              <Text style={styles.notificationText}>2</Text>
+              <Text className="text-[#1E40AF] font-bold">2</Text>
             </View>
           </View>
-          <View style={styles.authorityMetaRow}>
-            <View style={styles.metaPill}>
-              <Text style={styles.metaPillText}>
+          <View className="flex-row flex-wrap mt-3">
+            <View className="bg-[#1E293B] rounded-[999px] py-1.5 px-3 mr-2 mb-2 border-[1px] border-[#334155]">
+              <Text className="text-[#E2E8F0] text-xs font-semibold">
                 Badge {displayProfessionalId}
               </Text>
             </View>
-            <View style={styles.metaPill}>
-              <Text style={styles.metaPillText}>{displayJurisdiction}</Text>
+            <View className="bg-[#1E293B] rounded-[999px] py-1.5 px-3 mr-2 mb-2 border-[1px] border-[#334155]">
+              <Text className="text-[#E2E8F0] text-xs font-semibold">{displayJurisdiction}</Text>
             </View>
           </View>
-          <View style={styles.dutyRow}>
-            <Text style={styles.dutyLabel}>On Duty</Text>
+          <View className="mt-3 flex-row items-center justify-space-between">
+            <Text className="text-[#E2E8F0] font-semibold">On Duty</Text>
             <TouchableOpacity
-              style={[
-                styles.dutyToggle,
-                onDuty ? styles.dutyToggleActive : styles.dutyToggleInactive,
-              ]}
+              className={`w-[52px] h-7 rounded-4 p-[3px] justify-center ${onDuty ? "bg-[#22C55E]" : "bg-[#334155]"}`}
               onPress={() => setOnDuty((prev) => !prev)}
             >
               <View
-                style={[
-                  styles.dutyKnob,
-                  onDuty ? styles.dutyKnobActive : styles.dutyKnobInactive,
-                ]}
+                className={`w-[22px] h-[22px] rounded-[11px] bg-[#F8FAFC] ${onDuty ? "self-end" : "self-start"}`}
               />
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            <View style={styles.profileAvatar}>
-              <Text style={styles.profileAvatarText}>
+        <View className="bg-[#FFFFFF] rounded-4 p-5 mb-5 border-[1px] border-[#E2E8F0] shadow">
+          <View className="flex-row items-center mb-4 pb-4 border-b-[1] border-b-[#E2E8F0]">
+            <View className="w-[60px] h-[60px] rounded-[30px] bg-[#2563EB] items-center justify-center mr-4">
+              <Text className="text-[#FFFFFF] text-2xl font-bold">
                 {displayName.charAt(0).toUpperCase()}
               </Text>
             </View>
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{displayName}</Text>
-              <Text style={styles.profileRole}>RPF Officer</Text>
+            <View className="flex-[1]">
+              <Text className="text-xl font-bold text-[#1E293B] mb-1">{displayName}</Text>
+              <Text className="text-sm text-[#64748B] font-medium">RPF Officer</Text>
             </View>
           </View>
 
-          <View style={styles.profileDetails}>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Badge ID:</Text>
-              <Text style={styles.profileDetailValue}>
+          <View className="mt-0">
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">Badge ID:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">
                 {displayProfessionalId}
               </Text>
             </View>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Official Email:</Text>
-              <Text style={styles.profileDetailValue}>{displayEmail}</Text>
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">Official Email:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">{displayEmail}</Text>
             </View>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Assigned Zone:</Text>
-              <Text style={styles.profileDetailValue}>
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">Assigned Zone:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">
                 {displayJurisdiction}
               </Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.alertCard}>
-          <Text style={styles.alertTitle}>🚨 HIGH PRIORITY ALERT</Text>
-          <Text style={styles.alertText}>Item: Laptop</Text>
-          <Text style={styles.alertText}>Location: Train 12631 - S3</Text>
-          <Text style={styles.alertText}>Escalated by: TTR</Text>
-          <Text style={styles.alertText}>Reason: Possible theft</Text>
-          <Text style={styles.alertText}>Reported: 10:30 AM</Text>
-          <View style={styles.actionRow}>
+        <View className="bg-[#FEF2F2] rounded-4 p-4 mb-4 border-[1px] border-[#FECACA]">
+          <Text className="text-[#B91C1C] font-bold mb-2">🚨 HIGH PRIORITY ALERT</Text>
+          <Text className="text-[#7F1D1D] mb-1">Item: Laptop</Text>
+          <Text className="text-[#7F1D1D] mb-1">Location: Train 12631 - S3</Text>
+          <Text className="text-[#7F1D1D] mb-1">Escalated by: TTR</Text>
+          <Text className="text-[#7F1D1D] mb-1">Reason: Possible theft</Text>
+          <Text className="text-[#7F1D1D] mb-1">Reported: 10:30 AM</Text>
+          <View className="flex-row mt-3">
             <TouchableOpacity
-              style={[styles.actionButton, styles.actionButtonPrimary]}
+              className="flex-[1] rounded-3 py-3 items-center bg-[#2563EB]"
             >
-              <Text style={styles.actionButtonPrimaryText}>Investigate</Text>
+              <Text className="text-[#F8FAFC] font-semibold">Investigate</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[
-                styles.actionButton,
-                styles.actionButtonSecondary,
-                styles.actionButtonSpacing,
-              ]}
+              className={`${"flex-[1] rounded-3 py-3 items-center"} ${"border-[1px] border-[#2563EB] bg-[#EFF6FF]"} ${"ml-2.5"}`}
             >
-              <Text style={styles.actionButtonSecondaryText}>
+              <Text className="text-[#1D4ED8] font-semibold">
                 Contact passenger
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Investigation Screen</Text>
-          <View style={styles.optionList}>
-            <Text style={styles.optionItem}>🗺 View coach map</Text>
-            <Text style={styles.optionItem}>📞 Contact TTR</Text>
-            <Text style={styles.optionItem}>👥 Contact passenger</Text>
-            <Text style={styles.optionItem}>📝 Record statement</Text>
-            <Text style={styles.optionItem}>📸 Upload evidence photo</Text>
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">Investigation Screen</Text>
+          <View className="mb-2">
+            <Text className="text-[#475569] mb-1.5">🗺 View coach map</Text>
+            <Text className="text-[#475569] mb-1.5">📞 Contact TTR</Text>
+            <Text className="text-[#475569] mb-1.5">👥 Contact passenger</Text>
+            <Text className="text-[#475569] mb-1.5">📝 Record statement</Text>
+            <Text className="text-[#475569] mb-1.5">📸 Upload evidence photo</Text>
           </View>
         </View>
 
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Secure Custody Module</Text>
-          <Text style={styles.cardText}>If item recovered:</Text>
-          <View style={styles.optionList}>
-            <Text style={styles.optionItem}>• Log station and GPS</Text>
-            <Text style={styles.optionItem}>• Upload recovery proof</Text>
-            <Text style={styles.optionItem}>• Assign case ID</Text>
-            <Text style={styles.optionItem}>
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">Secure Custody Module</Text>
+          <Text className="text-[#475569] mb-1.5">If item recovered:</Text>
+          <View className="mb-2">
+            <Text className="text-[#475569] mb-1.5">• Log station and GPS</Text>
+            <Text className="text-[#475569] mb-1.5">• Upload recovery proof</Text>
+            <Text className="text-[#475569] mb-1.5">• Assign case ID</Text>
+            <Text className="text-[#475569] mb-1.5">
               • Transfer to police if needed
             </Text>
           </View>
-          <TouchableOpacity style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>Create custody log</Text>
+          <TouchableOpacity className="border-[1px] border-[#38BDF8] rounded-3 py-3 items-center">
+            <Text className="text-[#38BDF8] font-semibold">Create custody log</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Case Monitoring</Text>
-          <View style={styles.metricGrid}>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>6</Text>
-              <Text style={styles.metricLabel}>Active investigations</Text>
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">Case Monitoring</Text>
+          <View className="flex-row flex-wrap justify-space-between">
+            <View className="w-[48%] bg-[#FFFFFF] rounded-3 p-3 mb-2.5 border-[1px] border-[#E2E8F0]">
+              <Text className="text-[#1E293B] text-lg font-bold">6</Text>
+              <Text className="text-[#64748B] text-xs mt-1">Active investigations</Text>
             </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>12</Text>
-              <Text style={styles.metricLabel}>Closed cases</Text>
+            <View className="w-[48%] bg-[#FFFFFF] rounded-3 p-3 mb-2.5 border-[1px] border-[#E2E8F0]">
+              <Text className="text-[#1E293B] text-lg font-bold">12</Text>
+              <Text className="text-[#64748B] text-xs mt-1">Closed cases</Text>
             </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>4</Text>
-              <Text style={styles.metricLabel}>Escalations today</Text>
+            <View className="w-[48%] bg-[#FFFFFF] rounded-3 p-3 mb-2.5 border-[1px] border-[#E2E8F0]">
+              <Text className="text-[#1E293B] text-lg font-bold">4</Text>
+              <Text className="text-[#64748B] text-xs mt-1">Escalations today</Text>
             </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>9m</Text>
-              <Text style={styles.metricLabel}>Avg response</Text>
+            <View className="w-[48%] bg-[#FFFFFF] rounded-3 p-3 mb-2.5 border-[1px] border-[#E2E8F0]">
+              <Text className="text-[#1E293B] text-lg font-bold">9m</Text>
+              <Text className="text-[#64748B] text-xs mt-1">Avg response</Text>
             </View>
           </View>
         </View>
@@ -3185,172 +3069,162 @@ const AppContent = () => {
 
     return (
       <View>
-        <View style={styles.authorityHeaderCard}>
-          <View style={styles.authorityHeaderTop}>
+        <View className="bg-[#0F172A] rounded-[18px] p-[18px] mb-[18px] border-[1px] border-[#1E293B]">
+          <View className="flex-row justify-space-between items-center">
             <View>
-              <Text style={styles.authorityTitle}>{displayName}</Text>
-              <Text style={styles.authoritySubtitle}>👮 Police</Text>
+              <Text className="text-[#F8FAFC] text-xl font-bold mb-1">{displayName}</Text>
+              <Text className="text-[#CBD5F5] text-xs font-semibold">👮 Police</Text>
             </View>
-            <View style={styles.notificationBadge}>
+            <View className="flex-row items-center bg-[#E0E7FF] rounded-[999px] py-1 px-2.5">
               <Ionicons
                 name="alert-circle"
                 size={16}
                 color="#B91C1C"
-                style={styles.notificationIcon}
+                className="mr-1.5"
               />
-              <Text style={styles.notificationText}>1</Text>
+              <Text className="text-[#1E40AF] font-bold">1</Text>
             </View>
           </View>
-          <View style={styles.authorityMetaRow}>
-            <View style={styles.metaPill}>
-              <Text style={styles.metaPillText}>{displayStation}</Text>
+          <View className="flex-row flex-wrap mt-3">
+            <View className="bg-[#1E293B] rounded-[999px] py-1.5 px-3 mr-2 mb-2 border-[1px] border-[#334155]">
+              <Text className="text-[#E2E8F0] text-xs font-semibold">{displayStation}</Text>
             </View>
-            <View style={styles.metaPill}>
-              <Text style={styles.metaPillText}>{displayJurisdiction}</Text>
+            <View className="bg-[#1E293B] rounded-[999px] py-1.5 px-3 mr-2 mb-2 border-[1px] border-[#334155]">
+              <Text className="text-[#E2E8F0] text-xs font-semibold">{displayJurisdiction}</Text>
             </View>
-            <View style={styles.metaPill}>
-              <Text style={styles.metaPillText}>
+            <View className="bg-[#1E293B] rounded-[999px] py-1.5 px-3 mr-2 mb-2 border-[1px] border-[#334155]">
+              <Text className="text-[#E2E8F0] text-xs font-semibold">
                 Duty {onDuty ? "ON" : "OFF"}
               </Text>
             </View>
           </View>
-          <View style={styles.dutyRow}>
-            <Text style={styles.dutyLabel}>Duty Status</Text>
+          <View className="mt-3 flex-row items-center justify-space-between">
+            <Text className="text-[#E2E8F0] font-semibold">Duty Status</Text>
             <TouchableOpacity
-              style={[
-                styles.dutyToggle,
-                onDuty ? styles.dutyToggleActive : styles.dutyToggleInactive,
-              ]}
+              className={`w-[52px] h-7 rounded-4 p-[3px] justify-center ${onDuty ? "bg-[#22C55E]" : "bg-[#334155]"}`}
               onPress={() => setOnDuty((prev) => !prev)}
             >
               <View
-                style={[
-                  styles.dutyKnob,
-                  onDuty ? styles.dutyKnobActive : styles.dutyKnobInactive,
-                ]}
+                className={`w-[22px] h-[22px] rounded-[11px] bg-[#F8FAFC] ${onDuty ? "self-end" : "self-start"}`}
               />
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            <View style={styles.profileAvatar}>
-              <Text style={styles.profileAvatarText}>
+        <View className="bg-[#FFFFFF] rounded-4 p-5 mb-5 border-[1px] border-[#E2E8F0] shadow">
+          <View className="flex-row items-center mb-4 pb-4 border-b-[1] border-b-[#E2E8F0]">
+            <View className="w-[60px] h-[60px] rounded-[30px] bg-[#2563EB] items-center justify-center mr-4">
+              <Text className="text-[#FFFFFF] text-2xl font-bold">
                 {displayName.charAt(0).toUpperCase()}
               </Text>
             </View>
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{displayName}</Text>
-              <Text style={styles.profileRole}>{displayRole} Officer</Text>
+            <View className="flex-[1]">
+              <Text className="text-xl font-bold text-[#1E293B] mb-1">{displayName}</Text>
+              <Text className="text-sm text-[#64748B] font-medium">{displayRole} Officer</Text>
             </View>
           </View>
 
-          <View style={styles.profileDetails}>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Professional ID:</Text>
-              <Text style={styles.profileDetailValue}>
+          <View className="mt-0">
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">Professional ID:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">
                 {displayProfessionalId}
               </Text>
             </View>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Station:</Text>
-              <Text style={styles.profileDetailValue}>{displayStation}</Text>
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">Station:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">{displayStation}</Text>
             </View>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Jurisdiction:</Text>
-              <Text style={styles.profileDetailValue}>
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">Jurisdiction:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">
                 {displayJurisdiction}
               </Text>
             </View>
-            <View style={styles.profileDetailRow}>
-              <Text style={styles.profileDetailLabel}>Official Email:</Text>
-              <Text style={styles.profileDetailValue}>{displayEmail}</Text>
+            <View className="flex-row justify-space-between items-center mb-3">
+              <Text className="text-sm text-[#64748B] font-medium flex-[1]">Official Email:</Text>
+              <Text className="text-sm text-[#1E293B] font-semibold flex-[2] text-right">{displayEmail}</Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.alertCard}>
-          <Text style={styles.alertTitle}>🚨 LEGAL CASE ALERT</Text>
-          <Text style={styles.alertText}>Item: Passport</Text>
-          <Text style={styles.alertText}>Train: 12631</Text>
-          <Text style={styles.alertText}>Station: Trichy</Text>
-          <Text style={styles.alertText}>Escalated by: RPF</Text>
-          <Text style={styles.alertText}>Case ID: SG-2026-108</Text>
-          <View style={styles.actionRow}>
+        <View className="bg-[#FEF2F2] rounded-4 p-4 mb-4 border-[1px] border-[#FECACA]">
+          <Text className="text-[#B91C1C] font-bold mb-2">🚨 LEGAL CASE ALERT</Text>
+          <Text className="text-[#7F1D1D] mb-1">Item: Passport</Text>
+          <Text className="text-[#7F1D1D] mb-1">Train: 12631</Text>
+          <Text className="text-[#7F1D1D] mb-1">Station: Trichy</Text>
+          <Text className="text-[#7F1D1D] mb-1">Escalated by: RPF</Text>
+          <Text className="text-[#7F1D1D] mb-1">Case ID: SG-2026-108</Text>
+          <View className="flex-row mt-3">
             <TouchableOpacity
-              style={[styles.actionButton, styles.actionButtonPrimary]}
+              className="flex-[1] rounded-3 py-3 items-center bg-[#2563EB]"
             >
-              <Text style={styles.actionButtonPrimaryText}>Open case</Text>
+              <Text className="text-[#F8FAFC] font-semibold">Open case</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[
-                styles.actionButton,
-                styles.actionButtonSecondary,
-                styles.actionButtonSpacing,
-              ]}
+              className={`${"flex-[1] rounded-3 py-3 items-center"} ${"border-[1px] border-[#2563EB] bg-[#EFF6FF]"} ${"ml-2.5"}`}
             >
-              <Text style={styles.actionButtonSecondaryText}>Contact RPF</Text>
+              <Text className="text-[#1D4ED8] font-semibold">Contact RPF</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Case Management</Text>
-          <View style={styles.optionList}>
-            <Text style={styles.optionItem}>Case ID: SG-2026-108</Text>
-            <Text style={styles.optionItem}>Passenger: Ramya V</Text>
-            <Text style={styles.optionItem}>Aadhaar verified</Text>
-            <Text style={styles.optionItem}>Evidence uploaded</Text>
-            <Text style={styles.optionItem}>Investigation notes ready</Text>
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">Case Management</Text>
+          <View className="mb-2">
+            <Text className="text-[#475569] mb-1.5">Case ID: SG-2026-108</Text>
+            <Text className="text-[#475569] mb-1.5">Passenger: Ramya V</Text>
+            <Text className="text-[#475569] mb-1.5">Aadhaar verified</Text>
+            <Text className="text-[#475569] mb-1.5">Evidence uploaded</Text>
+            <Text className="text-[#475569] mb-1.5">Investigation notes ready</Text>
           </View>
-          <TouchableOpacity style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>FIR (Optional)</Text>
+          <TouchableOpacity className="border-[1px] border-[#38BDF8] rounded-3 py-3 items-center">
+            <Text className="text-[#38BDF8] font-semibold">FIR (Optional)</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Inter-Jurisdiction Transfer</Text>
-          <Text style={styles.cardText}>
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">Inter-Jurisdiction Transfer</Text>
+          <Text className="text-[#475569] mb-1.5">
             Forward to nearest police station for passenger city.
           </Text>
-          <View style={styles.optionList}>
-            <Text style={styles.optionItem}>• Digital case transfer</Text>
-            <Text style={styles.optionItem}>• Status update to passenger</Text>
+          <View className="mb-2">
+            <Text className="text-[#475569] mb-1.5">• Digital case transfer</Text>
+            <Text className="text-[#475569] mb-1.5">• Status update to passenger</Text>
           </View>
-          <TouchableOpacity style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>Start transfer</Text>
+          <TouchableOpacity className="border-[1px] border-[#38BDF8] rounded-3 py-3 items-center">
+            <Text className="text-[#38BDF8] font-semibold">Start transfer</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Secure Handover Logging</Text>
-          <View style={styles.optionList}>
-            <Text style={styles.optionItem}>Verify passenger ID</Text>
-            <Text style={styles.optionItem}>Capture signature</Text>
-            <Text style={styles.optionItem}>GPS log</Text>
-            <Text style={styles.optionItem}>Close legal case</Text>
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">Secure Handover Logging</Text>
+          <View className="mb-2">
+            <Text className="text-[#475569] mb-1.5">Verify passenger ID</Text>
+            <Text className="text-[#475569] mb-1.5">Capture signature</Text>
+            <Text className="text-[#475569] mb-1.5">GPS log</Text>
+            <Text className="text-[#475569] mb-1.5">Close legal case</Text>
           </View>
         </View>
 
-        <View style={styles.cardBlock}>
-          <Text style={styles.cardTitle}>Police Analytics</Text>
-          <View style={styles.metricGrid}>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>3</Text>
-              <Text style={styles.metricLabel}>Legal cases today</Text>
+        <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+          <Text className="text-[#1E293B] font-semibold mb-2.5">Police Analytics</Text>
+          <View className="flex-row flex-wrap justify-space-between">
+            <View className="w-[48%] bg-[#FFFFFF] rounded-3 p-3 mb-2.5 border-[1px] border-[#E2E8F0]">
+              <Text className="text-[#1E293B] text-lg font-bold">3</Text>
+              <Text className="text-[#64748B] text-xs mt-1">Legal cases today</Text>
             </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>12</Text>
-              <Text style={styles.metricLabel}>Resolved cases</Text>
+            <View className="w-[48%] bg-[#FFFFFF] rounded-3 p-3 mb-2.5 border-[1px] border-[#E2E8F0]">
+              <Text className="text-[#1E293B] text-lg font-bold">12</Text>
+              <Text className="text-[#64748B] text-xs mt-1">Resolved cases</Text>
             </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>5</Text>
-              <Text style={styles.metricLabel}>Pending cases</Text>
+            <View className="w-[48%] bg-[#FFFFFF] rounded-3 p-3 mb-2.5 border-[1px] border-[#E2E8F0]">
+              <Text className="text-[#1E293B] text-lg font-bold">5</Text>
+              <Text className="text-[#64748B] text-xs mt-1">Pending cases</Text>
             </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>2</Text>
-              <Text style={styles.metricLabel}>Cross-district transfers</Text>
+            <View className="w-[48%] bg-[#FFFFFF] rounded-3 p-3 mb-2.5 border-[1px] border-[#E2E8F0]">
+              <Text className="text-[#1E293B] text-lg font-bold">2</Text>
+              <Text className="text-[#64748B] text-xs mt-1">Cross-district transfers</Text>
             </View>
           </View>
         </View>
@@ -3444,19 +3318,19 @@ const AppContent = () => {
   const renderAuthenticatedContent = () => {
     if (usesInternalScroll) {
       return (
-        <View style={styles.authenticatedContent}>{renderDashboard()}</View>
+        <View className="flex-[1]">{renderDashboard()}</View>
       );
     }
 
     return (
-      <ScrollView contentContainerStyle={styles.authenticatedScrollContent}>
+      <ScrollView contentContainerClassName="p-5 pb-10">
         {renderDashboard()}
         {showStandaloneLogout && (
           <TouchableOpacity
-            style={[styles.secondaryButton, styles.logoutButtonFull]}
+            className="border-[1px] border-[#38BDF8] rounded-3 py-3 items-center mt-3"
             onPress={handleLogout}
           >
-            <Text style={styles.secondaryButtonText}>Log out</Text>
+            <Text className="text-[#38BDF8] font-semibold">Log out</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -3467,96 +3341,41 @@ const AppContent = () => {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+      <SafeAreaView className="flex-[1] bg-[#FFFFFF]" style={{ paddingTop: insets.top }}>
         {isAuthenticated ? (
-          <View style={styles.authenticatedContainer}>
+          <View className="flex-[1] bg-[#F8FAFC]">
             {renderAuthenticatedContent()}
           </View>
         ) : (
           <>
             <Animated.View
-              style={[
-                styles.backgroundGlow,
-                {
-                  opacity: bgDriftAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.25, 0.42],
-                  }),
-                  transform: [
-                    {
-                      translateY: bgDriftAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, -14],
-                      }),
-                    },
-                    {
-                      scale: bgDriftAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [1, 1.08],
-                      }),
-                    },
-                  ],
-                },
-              ]}
+              className={`${"absolute w-[320px] h-[320px] rounded-[160px] bg-[#E0E7FF] opacity-[0.3] top-10 right-[-80px]"}`}
             />
             <KeyboardAvoidingView
-              style={styles.keyboardAvoidingView}
+              className="flex-[1]"
               behavior={Platform.OS === "ios" ? "padding" : "height"}
               keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
             >
-              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <ScrollView
-                  contentContainerStyle={[
-                    styles.scrollContent,
-                    !keyboardVisible && styles.scrollContentCentered,
-                  ]}
-                  keyboardShouldPersistTaps="handled"
-                  showsVerticalScrollIndicator={true}
-                  bounces={true}
-                  nestedScrollEnabled={true}
-                >
+              <ScrollView
+                contentContainerStyle={{ flexGrow: 1, padding: 24, paddingBottom: 40 }}
+                className={!keyboardVisible ? "justify-center" : ""}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
+                onScrollBeginDrag={Keyboard.dismiss}
+                showsVerticalScrollIndicator={true}
+                bounces={true}
+                nestedScrollEnabled={true}
+              >
                   <Animated.View
-                    style={[
-                      styles.card,
-                      {
-                        transform: [
-                          {
-                            translateY: cardFloatAnim.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [0, -8],
-                            }),
-                          },
-                          {
-                            scale: cardFloatAnim.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [1, 1.006],
-                            }),
-                          },
-                        ],
-                      },
-                    ]}
+                    className={`${"w-[100%] bg-[#FFFFFF] rounded-5 p-6 border-[1px] border-[#E2E8F0] shadow-lg"}`}
                   >
-                    <View style={styles.brandRow}>
+                    <View className="flex-row justify-space-between items-center gap-3">
                       <Pressable
                         onHoverIn={startShieldShake}
                         onHoverOut={stopShieldShake}
                       >
                         <Animated.View
-                          style={[
-                            styles.shieldIconContainer,
-                            {
-                              opacity: titleFade,
-                              transform: [
-                                {
-                                  rotate: shieldRotate.interpolate({
-                                    inputRange: [0, 1],
-                                    outputRange: ['-5deg', '5deg'],
-                                  }),
-                                },
-                                { translateX: shieldShake },
-                              ],
-                            },
-                          ]}
+                          className={`${"mr-2 items-center justify-center"}`} style={[{ translateX: shieldShake }]}
                         >
                           <Ionicons
                             name="shield-checkmark"
@@ -3565,41 +3384,21 @@ const AppContent = () => {
                           />
                         </Animated.View>
                       </Pressable>
-                      <View style={styles.brandTextContainer}>
+                      <View className="flex-[1]">
                         <Animated.Text
-                          style={[
-                            styles.title,
-                            {
-                              opacity: titleFade,
-                              transform: [
-                                {
-                                  translateY: titleFade.interpolate({
-                                    inputRange: [0, 1],
-                                    outputRange: [20, 0],
-                                  }),
-                                },
-                              ],
-                            },
-                          ]}
+                          className={`${"text-[28px] font-bold text-[#1E293B] mb-2"}`}
                         >
                           SafeRide Guardian
                         </Animated.Text>
-                        <Text style={styles.subtitle}>
+                        <Text className="text-sm text-[#64748B] mb-5 line-height-[20]">
                           AI-powered role-based recovery for buses, trains,
                           cabs, autos.
                         </Text>
-                        <View style={styles.statusBadgeRow}>
+                        <View className="mt-3">
                           <View
-                            style={[
-                              styles.statusBadge,
-                              apiStatus === "online"
-                                ? styles.statusBadgeOnline
-                                : apiStatus === "offline"
-                                  ? styles.statusBadgeOffline
-                                  : styles.statusBadgeChecking,
-                            ]}
+                            className={`${"self-start py-1.5 px-3 rounded-[999px]"}`}
                           >
-                            <Text style={styles.statusBadgeText}>
+                            <Text className="text-xs font-semibold text-[#1F2937]">
                               {apiStatus === "online"
                                 ? "Backend online"
                                 : apiStatus === "offline"
@@ -3609,11 +3408,11 @@ const AppContent = () => {
                           </View>
                         </View>
                         {apiStatus === "offline" && apiError.length > 0 && (
-                          <Text style={styles.apiErrorText}>{apiError}</Text>
+                          <Text className="mt-2 text-xs text-[#DC2626]">{apiError}</Text>
                         )}
                       </View>
                     </View>
-                    <View style={styles.divider} />
+                    <View className="h-[1px] bg-[#E2E8F0] mb-[18px]" />
 
                     {showRoleSelection ? (
                       <Animated.View
@@ -3629,9 +3428,9 @@ const AppContent = () => {
                           ],
                         }}
                       >
-                        <View style={styles.backButtonRow}>
+                        <View className="flex-row items-center mb-4">
                           <TouchableOpacity
-                            style={styles.backButton}
+                            className="p-2 mr-2"
                             onPress={() => {
                               setShowRoleSelection(false);
                               setSpecificRole("");
@@ -3644,19 +3443,19 @@ const AppContent = () => {
                               color="#2563EB"
                             />
                           </TouchableOpacity>
-                          <Text style={styles.formTitle}>
+                          <Text className="text-lg font-semibold text-[#1E293B] mb-4">
                             SafeRide Guardian
                           </Text>
                           <View style={{ width: 24 }} />
                         </View>
-                        <Text style={styles.sectionTitle}>
+                        <Text className="text-xl font-bold text-[#1E293B] mb-1.5">
                           Choose Your Authority
                         </Text>
-                        <Text style={styles.sectionSubtitle}>
+                        <Text className="text-[#94A3B8] mb-4 line-height-[20]">
                           Select one role to continue into the duty dashboard.
                         </Text>
 
-                        <View style={styles.authorityOptions}>
+                        <View className="mt-2 mb-3">
                           {[
                             {
                               key: "TTR",
@@ -3684,45 +3483,38 @@ const AppContent = () => {
                           ].map((item) => (
                             <TouchableOpacity
                               key={item.key}
-                              style={[
-                                styles.authorityOption,
-                                specificRole === item.key &&
-                                styles.authorityOptionActive,
-                              ]}
+                              className={`${"bg-[#F8FAFC] rounded-4 p-4 border-[1px] border-[#E2E8F0] mb-3"} ${specificRole === item.key ? "border-[#2563EB] bg-[#EFF6FF]" : ""}`}
                               onPress={() => setSpecificRole(item.key)}
                             >
-                              <Text style={styles.authorityOptionTitle}>
+                              <Text className="text-[#0F172A] font-bold mb-1.5">
                                 {item.title}
                               </Text>
-                              <Text style={styles.authorityOptionText}>
+                              <Text className="text-[#475569] line-height-[18]">
                                 {item.description}
                               </Text>
                             </TouchableOpacity>
                           ))}
                         </View>
 
-                        <View style={styles.selectionHints}>
-                          <Text style={styles.helperText}>
+                        <View className="mb-2.5">
+                          <Text className="text-[#64748B] text-xs mt-1.5">
                             Only one selectable.
                           </Text>
-                          <Text style={styles.helperText}>
+                          <Text className="text-[#64748B] text-xs mt-1.5">
                             Continue enabled after selection.
                           </Text>
                         </View>
 
                         {error.length > 0 && (
-                          <Text style={styles.errorText}>{error}</Text>
+                          <Text className="text-[#F87171] mb-3">{error}</Text>
                         )}
 
                         <TouchableOpacity
-                          style={[
-                            styles.primaryButton,
-                            !specificRole && styles.buttonDisabled,
-                          ]}
+                          className={`${"bg-[#2563EB] rounded-3 py-3.5 items-center mt-1.5 shadow-md"} ${!specificRole ? "opacity-[0.5]" : ""}`}
                           onPress={handleSpecificRoleSelection}
                           disabled={!specificRole}
                         >
-                          <Text style={styles.primaryButtonText}>Continue</Text>
+                          <Text className="text-[#F8FAFC] font-semibold letter-spacing-[0.3]">Continue</Text>
                         </TouchableOpacity>
                       </Animated.View>
                     ) : (
@@ -3739,33 +3531,41 @@ const AppContent = () => {
                           ],
                         }}
                       >
-                        <Text style={styles.formTitle}>
+                        <Text className="text-lg font-semibold text-[#1E293B] mb-4">
                           {isRegister
                             ? "Create your account"
                             : "Sign in to continue"}
                         </Text>
                         {isOfficialRole && !isRegister ? (
-                          <View style={styles.officerLoginBanner}>
-                            <Text style={styles.officerLoginBannerTag}>Officer access</Text>
-                            <Text style={styles.officerLoginBannerTitle}>Railway staff sign-in</Text>
-                            <Text style={styles.officerLoginBannerText}>
-                              Use your officer role, username, and password to open the duty dashboard.
+                          <View className="bg-[#EFF6FF] border-[1.5px] border-[#BFDBFE] rounded-4 p-3.5 gap-2.5 mb-1.5">
+                            <View className="flex-row items-center gap-3">
+                              <Ionicons name="shield-checkmark" size={26} color="#2563EB" />
+                              <View className="flex-[1]">
+                                <Text className="text-[#2563EB] text-[10px] font-extrabold letter-spacing-[1.2] text-transform-[uppercase]">Officer access</Text>
+                                <Text className="text-[#1E40AF] text-[17px] font-black mt-[1px]">Railway staff sign-in</Text>
+                              </View>
+                            </View>
+                            <Text className="text-[#475569] text-xs line-height-[18]">
+                              Use your Professional ID and password to open the duty dashboard.
                             </Text>
                           </View>
                         ) : null}
 
-                        <View style={styles.inputGroup}>
-                          <Text style={styles.label}>
-                            {requiredLabel(isOfficialRole ? "Officer role" : "Select role")}
-                          </Text>
-                          {renderRoleSelector()}
-                        </View>
+                        {!isOfficialRole && (
+                          <View className="mb-3.5">
+                            <Text className="text-[#475569] text-xs mb-1.5 font-medium">
+                              {requiredLabel("Select role")}
+                            </Text>
+                            {renderRoleSelector()}
+                          </View>
+                        )}
+
 
                         {isRegister && (
-                          <View style={styles.inputGroup}>
-                            <Text style={styles.label}>{requiredLabel("Full name")}</Text>
+                          <View className="mb-3.5">
+                            <Text className="text-[#475569] text-xs mb-1.5 font-medium">{requiredLabel("Full name")}</Text>
                             <TextInput
-                              style={styles.input}
+                              className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                               placeholder="Enter your name"
                               placeholderTextColor="#94A3B8"
                               value={name}
@@ -3776,10 +3576,10 @@ const AppContent = () => {
                         )}
 
                         {isRegister && (
-                          <View style={styles.inputGroup}>
-                            <Text style={styles.label}>{requiredLabel("Mobile number")}</Text>
+                          <View className="mb-3.5">
+                            <Text className="text-[#475569] text-xs mb-1.5 font-medium">{requiredLabel("Mobile number")}</Text>
                             <TextInput
-                              style={styles.input}
+                              className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                               placeholder="+91 98765 43210"
                               placeholderTextColor="#94A3B8"
                               value={phone}
@@ -3790,18 +3590,13 @@ const AppContent = () => {
                         )}
 
                         {(!isOfficialRole || !isRegister) && (
-                          <View style={styles.inputGroup}>
+                          <View className="mb-3.5">
                             <AnimatedLabel
                               text={requiredLabel(isOfficialRole ? "Username" : "Email address")}
                               iconName="mail"
                             />
                             <TextInput
-                              style={[
-                                styles.input,
-                                isRegister &&
-                                isVerified &&
-                                styles.inputDisabled,
-                              ]}
+                              className={`${"bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"}`}
                               placeholder={isOfficialRole ? "officer.username / officer.email" : "you@example.com"}
                               placeholderTextColor="#94A3B8"
                               value={email}
@@ -3814,10 +3609,10 @@ const AppContent = () => {
                         )}
 
                         {isOfficialRole && !forgotPasswordMode && (
-                          <View style={styles.inputGroup}>
-                            <Text style={styles.label}>{requiredLabel("Professional ID / badge")}</Text>
+                          <View className="mb-3.5">
+                            <Text className="text-[#475569] text-xs mb-1.5 font-medium">{requiredLabel("Professional ID / badge")}</Text>
                             <TextInput
-                              style={styles.input}
+                              className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                               placeholder={
                                 role === "Police"
                                   ? "TNPolice-45678"
@@ -3832,13 +3627,10 @@ const AppContent = () => {
                         )}
 
                         {isRegister && isOfficialRole && (
-                          <View style={styles.inputGroup}>
-                            <Text style={styles.label}>{requiredLabel("Email")}</Text>
+                          <View className="mb-3.5">
+                            <Text className="text-[#475569] text-xs mb-1.5 font-medium">{requiredLabel("Email")}</Text>
                             <TextInput
-                              style={[
-                                styles.input,
-                                isVerified && styles.inputDisabled,
-                              ]}
+                              className={`bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B] ${isVerified ? "bg-[#E2E8F0] text-[#94A3B8]" : ""}`}
                               placeholder="name@example.com"
                               placeholderTextColor="#94A3B8"
                               value={email}
@@ -3847,18 +3639,18 @@ const AppContent = () => {
                               keyboardType="email-address"
                               editable={!isVerified}
                             />
-                            <Text style={styles.helperText}>
+                            <Text className="text-[#64748B] text-xs mt-1.5">
                               Use your email for registration
                             </Text>
                           </View>
                         )}
 
                         {showPasswordInput && (
-                          <View style={styles.inputGroup}>
+                          <View className="mb-3.5">
                             <AnimatedLabel text={requiredLabel("Password")} iconName="lock-closed" />
-                            <View style={styles.passwordRow}>
+                            <View className="flex-row items-center">
                               <TextInput
-                                style={[styles.input, styles.passwordInput]}
+                                className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B] flex-[1]"
                                 placeholder="Enter your password"
                                 placeholderTextColor="#94A3B8"
                                 value={password}
@@ -3866,7 +3658,7 @@ const AppContent = () => {
                                 secureTextEntry={!showPassword}
                               />
                               <TouchableOpacity
-                                style={styles.eyeButton}
+                                className="ml-2.5 p-2 rounded-2.5 border-[1px] border-[#CBD5E1] bg-[#F8FAFC]"
                                 onPress={() =>
                                   setShowPassword((prev) => !prev)
                                 }
@@ -3893,11 +3685,11 @@ const AppContent = () => {
                         )}
 
                         {isRegister && (
-                          <View style={styles.inputGroup}>
-                            <Text style={styles.label}>{requiredLabel("Confirm password")}</Text>
-                            <View style={styles.passwordRow}>
+                          <View className="mb-3.5">
+                            <Text className="text-[#475569] text-xs mb-1.5 font-medium">{requiredLabel("Confirm password")}</Text>
+                            <View className="flex-row items-center">
                               <TextInput
-                                style={[styles.input, styles.passwordInput]}
+                                className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B] flex-[1]"
                                 placeholder="Re-enter your password"
                                 placeholderTextColor="#94A3B8"
                                 value={confirmPassword}
@@ -3905,7 +3697,7 @@ const AppContent = () => {
                                 secureTextEntry={!showConfirmPassword}
                               />
                               <TouchableOpacity
-                                style={styles.eyeButton}
+                                className="ml-2.5 p-2 rounded-2.5 border-[1px] border-[#CBD5E1] bg-[#F8FAFC]"
                                 onPress={() =>
                                   setShowConfirmPassword((prev) => !prev)
                                 }
@@ -3924,12 +3716,7 @@ const AppContent = () => {
                             </View>
                             {confirmPassword.length > 0 && (
                               <Text
-                                style={[
-                                  styles.confirmPasswordText,
-                                  isRegisterPasswordMatch
-                                    ? styles.confirmPasswordTextMatch
-                                    : styles.confirmPasswordTextNoMatch,
-                                ]}
+                                className={`mt-2 text-xs font-semibold ${isRegisterPasswordMatch ? "text-[#10B981]" : "text-[#F59E0B]"}`}
                               >
                                 {isRegisterPasswordMatch
                                   ? "✓ Passwords match"
@@ -3940,13 +3727,13 @@ const AppContent = () => {
                         )}
 
                         {!isRegister && !isOfficialRole && !isPostLoginOtpStep && (
-                          <View style={styles.otpToggleRow}>
-                            <Text style={styles.helperText}>
+                          <View className="flex-row justify-space-between items-center mb-3">
+                            <Text className="text-[#64748B] text-xs mt-1.5">
                               {loginWithOtp
                                 ? "Signing in with OTP"
                                 : "Use OTP instead of password"}
                             </Text>
-                            <View style={styles.otpToggleActions}>
+                            <View className="flex-row items-center gap-2">
                               <TouchableOpacity
                                 onPress={() => {
                                   if (loginWithOtp) {
@@ -3963,7 +3750,7 @@ const AppContent = () => {
                                   }
                                 }}
                               >
-                                <Text style={styles.switchLink}>
+                                <Text className="text-[#2563EB] font-semibold">
                                   {loginWithOtp
                                     ? "Use password"
                                     : "Sign in with OTP"}
@@ -3981,7 +3768,7 @@ const AppContent = () => {
                                   setError("");
                                 }}
                               >
-                                <Text style={styles.switchLink}>
+                                <Text className="text-[#2563EB] font-semibold">
                                   Reset password
                                 </Text>
                               </TouchableOpacity>
@@ -3992,8 +3779,8 @@ const AppContent = () => {
                         {!isRegister &&
                           isOfficialRole &&
                           !forgotPasswordMode && (
-                            <View style={styles.otpToggleRow}>
-                              <Text style={styles.helperText}>
+                            <View className="flex-row justify-space-between items-center mb-3">
+                              <Text className="text-[#64748B] text-xs mt-1.5">
                                 Forgot password?
                               </Text>
                               <TouchableOpacity
@@ -4004,7 +3791,7 @@ const AppContent = () => {
                                   setError("");
                                 }}
                               >
-                                <Text style={styles.switchLink}>
+                                <Text className="text-[#2563EB] font-semibold">
                                   Reset password
                                 </Text>
                               </TouchableOpacity>
@@ -4014,10 +3801,10 @@ const AppContent = () => {
                         {!isRegister &&
                           isOfficialRole &&
                           forgotPasswordMode && (
-                            <View style={styles.verifyCard}>
-                              <View style={styles.backButtonRow}>
+                            <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+                              <View className="flex-row items-center mb-4">
                                 <TouchableOpacity
-                                  style={styles.backButton}
+                                  className="p-2 mr-2"
                                   onPress={() => {
                                     setForgotPasswordMode(false);
                                     setResetCode("");
@@ -4036,24 +3823,24 @@ const AppContent = () => {
                                     color="#2563EB"
                                   />
                                 </TouchableOpacity>
-                                <Text style={styles.cardTitle}>
+                                <Text className="text-[#1E293B] font-semibold mb-2.5">
                                   Reset Password
                                 </Text>
                                 <View style={{ width: 24 }} />
                               </View>
-                              <Text style={styles.sectionSubtitle}>
+                              <Text className="text-[#94A3B8] mb-4 line-height-[20]">
                                 We'll send a verification code to your
                                 registered official email
                               </Text>
 
                               {!isResetCodeSent ? (
                                 <>
-                                  <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>
+                                  <View className="mb-3.5">
+                                    <Text className="text-[#475569] text-xs mb-1.5 font-medium">
                                       {requiredLabel("Professional ID")}
                                     </Text>
                                     <TextInput
-                                      style={styles.input}
+                                      className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                       placeholder={
                                         role === "Police"
                                           ? "TNPolice-45678"
@@ -4065,12 +3852,12 @@ const AppContent = () => {
                                       autoCapitalize="characters"
                                     />
                                   </View>
-                                  <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>
+                                  <View className="mb-3.5">
+                                    <Text className="text-[#475569] text-xs mb-1.5 font-medium">
                                       {requiredLabel("Email")}
                                     </Text>
                                     <TextInput
-                                      style={styles.input}
+                                      className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                       placeholder="name@example.com"
                                       placeholderTextColor="#94A3B8"
                                       value={email}
@@ -4078,18 +3865,14 @@ const AppContent = () => {
                                       autoCapitalize="none"
                                       keyboardType="email-address"
                                     />
-                                    <Text style={styles.helperText}>
+                                    <Text className="text-[#64748B] text-xs mt-1.5">
                                       Enter your registered email
                                     </Text>
                                   </View>
                                   <TouchableOpacity
-                                    style={[
-                                      styles.primaryButton,
-                                      (professionalId.trim().length < 6 ||
+                                    className={`${"bg-[#2563EB] rounded-3 py-3.5 items-center mt-1.5 shadow-md"} ${(professionalId.trim().length < 6 ||
                                         email.trim().length < 5 ||
-                                        isSendingResetCode) &&
-                                      styles.buttonDisabled,
-                                    ]}
+                                        isSendingResetCode) ? "opacity-[0.5]" : ""}`}
                                     onPress={handleSendResetCode}
                                     disabled={
                                       professionalId.trim().length < 6 ||
@@ -4097,7 +3880,7 @@ const AppContent = () => {
                                       isSendingResetCode
                                     }
                                   >
-                                    <Text style={styles.primaryButtonText}>
+                                    <Text className="text-[#F8FAFC] font-semibold letter-spacing-[0.3]">
                                       {isSendingResetCode
                                         ? "Sending reset code..."
                                         : "Send reset code"}
@@ -4105,11 +3888,11 @@ const AppContent = () => {
                                   </TouchableOpacity>
                                 </>
                               ) : resetSuccess ? (
-                                <View style={styles.successCard}>
-                                  <Text style={styles.successText}>
+                                <View className="bg-[#DCFCE7] rounded-4 p-4 mb-4 border-[1px] border-[#86EFAC]">
+                                  <Text className="text-[#16A34A] mt-2.5 font-semibold">
                                     ✅ Password reset successful!
                                   </Text>
-                                  <Text style={styles.cardText}>
+                                  <Text className="text-[#475569] mb-1.5">
                                     You can now login with your new password.
                                   </Text>
                                 </View>
@@ -4117,12 +3900,12 @@ const AppContent = () => {
                                 <>
                                   {!isResetCodeVerified ? (
                                     <>
-                                      <View style={styles.inputGroup}>
-                                        <Text style={styles.label}>
+                                      <View className="mb-3.5">
+                                        <Text className="text-[#475569] text-xs mb-1.5 font-medium">
                                           {requiredLabel("Reset Code")}
                                         </Text>
                                         <TextInput
-                                          style={styles.input}
+                                          className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                           placeholder="Enter 6-digit reset code"
                                           placeholderTextColor="#94A3B8"
                                           value={resetCode}
@@ -4130,43 +3913,35 @@ const AppContent = () => {
                                           keyboardType="number-pad"
                                           maxLength={6}
                                         />
-                                        <Text style={styles.helperText}>
+                                        <Text className="text-[#64748B] text-xs mt-1.5">
                                           Check your email for the 6-digit code
                                         </Text>
                                       </View>
                                       <TouchableOpacity
-                                        style={[
-                                          styles.primaryButton,
-                                          (resetCode.trim().length !== 6 ||
-                                            isVerifyingResetCode) &&
-                                          styles.buttonDisabled,
-                                        ]}
+                                        className={`${"bg-[#2563EB] rounded-3 py-3.5 items-center mt-1.5 shadow-md"} ${(resetCode.trim().length !== 6 ||
+                                            isVerifyingResetCode) ? "opacity-[0.5]" : ""}`}
                                         onPress={handleVerifyResetCode}
                                         disabled={
                                           resetCode.trim().length !== 6 ||
                                           isVerifyingResetCode
                                         }
                                       >
-                                        <Text style={styles.primaryButtonText}>
+                                        <Text className="text-[#F8FAFC] font-semibold letter-spacing-[0.3]">
                                           {isVerifyingResetCode
                                             ? "Verifying code..."
                                             : "Verify Code"}
                                         </Text>
                                       </TouchableOpacity>
                                       <TouchableOpacity
-                                        style={[
-                                          styles.textButton,
-                                          (resetResendCountdown > 0 ||
-                                            isSendingResetCode) &&
-                                          styles.buttonDisabled,
-                                        ]}
+                                        className={`${"mt-3 items-center"} ${(resetResendCountdown > 0 ||
+                                            isSendingResetCode) ? "opacity-[0.5]" : ""}`}
                                         onPress={handleResendResetCode}
                                         disabled={
                                           resetResendCountdown > 0 ||
                                           isSendingResetCode
                                         }
                                       >
-                                        <Text style={styles.switchLink}>
+                                        <Text className="text-[#2563EB] font-semibold">
                                           {isSendingResetCode
                                             ? "Sending code..."
                                             : resetResendCountdown > 0
@@ -4177,19 +3952,16 @@ const AppContent = () => {
                                     </>
                                   ) : (
                                     <>
-                                      <Text style={styles.sectionSubtitle}>
+                                      <Text className="text-[#94A3B8] mb-4 line-height-[20]">
                                         Code verified! Now set your new password
                                       </Text>
-                                      <View style={styles.inputGroup}>
-                                        <Text style={styles.label}>
+                                      <View className="mb-3.5">
+                                        <Text className="text-[#475569] text-xs mb-1.5 font-medium">
                                           {requiredLabel("New Password")}
                                         </Text>
-                                        <View style={styles.passwordRow}>
+                                        <View className="flex-row items-center">
                                           <TextInput
-                                            style={[
-                                              styles.input,
-                                              styles.passwordInput,
-                                            ]}
+                                            className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B] flex-[1]"
                                             placeholder="Enter new password"
                                             placeholderTextColor="#94A3B8"
                                             value={newPassword}
@@ -4197,7 +3969,7 @@ const AppContent = () => {
                                             secureTextEntry={!showNewPassword}
                                           />
                                           <TouchableOpacity
-                                            style={styles.eyeButton}
+                                            className="ml-2.5 p-2 rounded-2.5 border-[1px] border-[#CBD5E1] bg-[#F8FAFC]"
                                             onPress={() =>
                                               setShowNewPassword((prev) => !prev)
                                             }
@@ -4214,16 +3986,13 @@ const AppContent = () => {
                                           </TouchableOpacity>
                                         </View>
                                       </View>
-                                      <View style={styles.inputGroup}>
-                                        <Text style={styles.label}>
+                                      <View className="mb-3.5">
+                                        <Text className="text-[#475569] text-xs mb-1.5 font-medium">
                                           {requiredLabel("Confirm New Password")}
                                         </Text>
-                                        <View style={styles.passwordRow}>
+                                        <View className="flex-row items-center">
                                           <TextInput
-                                            style={[
-                                              styles.input,
-                                              styles.passwordInput,
-                                            ]}
+                                            className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B] flex-[1]"
                                             placeholder="Re-enter new password"
                                             placeholderTextColor="#94A3B8"
                                             value={confirmNewPassword}
@@ -4235,7 +4004,7 @@ const AppContent = () => {
                                             }
                                           />
                                           <TouchableOpacity
-                                            style={styles.eyeButton}
+                                            className="ml-2.5 p-2 rounded-2.5 border-[1px] border-[#CBD5E1] bg-[#F8FAFC]"
                                             onPress={() =>
                                               setShowConfirmNewPassword(
                                                 (prev) => !prev,
@@ -4262,12 +4031,7 @@ const AppContent = () => {
                                       )}
                                       {confirmNewPassword.length > 0 && (
                                         <Text
-                                          style={[
-                                            styles.confirmPasswordText,
-                                            isResetPasswordMatch
-                                              ? styles.confirmPasswordTextMatch
-                                              : styles.confirmPasswordTextNoMatch,
-                                          ]}
+                                          className={`mt-2 text-xs font-semibold ${isResetPasswordMatch ? "text-[#10B981]" : "text-[#F59E0B]"}`}
                                         >
                                           {isResetPasswordMatch
                                             ? "✓ Passwords match"
@@ -4275,14 +4039,10 @@ const AppContent = () => {
                                         </Text>
                                       )}
                                       <TouchableOpacity
-                                        style={[
-                                          styles.primaryButton,
-                                          (!isNewPasswordStrong ||
+                                        className={`${"bg-[#2563EB] rounded-3 py-3.5 items-center mt-1.5 shadow-md"} ${(!isNewPasswordStrong ||
                                             !isResetPasswordMatch ||
                                             confirmNewPassword.trim().length <
-                                            PASSWORD_MIN_LENGTH) &&
-                                          styles.buttonDisabled,
-                                        ]}
+                                            PASSWORD_MIN_LENGTH) ? "opacity-[0.5]" : ""}`}
                                         onPress={handleResetPassword}
                                         disabled={
                                           !isNewPasswordStrong ||
@@ -4291,12 +4051,12 @@ const AppContent = () => {
                                           PASSWORD_MIN_LENGTH
                                         }
                                       >
-                                        <Text style={styles.primaryButtonText}>
+                                        <Text className="text-[#F8FAFC] font-semibold letter-spacing-[0.3]">
                                           Reset Password
                                         </Text>
                                       </TouchableOpacity>
                                       <TouchableOpacity
-                                        style={[styles.textButton]}
+                                        className={`${"mt-3 items-center"}`}
                                         onPress={() => {
                                           setIsResetCodeVerified(false);
                                           setResetCode("");
@@ -4305,7 +4065,7 @@ const AppContent = () => {
                                           setError("");
                                         }}
                                       >
-                                        <Text style={styles.switchLink}>
+                                        <Text className="text-[#2563EB] font-semibold">
                                           Use different code
                                         </Text>
                                       </TouchableOpacity>
@@ -4319,10 +4079,10 @@ const AppContent = () => {
                         {!isRegister &&
                           !isOfficialRole &&
                           forgotPasswordMode && (
-                            <View style={styles.verifyCard}>
-                              <View style={styles.backButtonRow}>
+                            <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+                              <View className="flex-row items-center mb-4">
                                 <TouchableOpacity
-                                  style={styles.backButton}
+                                  className="p-2 mr-2"
                                   onPress={() => {
                                     setForgotPasswordMode(false);
                                     setResetCode("");
@@ -4340,22 +4100,22 @@ const AppContent = () => {
                                     color="#2563EB"
                                   />
                                 </TouchableOpacity>
-                                <Text style={styles.cardTitle}>
+                                <Text className="text-[#1E293B] font-semibold mb-2.5">
                                   Reset Password
                                 </Text>
                                 <View style={{ width: 24 }} />
                               </View>
-                              <Text style={styles.sectionSubtitle}>
+                              <Text className="text-[#94A3B8] mb-4 line-height-[20]">
                                 We'll send a verification code to your
                                 registered email
                               </Text>
 
                               {!isResetCodeSent ? (
                                 <>
-                                  <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>{requiredLabel("Email")}</Text>
+                                  <View className="mb-3.5">
+                                    <Text className="text-[#475569] text-xs mb-1.5 font-medium">{requiredLabel("Email")}</Text>
                                     <TextInput
-                                      style={styles.input}
+                                      className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                       placeholder="Enter your email"
                                       placeholderTextColor="#94A3B8"
                                       value={email}
@@ -4363,24 +4123,20 @@ const AppContent = () => {
                                       autoCapitalize="none"
                                       keyboardType="email-address"
                                     />
-                                    <Text style={styles.helperText}>
+                                    <Text className="text-[#64748B] text-xs mt-1.5">
                                       Enter your registered email address
                                     </Text>
                                   </View>
                                   <TouchableOpacity
-                                    style={[
-                                      styles.primaryButton,
-                                      (email.trim().length < 5 ||
-                                        isSendingResetCode) &&
-                                      styles.buttonDisabled,
-                                    ]}
+                                    className={`${"bg-[#2563EB] rounded-3 py-3.5 items-center mt-1.5 shadow-md"} ${(email.trim().length < 5 ||
+                                        isSendingResetCode) ? "opacity-[0.5]" : ""}`}
                                     onPress={handleSendResetCodeUser}
                                     disabled={
                                       email.trim().length < 5 ||
                                       isSendingResetCode
                                     }
                                   >
-                                    <Text style={styles.primaryButtonText}>
+                                    <Text className="text-[#F8FAFC] font-semibold letter-spacing-[0.3]">
                                       {isSendingResetCode
                                         ? "Sending verification code..."
                                         : "Send verification code"}
@@ -4388,11 +4144,11 @@ const AppContent = () => {
                                   </TouchableOpacity>
                                 </>
                               ) : resetSuccess ? (
-                                <View style={styles.successCard}>
-                                  <Text style={styles.successText}>
+                                <View className="bg-[#DCFCE7] rounded-4 p-4 mb-4 border-[1px] border-[#86EFAC]">
+                                  <Text className="text-[#16A34A] mt-2.5 font-semibold">
                                     ✅ Password reset successful!
                                   </Text>
-                                  <Text style={styles.cardText}>
+                                  <Text className="text-[#475569] mb-1.5">
                                     You can now login with your new password.
                                   </Text>
                                 </View>
@@ -4400,12 +4156,12 @@ const AppContent = () => {
                                 <>
                                   {!isResetCodeVerified ? (
                                     <>
-                                      <View style={styles.inputGroup}>
-                                        <Text style={styles.label}>
+                                      <View className="mb-3.5">
+                                        <Text className="text-[#475569] text-xs mb-1.5 font-medium">
                                           {requiredLabel("Verification Code")}
                                         </Text>
                                         <TextInput
-                                          style={styles.input}
+                                          className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                           placeholder="Enter 6-digit code"
                                           placeholderTextColor="#94A3B8"
                                           value={resetCode}
@@ -4413,43 +4169,35 @@ const AppContent = () => {
                                           keyboardType="number-pad"
                                           maxLength={6}
                                         />
-                                        <Text style={styles.helperText}>
+                                        <Text className="text-[#64748B] text-xs mt-1.5">
                                           Check your email for the 6-digit code
                                         </Text>
                                       </View>
                                       <TouchableOpacity
-                                        style={[
-                                          styles.primaryButton,
-                                          (resetCode.trim().length !== 6 ||
-                                            isVerifyingResetCode) &&
-                                          styles.buttonDisabled,
-                                        ]}
+                                        className={`${"bg-[#2563EB] rounded-3 py-3.5 items-center mt-1.5 shadow-md"} ${(resetCode.trim().length !== 6 ||
+                                            isVerifyingResetCode) ? "opacity-[0.5]" : ""}`}
                                         onPress={handleVerifyResetCodeUser}
                                         disabled={
                                           resetCode.trim().length !== 6 ||
                                           isVerifyingResetCode
                                         }
                                       >
-                                        <Text style={styles.primaryButtonText}>
+                                        <Text className="text-[#F8FAFC] font-semibold letter-spacing-[0.3]">
                                           {isVerifyingResetCode
                                             ? "Verifying code..."
                                             : "Verify Code"}
                                         </Text>
                                       </TouchableOpacity>
                                       <TouchableOpacity
-                                        style={[
-                                          styles.textButton,
-                                          (resetResendCountdown > 0 ||
-                                            isSendingResetCode) &&
-                                          styles.buttonDisabled,
-                                        ]}
+                                        className={`${"mt-3 items-center"} ${(resetResendCountdown > 0 ||
+                                            isSendingResetCode) ? "opacity-[0.5]" : ""}`}
                                         onPress={handleResendResetCodeUser}
                                         disabled={
                                           resetResendCountdown > 0 ||
                                           isSendingResetCode
                                         }
                                       >
-                                        <Text style={styles.switchLink}>
+                                        <Text className="text-[#2563EB] font-semibold">
                                           {isSendingResetCode
                                             ? "Sending code..."
                                             : resetResendCountdown > 0
@@ -4460,19 +4208,16 @@ const AppContent = () => {
                                     </>
                                   ) : (
                                     <>
-                                      <Text style={styles.sectionSubtitle}>
+                                      <Text className="text-[#94A3B8] mb-4 line-height-[20]">
                                         Code verified! Now set your new password
                                       </Text>
-                                      <View style={styles.inputGroup}>
-                                        <Text style={styles.label}>
+                                      <View className="mb-3.5">
+                                        <Text className="text-[#475569] text-xs mb-1.5 font-medium">
                                           {requiredLabel("New Password")}
                                         </Text>
-                                        <View style={styles.passwordRow}>
+                                        <View className="flex-row items-center">
                                           <TextInput
-                                            style={[
-                                              styles.input,
-                                              styles.passwordInput,
-                                            ]}
+                                            className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B] flex-[1]"
                                             placeholder="Enter new password"
                                             placeholderTextColor="#94A3B8"
                                             value={newPassword}
@@ -4480,7 +4225,7 @@ const AppContent = () => {
                                             secureTextEntry={!showNewPassword}
                                           />
                                           <TouchableOpacity
-                                            style={styles.eyeButton}
+                                            className="ml-2.5 p-2 rounded-2.5 border-[1px] border-[#CBD5E1] bg-[#F8FAFC]"
                                             onPress={() =>
                                               setShowNewPassword((prev) => !prev)
                                             }
@@ -4497,16 +4242,13 @@ const AppContent = () => {
                                           </TouchableOpacity>
                                         </View>
                                       </View>
-                                      <View style={styles.inputGroup}>
-                                        <Text style={styles.label}>
+                                      <View className="mb-3.5">
+                                        <Text className="text-[#475569] text-xs mb-1.5 font-medium">
                                           {requiredLabel("Confirm New Password")}
                                         </Text>
-                                        <View style={styles.passwordRow}>
+                                        <View className="flex-row items-center">
                                           <TextInput
-                                            style={[
-                                              styles.input,
-                                              styles.passwordInput,
-                                            ]}
+                                            className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B] flex-[1]"
                                             placeholder="Re-enter new password"
                                             placeholderTextColor="#94A3B8"
                                             value={confirmNewPassword}
@@ -4518,7 +4260,7 @@ const AppContent = () => {
                                             }
                                           />
                                           <TouchableOpacity
-                                            style={styles.eyeButton}
+                                            className="ml-2.5 p-2 rounded-2.5 border-[1px] border-[#CBD5E1] bg-[#F8FAFC]"
                                             onPress={() =>
                                               setShowConfirmNewPassword(
                                                 (prev) => !prev,
@@ -4545,12 +4287,7 @@ const AppContent = () => {
                                       )}
                                       {confirmNewPassword.length > 0 && (
                                         <Text
-                                          style={[
-                                            styles.confirmPasswordText,
-                                            isResetPasswordMatch
-                                              ? styles.confirmPasswordTextMatch
-                                              : styles.confirmPasswordTextNoMatch,
-                                          ]}
+                                          className={`mt-2 text-xs font-semibold ${isResetPasswordMatch ? "text-[#10B981]" : "text-[#F59E0B]"}`}
                                         >
                                           {isResetPasswordMatch
                                             ? "✓ Passwords match"
@@ -4558,14 +4295,10 @@ const AppContent = () => {
                                         </Text>
                                       )}
                                       <TouchableOpacity
-                                        style={[
-                                          styles.primaryButton,
-                                          (!isNewPasswordStrong ||
+                                        className={`${"bg-[#2563EB] rounded-3 py-3.5 items-center mt-1.5 shadow-md"} ${(!isNewPasswordStrong ||
                                             !isResetPasswordMatch ||
                                             confirmNewPassword.trim().length <
-                                            PASSWORD_MIN_LENGTH) &&
-                                          styles.buttonDisabled,
-                                        ]}
+                                            PASSWORD_MIN_LENGTH) ? "opacity-[0.5]" : ""}`}
                                         onPress={handleResetPasswordUser}
                                         disabled={
                                           !isNewPasswordStrong ||
@@ -4574,12 +4307,12 @@ const AppContent = () => {
                                           PASSWORD_MIN_LENGTH
                                         }
                                       >
-                                        <Text style={styles.primaryButtonText}>
+                                        <Text className="text-[#F8FAFC] font-semibold letter-spacing-[0.3]">
                                           Reset Password
                                         </Text>
                                       </TouchableOpacity>
                                       <TouchableOpacity
-                                        style={[styles.textButton]}
+                                        className={`${"mt-3 items-center"}`}
                                         onPress={() => {
                                           setIsResetCodeVerified(false);
                                           setResetCode("");
@@ -4588,7 +4321,7 @@ const AppContent = () => {
                                           setError("");
                                         }}
                                       >
-                                        <Text style={styles.switchLink}>
+                                        <Text className="text-[#2563EB] font-semibold">
                                           Use different code
                                         </Text>
                                       </TouchableOpacity>
@@ -4600,15 +4333,15 @@ const AppContent = () => {
                           )}
 
                         {isOtpContext && (
-                          <View style={styles.verifyCard}>
-                            <Text style={styles.cardTitle}>
+                          <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+                            <Text className="text-[#1E293B] font-semibold mb-2.5">
                               {isRegister
                                 ? "Email verification"
                                 : isPostLoginOtpStep
                                   ? "Login verification"
                                   : "OTP sign-in"}
                             </Text>
-                            <Text style={styles.sectionSubtitle}>
+                            <Text className="text-[#94A3B8] mb-4 line-height-[20]">
                               {isRegister
                                 ? "We'll send a verification code to your email address"
                                 : isPostLoginOtpStep
@@ -4617,19 +4350,15 @@ const AppContent = () => {
                             </Text>
                             {!isOtpSent ? (
                               <TouchableOpacity
-                                style={[
-                                  styles.primaryButton,
-                                  (otpEmail.trim().length < 5 ||
-                                    isSendingOtp) &&
-                                  styles.buttonDisabled,
-                                ]}
+                                className={`${"bg-[#2563EB] rounded-3 py-3.5 items-center mt-1.5 shadow-md"} ${(otpEmail.trim().length < 5 ||
+                                    isSendingOtp) ? "opacity-[0.5]" : ""}`}
                                 onPress={handleSendOtp}
                                 disabled={
                                   otpEmail.trim().length < 5 || isSendingOtp
                                 }
                                 activeOpacity={0.9}
                               >
-                                <Text style={styles.primaryButtonText}>
+                                <Text className="text-[#F8FAFC] font-semibold letter-spacing-[0.3]">
                                   {isSendingOtp
                                     ? "Sending verification code..."
                                     : "Send verification code"}
@@ -4637,15 +4366,12 @@ const AppContent = () => {
                               </TouchableOpacity>
                             ) : (
                               <>
-                                <View style={styles.inputGroup}>
-                                  <Text style={styles.label}>
+                                <View className="mb-3.5">
+                                  <Text className="text-[#475569] text-xs mb-1.5 font-medium">
                                     {requiredLabel("Verification code")}
                                   </Text>
                                   <TextInput
-                                    style={[
-                                      styles.input,
-                                      isVerified && styles.inputDisabled,
-                                    ]}
+                                    className={`bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B] ${isVerified ? "bg-[#E2E8F0] text-[#94A3B8]" : ""}`}
                                     placeholder="Enter 6-digit code"
                                     placeholderTextColor="#94A3B8"
                                     value={emailOtp}
@@ -4656,31 +4382,24 @@ const AppContent = () => {
                                   />
                                 </View>
                                 <TouchableOpacity
-                                  style={[
-                                    styles.secondaryButton,
-                                    !canVerify && styles.buttonDisabled,
-                                  ]}
+                                  className={`${"border-[1px] border-[#38BDF8] rounded-3 py-3 items-center"} ${!canVerify ? "opacity-[0.5]" : ""}`}
                                   onPress={handleVerify}
                                   disabled={!canVerify}
                                 >
-                                  <Text style={styles.secondaryButtonText}>
+                                  <Text className="text-[#38BDF8] font-semibold">
                                     {isVerified
                                       ? "Verified ✅"
                                       : "Verify email"}
                                   </Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                  style={[
-                                    styles.textButton,
-                                    otpResendCountdown > 0 &&
-                                    styles.buttonDisabled,
-                                  ]}
+                                  className={`${"mt-3 items-center"} ${otpResendCountdown > 0 ? "opacity-[0.5]" : ""}`}
                                   onPress={handleSendOtp}
                                   activeOpacity={0.85}
                                   disabled={otpResendCountdown > 0}
                                 >
                                   {!isVerified && (
-                                    <Text style={styles.switchLink}>
+                                    <Text className="text-[#2563EB] font-semibold">
                                       {otpResendCountdown > 0
                                         ? `Resend code (${otpResendCountdown}s)`
                                         : "Resend code"}
@@ -4696,29 +4415,21 @@ const AppContent = () => {
                           role === "Passenger" &&
                           isOtpSent &&
                           isVerified && (
-                            <View style={styles.cardBlock}>
-                              <Text style={styles.cardTitle}>
+                            <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+                              <Text className="text-[#1E293B] font-semibold mb-2.5">
                                 Passenger travel details
                               </Text>
-                              <View style={styles.inputGroup}>
-                                <Text style={styles.label}>{requiredLabel("Travel mode")}</Text>
-                                <View style={styles.roleRow}>
+                              <View className="mb-3.5">
+                                <Text className="text-[#475569] text-xs mb-1.5 font-medium">{requiredLabel("Travel mode")}</Text>
+                                <View className="flex-row flex-wrap mx-[-4px]">
                                   {["Bus", "Train"].map((item) => (
                                     <TouchableOpacity
                                       key={item}
-                                      style={[
-                                        styles.roleChip,
-                                        travelType === item &&
-                                        styles.roleChipActive,
-                                      ]}
+                                      className={`${"border-[1px] border-[#CBD5E1] bg-[#F8FAFC] py-1.5 px-2.5 rounded-[999px] m-1"} ${travelType === item ? "bg-[#2563EB] border-[#2563EB]" : ""}`}
                                       onPress={() => setTravelType(item)}
                                     >
                                       <Text
-                                        style={[
-                                          styles.roleChipText,
-                                          travelType === item &&
-                                          styles.roleChipTextActive,
-                                        ]}
+                                        className={`${"text-[#475569] text-xs"} ${travelType === item ? "text-[#F8FAFC] font-semibold" : ""}`}
                                       >
                                         {item}
                                       </Text>
@@ -4726,28 +4437,28 @@ const AppContent = () => {
                                   ))}
                                 </View>
                               </View>
-                              <View style={styles.inputGroup}>
-                                <Text style={styles.label}>
+                              <View className="mb-3.5">
+                                <Text className="text-[#475569] text-xs mb-1.5 font-medium">
                                   {requiredLabel(
                                     `${travelType === "Bus" ? "Bus" : "Train"} number`,
                                   )}
                                 </Text>
                                 <TextInput
-                                  style={styles.input}
+                                  className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                   placeholder="TN-01-AB-1234"
                                   placeholderTextColor="#94A3B8"
                                   value={travelNumber}
                                   onChangeText={setTravelNumber}
                                 />
                               </View>
-                              <View style={styles.inputGroup}>
-                                <Text style={styles.label}>
+                              <View className="mb-3.5">
+                                <Text className="text-[#475569] text-xs mb-1.5 font-medium">
                                   {travelType === "Bus"
                                     ? "Bus name (optional)"
                                     : requiredLabel("Train name")}
                                 </Text>
                                 <TextInput
-                                  style={styles.input}
+                                  className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                   placeholder="MTC 27B / MS-EXP-204"
                                   placeholderTextColor="#94A3B8"
                                   value={travelName}
@@ -4756,37 +4467,37 @@ const AppContent = () => {
                               </View>
                               {travelType === "Bus" ? (
                                 <>
-                                  <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>
+                                  <View className="mb-3.5">
+                                    <Text className="text-[#475569] text-xs mb-1.5 font-medium">
                                       {requiredLabel("Departure stop")}
                                     </Text>
                                     <TextInput
-                                      style={styles.input}
+                                      className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                       placeholder="Velachery"
                                       placeholderTextColor="#94A3B8"
                                       value={busDeparture}
                                       onChangeText={setBusDeparture}
                                     />
                                   </View>
-                                  <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>
+                                  <View className="mb-3.5">
+                                    <Text className="text-[#475569] text-xs mb-1.5 font-medium">
                                       {requiredLabel("Arrival stop")}
                                     </Text>
                                     <TextInput
-                                      style={styles.input}
+                                      className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                       placeholder="CMBT"
                                       placeholderTextColor="#94A3B8"
                                       value={busArrival}
                                       onChangeText={setBusArrival}
                                     />
                                   </View>
-                                  <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>
+                                  <View className="mb-3.5">
+                                    <Text className="text-[#475569] text-xs mb-1.5 font-medium">
                                       {requiredLabel("Bus start timing")}
                                     </Text>
-                                    <View style={styles.timeFieldRow}>
+                                    <View className="gap-2.5">
                                       <TextInput
-                                        style={[styles.input, styles.timeInput]}
+                                        className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B] w-[100%]"
                                         placeholder="09:30"
                                         placeholderTextColor="#94A3B8"
                                         value={busStartTime}
@@ -4802,20 +4513,20 @@ const AppContent = () => {
                                 </>
                               ) : (
                                 <>
-                                  <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>{requiredLabel("Route")}</Text>
+                                  <View className="mb-3.5">
+                                    <Text className="text-[#475569] text-xs mb-1.5 font-medium">{requiredLabel("Route")}</Text>
                                     <TextInput
-                                      style={styles.input}
+                                      className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                       placeholder="Velachery → CMBT"
                                       placeholderTextColor="#94A3B8"
                                       value={travelRoute}
                                       onChangeText={setTravelRoute}
                                     />
                                   </View>
-                                  <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>{requiredLabel("Timing")}</Text>
+                                  <View className="mb-3.5">
+                                    <Text className="text-[#475569] text-xs mb-1.5 font-medium">{requiredLabel("Timing")}</Text>
                                     <TextInput
-                                      style={styles.input}
+                                      className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                       placeholder="09:30AM - 11:45AM"
                                       placeholderTextColor="#94A3B8"
                                       value={travelTiming}
@@ -4826,24 +4537,24 @@ const AppContent = () => {
                               )}
                               {travelType === "Bus" && (
                                 <>
-                                  <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>
+                                  <View className="mb-3.5">
+                                    <Text className="text-[#475569] text-xs mb-1.5 font-medium">
                                       Driver name (optional)
                                     </Text>
                                     <TextInput
-                                      style={styles.input}
+                                      className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                       placeholder="Driver name"
                                       placeholderTextColor="#94A3B8"
                                       value={driverName}
                                       onChangeText={setDriverName}
                                     />
                                   </View>
-                                  <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>
+                                  <View className="mb-3.5">
+                                    <Text className="text-[#475569] text-xs mb-1.5 font-medium">
                                       Conductor name (optional)
                                     </Text>
                                     <TextInput
-                                      style={styles.input}
+                                      className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                       placeholder="Conductor name"
                                       placeholderTextColor="#94A3B8"
                                       value={conductorName}
@@ -4859,44 +4570,44 @@ const AppContent = () => {
                           isOperationalStaff &&
                           isOtpSent &&
                           isVerified && (
-                            <View style={styles.cardBlock}>
-                              <Text style={styles.cardTitle}>
+                            <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+                              <Text className="text-[#1E293B] font-semibold mb-2.5">
                                 Daily duty roster
                               </Text>
-                              <View style={styles.inputGroup}>
-                                <Text style={styles.label}>{requiredLabel("Vehicle number")}</Text>
+                              <View className="mb-3.5">
+                                <Text className="text-[#475569] text-xs mb-1.5 font-medium">{requiredLabel("Vehicle number")}</Text>
                                 <TextInput
-                                  style={styles.input}
+                                  className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                   placeholder="TN-01-AB-1234"
                                   placeholderTextColor="#94A3B8"
                                   value={vehicleNumber}
                                   onChangeText={setVehicleNumber}
                                 />
                               </View>
-                              <View style={styles.inputGroup}>
-                                <Text style={styles.label}>{requiredLabel("Shift timing")}</Text>
+                              <View className="mb-3.5">
+                                <Text className="text-[#475569] text-xs mb-1.5 font-medium">{requiredLabel("Shift timing")}</Text>
                                 <TextInput
-                                  style={styles.input}
+                                  className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                   placeholder="6AM - 2PM"
                                   placeholderTextColor="#94A3B8"
                                   value={shiftTiming}
                                   onChangeText={setShiftTiming}
                                 />
                               </View>
-                              <View style={styles.inputGroup}>
-                                <Text style={styles.label}>{requiredLabel("From stop")}</Text>
+                              <View className="mb-3.5">
+                                <Text className="text-[#475569] text-xs mb-1.5 font-medium">{requiredLabel("From stop")}</Text>
                                 <TextInput
-                                  style={styles.input}
+                                  className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                   placeholder="Velachery"
                                   placeholderTextColor="#94A3B8"
                                   value={fromStop}
                                   onChangeText={setFromStop}
                                 />
                               </View>
-                              <View style={styles.inputGroup}>
-                                <Text style={styles.label}>{requiredLabel("To stop")}</Text>
+                              <View className="mb-3.5">
+                                <Text className="text-[#475569] text-xs mb-1.5 font-medium">{requiredLabel("To stop")}</Text>
                                 <TextInput
-                                  style={styles.input}
+                                  className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                   placeholder="CMBT"
                                   placeholderTextColor="#94A3B8"
                                   value={toStop}
@@ -4907,27 +4618,27 @@ const AppContent = () => {
                           )}
 
                         {isRegister && isOfficialRole && (
-                          <View style={styles.cardBlock}>
-                            <Text style={styles.cardTitle}>
+                          <View className="bg-[#F8FAFC] rounded-4 p-4 mb-4 border-[1px] border-[#E2E8F0]">
+                            <Text className="text-[#1E293B] font-semibold mb-2.5">
                               Official duty details
                             </Text>
-                            <Text style={styles.sectionSubtitle}>
+                            <Text className="text-[#94A3B8] mb-4 line-height-[20]">
                               Admin approval required within 24 hours.
                             </Text>
-                            <View style={styles.inputGroup}>
-                              <Text style={styles.label}>{requiredLabel("Train PNR range")}</Text>
+                            <View className="mb-3.5">
+                              <Text className="text-[#475569] text-xs mb-1.5 font-medium">{requiredLabel("Train PNR range")}</Text>
                               <TextInput
-                                style={styles.input}
+                                className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                 placeholder="4528193000-4528193999"
                                 placeholderTextColor="#94A3B8"
                                 value={pnrRange}
                                 onChangeText={setPnrRange}
                               />
                             </View>
-                            <View style={styles.inputGroup}>
-                              <Text style={styles.label}>{requiredLabel("Jurisdiction")}</Text>
+                            <View className="mb-3.5">
+                              <Text className="text-[#475569] text-xs mb-1.5 font-medium">{requiredLabel("Jurisdiction")}</Text>
                               <TextInput
-                                style={styles.input}
+                                className="bg-[#F8FAFC] border-[#CBD5E1] border-[1px] rounded-3 py-3 px-3.5 text-[#1E293B]"
                                 placeholder="Chennai Central Division"
                                 placeholderTextColor="#94A3B8"
                                 value={jurisdiction}
@@ -4938,32 +4649,29 @@ const AppContent = () => {
                         )}
 
                         {error.length > 0 && (
-                          <Text style={styles.errorText}>{error}</Text>
+                          <Text className="text-[#F87171] mb-3">{error}</Text>
                         )}
 
                         {!forgotPasswordMode && (
                           <View>
                             <TouchableOpacity
-                              style={[
-                                styles.primaryButton,
-                                !canSubmit && styles.buttonDisabled,
-                              ]}
+                              className={`${"bg-[#2563EB] rounded-3 py-3.5 items-center mt-1.5 shadow-md"} ${!canSubmit ? "opacity-[0.5]" : ""}`}
                               onPress={handleSubmit}
                               disabled={!canSubmit}
                             >
-                              <Text style={styles.primaryButtonText}>
+                              <Text className="text-[#F8FAFC] font-semibold letter-spacing-[0.3]">
                                 {isRegister ? "Create account" : "Log in"}
                               </Text>
                             </TouchableOpacity>
 
-                            <View style={styles.switchRow}>
-                              <Text style={styles.switchText}>
+                            <View className="flex-row justify-center items-center mt-3.5">
+                              <Text className="text-[#64748B] mr-1.5">
                                 {isRegister
                                   ? "Already have an account?"
                                   : "New here?"}
                               </Text>
                               <TouchableOpacity onPress={handleSwitchMode}>
-                                <Text style={styles.switchLink}>
+                                <Text className="text-[#2563EB] font-semibold">
                                   {isRegister ? "Log in" : "Create one"}
                                 </Text>
                               </TouchableOpacity>
@@ -4973,8 +4681,7 @@ const AppContent = () => {
                       </Animated.View>
                     )}
                   </Animated.View>
-                </ScrollView>
-              </TouchableWithoutFeedback>
+              </ScrollView>
             </KeyboardAvoidingView>
           </>
         )}
@@ -4983,1392 +4690,7 @@ const AppContent = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  authenticatedContainer: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-  },
-  authenticatedContent: {
-    flex: 1,
-  },
-  authenticatedScrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  logoutButtonFull: {
-    marginTop: 12,
-  },
-  accessDeniedContainer: {
-    flex: 1,
-    padding: 20,
-    justifyContent: "center",
-    backgroundColor: "#F8FAFC",
-  },
-  accessDeniedCard: {
-    backgroundColor: "#FEF2F2",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#FECACA",
-    padding: 24,
-    alignItems: "center",
-    gap: 16,
-  },
-  accessDeniedTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#B91C1C",
-    marginTop: 8,
-  },
-  accessDeniedMessage: {
-    fontSize: 14,
-    color: "#7F1D1D",
-    textAlign: "center",
-    lineHeight: 22,
-  },
-  opsShell: {
-    flex: 1,
-    backgroundColor: "#07101C",
-  },
-  opsContent: {
-    padding: 20,
-    gap: 16,
-  },
-  opsHero: {
-    minHeight: 240,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 10,
-    padding: 18,
-    borderRadius: 28,
-    backgroundColor: "#0D1726",
-    borderWidth: 1,
-    borderColor: "#1E293B",
-  },
-  opsPulse: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: "#F59E0B",
-    shadowColor: "#F59E0B",
-    shadowOpacity: 0.28,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-  },
-  opsKicker: {
-    color: "#FBBF24",
-    fontSize: 12,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 1.4,
-  },
-  opsTitle: {
-    color: "#FFFFFF",
-    fontSize: 28,
-    lineHeight: 34,
-    fontWeight: "900",
-    letterSpacing: 0.4,
-    textAlign: "center",
-  },
-  opsSubtitle: {
-    color: "#B4C1D6",
-    fontSize: 13,
-    textAlign: "center",
-    lineHeight: 19,
-    maxWidth: 300,
-  },
-  opsHeroTag: {
-    marginTop: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 999,
-    backgroundColor: "rgba(15, 23, 42, 0.82)",
-    borderWidth: 1,
-    borderColor: "#334155",
-  },
-  opsHeroTagText: {
-    color: "#E2E8F0",
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.4,
-  },
-  opsDutyToggle: {
-    marginTop: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
-    borderRadius: 999,
-    borderWidth: 1,
-    alignItems: "center",
-  },
-  opsDutyOn: {
-    backgroundColor: "#0F5132",
-    borderColor: "#34D399",
-  },
-  opsDutyOff: {
-    backgroundColor: "#3F1D1D",
-    borderColor: "#FCA5A5",
-  },
-  opsDutyToggleText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "900",
-    letterSpacing: 0.4,
-  },
-  opsDutyActionRow: {
-    flexDirection: "row",
-    gap: 10,
-    width: "100%",
-  },
-  opsDutyActionButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    backgroundColor: "#0F172A",
-    alignItems: "center",
-  },
-  opsDutyActionDanger: {
-    borderColor: "#F87171",
-  },
-  opsDutyActionText: {
-    color: "#E2E8F0",
-    fontWeight: "800",
-    fontSize: 12,
-  },
-  opsErrorBanner: {
-    backgroundColor: "#3F1D1D",
-    borderWidth: 1,
-    borderColor: "#FCA5A5",
-    borderRadius: 16,
-    padding: 12,
-  },
-  opsErrorText: {
-    color: "#FEE2E2",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  opsMetricRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  opsMetricCard: {
-    flex: 1,
-    backgroundColor: "#0F172A",
-    borderRadius: 18,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#1F2937",
-  },
-  opsMetricLabel: {
-    color: "#94A3B8",
-    fontSize: 11,
-    fontWeight: "800",
-    textTransform: "uppercase",
-  },
-  opsMetricValue: {
-    color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "900",
-    marginTop: 6,
-  },
-  opsSection: {
-    gap: 12,
-  },
-  opsSectionHeader: {
-    gap: 4,
-  },
-  opsSectionTitle: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "900",
-  },
-  opsSectionSubtitle: {
-    color: "#94A3B8",
-    fontSize: 12,
-  },
-  opsEmptyState: {
-    backgroundColor: "#0F172A",
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#1F2937",
-    gap: 6,
-  },
-  opsEmptyTitle: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "900",
-  },
-  opsEmptyText: {
-    color: "#CBD5E1",
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  opsCaseCard: {
-    backgroundColor: "#0F172A",
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#1F2937",
-    gap: 10,
-  },
-  opsCaseCardActive: {
-    borderColor: "#F59E0B",
-    backgroundColor: "#111B2D",
-  },
-  opsCaseTopRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-  opsCaseMetaGroup: {
-    flex: 1,
-    gap: 4,
-  },
-  opsCaseId: {
-    color: "#FBBF24",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.1,
-  },
-  opsCaseTitle: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  opsCaseSummary: {
-    color: "#C7D2FE",
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  opsCaseMetaRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  opsCaseMetaText: {
-    color: "#94A3B8",
-    fontSize: 12,
-  },
-  opsStatusChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    alignSelf: "flex-start",
-  },
-  opsStatusFound: {
-    backgroundColor: "#1D4ED8",
-  },
-  opsStatusReview: {
-    backgroundColor: "#F59E0B",
-  },
-  opsStatusSecured: {
-    backgroundColor: "#059669",
-  },
-  opsStatusHandover: {
-    backgroundColor: "#7C3AED",
-  },
-  opsStatusText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-  },
-  opsDetailCard: {
-    backgroundColor: "#0B1628",
-    borderRadius: 24,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: "#203047",
-    gap: 14,
-  },
-  opsDetailGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  opsDetailBlock: {
-    flexBasis: "48%",
-    backgroundColor: "#0F172A",
-    borderRadius: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#1E293B",
-    gap: 4,
-  },
-  opsDetailLabel: {
-    color: "#94A3B8",
-    fontSize: 11,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 0.7,
-  },
-  opsDetailValue: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: "700",
-  },
-  opsFieldInput: {
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: "#334155",
-    borderRadius: 10,
-    backgroundColor: "#0B1322",
-    color: "#FFFFFF",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 12,
-  },
-  opsInfoPanel: {
-    backgroundColor: "#101C2E",
-    borderRadius: 18,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#243449",
-    gap: 4,
-  },
-  opsInfoValue: {
-    color: "#F8FAFC",
-    fontSize: 18,
-    fontWeight: "900",
-  },
-  opsInfoHint: {
-    color: "#CBD5E1",
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  opsReplyBlock: {
-    gap: 10,
-  },
-  opsReplyInput: {
-    minHeight: 92,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#334155",
-    backgroundColor: "#0F172A",
-    color: "#FFFFFF",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    textAlignVertical: "top",
-  },
-  opsActionRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  opsActionButton: {
-    flex: 1,
-    backgroundColor: "#F59E0B",
-    borderRadius: 14,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  opsActionButtonSecondary: {
-    flex: 1,
-    backgroundColor: "#0F172A",
-    borderRadius: 14,
-    paddingVertical: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#334155",
-  },
-  opsActionButtonText: {
-    color: "#111827",
-    fontWeight: "900",
-  },
-  opsActionButtonSecondaryText: {
-    color: "#E2E8F0",
-    fontWeight: "800",
-  },
-  opsActionPills: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  opsStatusAction: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: "#12233A",
-    borderWidth: 1,
-    borderColor: "#27415E",
-  },
-  opsStatusActionText: {
-    color: "#E2E8F0",
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  opsLogoutButton: {
-    marginTop: 6,
-    backgroundColor: "#F97316",
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  opsLogoutText: {
-    color: "#FFFFFF",
-    fontWeight: "900",
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  backgroundGlow: {
-    position: "absolute",
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: "#E0E7FF",
-    opacity: 0.3,
-    top: 40,
-    right: -80,
-  },
-  statusBadgeRow: {
-    marginTop: 12,
-  },
-  statusBadge: {
-    alignSelf: "flex-start",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-  },
-  statusBadgeChecking: {
-    backgroundColor: "#E2E8F0",
-  },
-  statusBadgeOnline: {
-    backgroundColor: "#DCFCE7",
-  },
-  statusBadgeOffline: {
-    backgroundColor: "#FEE2E2",
-  },
-  statusBadgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#1F2937",
-  },
-  apiErrorText: {
-    marginTop: 8,
-    fontSize: 12,
-    color: "#DC2626",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 24,
-    paddingBottom: 40,
-  },
-  scrollContentCentered: {
-    justifyContent: "center",
-  },
-  card: {
-    width: "100%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  brandRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-  },
-  shieldIconContainer: {
-    marginRight: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  brandTextContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#64748B",
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  statusPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#0F172A",
-    borderRadius: 999,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: "#1D4ED8",
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#22C55E",
-    marginRight: 6,
-  },
-  statusPillText: {
-    color: "#BFDBFE",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#E2E8F0",
-    marginBottom: 18,
-  },
-  formTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#1E293B",
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 6,
-  },
-  sectionSubtitle: {
-    color: "#94A3B8",
-    marginBottom: 16,
-    lineHeight: 20,
-  },
-  inputGroup: {
-    marginBottom: 14,
-  },
-  label: {
-    color: "#475569",
-    fontSize: 12,
-    marginBottom: 6,
-    fontWeight: "500",
-  },
-  labelWithIcon: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 6,
-  },
-  helperText: {
-    color: "#64748B",
-    fontSize: 12,
-    marginTop: 6,
-  },
-  input: {
-    backgroundColor: "#F8FAFC",
-    borderColor: "#CBD5E1",
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    color: "#1E293B",
-  },
-  timeFieldRow: {
-    gap: 10,
-  },
-  timeInput: {
-    width: "100%",
-  },
-  timePeriodRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  timePeriodOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderWidth: 1,
-    borderColor: "#CBD5E1",
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  timePeriodOptionActive: {
-    borderColor: "#93C5FD",
-    backgroundColor: "#EFF6FF",
-  },
-  timePeriodText: {
-    color: "#475569",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  timePeriodTextActive: {
-    color: "#1D4ED8",
-  },
-  inputDisabled: {
-    backgroundColor: "#E2E8F0",
-    color: "#94A3B8",
-  },
-  passwordRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  passwordInput: {
-    flex: 1,
-  },
-  eyeButton: {
-    marginLeft: 10,
-    padding: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#CBD5E1",
-    backgroundColor: "#F8FAFC",
-  },
-  passwordRuleBarRow: {
-    marginTop: 10,
-    flexDirection: "row",
-    gap: 6,
-  },
-  passwordRuleBar: {
-    flex: 1,
-    height: 4,
-    borderRadius: 999,
-    backgroundColor: "#334155",
-    opacity: 0.4,
-  },
-  passwordRuleBarActive: {
-    backgroundColor: "#22C55E",
-    opacity: 1,
-  },
-  passwordRuleRow: {
-    marginTop: 8,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    rowGap: 6,
-  },
-  passwordRuleText: {
-    color: "#94A3B8",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  passwordRuleTextActive: {
-    color: "#10B981",
-  },
-  confirmPasswordText: {
-    marginTop: 8,
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  confirmPasswordTextMatch: {
-    color: "#10B981",
-  },
-  confirmPasswordTextNoMatch: {
-    color: "#F59E0B",
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: "top",
-  },
-  roleRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginHorizontal: -4,
-  },
-  roleSelectorBlock: {
-    gap: 10,
-  },
-  officerRoleGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  officerRoleCard: {
-    flexBasis: "48%",
-    minHeight: 108,
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#CBD5E1",
-    backgroundColor: "#F8FAFC",
-    justifyContent: "space-between",
-  },
-  officerRoleCardActive: {
-    borderColor: "#2563EB",
-    backgroundColor: "#EFF6FF",
-    shadowColor: "#2563EB",
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
-  },
-  officerRoleKey: {
-    color: "#64748B",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-  },
-  officerRoleTitle: {
-    color: "#0F172A",
-    fontSize: 20,
-    fontWeight: "900",
-    marginTop: 6,
-  },
-  officerRoleTitleActive: {
-    color: "#1D4ED8",
-  },
-  officerRoleDescription: {
-    color: "#475569",
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 4,
-  },
-  officerRoleDescriptionActive: {
-    color: "#1E3A8A",
-  },
-  officerRoleHint: {
-    color: "#64748B",
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  officerLoginBanner: {
-    backgroundColor: "#0F172A",
-    borderRadius: 18,
-    padding: 16,
-    gap: 6,
-    marginBottom: 6,
-  },
-  officerLoginBannerTag: {
-    color: "#93C5FD",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-  },
-  officerLoginBannerTitle: {
-    color: "#F8FAFC",
-    fontSize: 20,
-    fontWeight: "900",
-  },
-  officerLoginBannerText: {
-    color: "#CBD5E1",
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  roleChip: {
-    borderWidth: 1,
-    borderColor: "#CBD5E1",
-    backgroundColor: "#F8FAFC",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    margin: 4,
-  },
-  roleChipActive: {
-    backgroundColor: "#2563EB",
-    borderColor: "#2563EB",
-  },
-  roleChipText: {
-    color: "#475569",
-    fontSize: 12,
-  },
-  roleChipTextActive: {
-    color: "#F8FAFC",
-    fontWeight: "600",
-  },
-  roleChipLarge: {
-    borderWidth: 2,
-    borderColor: "#CBD5E1",
-    backgroundColor: "#F8FAFC",
-    paddingVertical: 20,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 80,
-    margin: 4,
-  },
-  roleChipTextLarge: {
-    color: "#475569",
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  roleDescriptions: {
-    marginTop: 20,
-  },
-  roleDescCard: {
-    backgroundColor: "#EFF6FF",
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-  },
-  roleDescTitle: {
-    color: "#1E40AF",
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  roleDescText: {
-    color: "#1E40AF",
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  errorText: {
-    color: "#F87171",
-    marginBottom: 12,
-  },
-  devHintText: {
-    color: "#F59E0B",
-    marginTop: 10,
-    fontSize: 12,
-    textAlign: "center",
-  },
-  primaryButton: {
-    backgroundColor: "#2563EB",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 6,
-    shadowColor: "#1D4ED8",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  primaryButtonText: {
-    color: "#F8FAFC",
-    fontWeight: "600",
-    letterSpacing: 0.3,
-  },
-  switchRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 14,
-  },
-  otpToggleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  switchText: {
-    color: "#64748B",
-    marginRight: 6,
-  },
-  switchLink: {
-    color: "#2563EB",
-    fontWeight: "600",
-  },
-  footerRow: {
-    marginTop: 18,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
-  },
-  footerText: {
-    color: "#64748B",
-    fontSize: 12,
-    textAlign: "center",
-    lineHeight: 16,
-  },
-  home: {
-    marginTop: 6,
-  },
-  cardBlock: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  authorityHeaderCard: {
-    backgroundColor: "#0F172A",
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 18,
-    borderWidth: 1,
-    borderColor: "#1E293B",
-  },
-  authorityHeaderTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  authorityTitle: {
-    color: "#F8FAFC",
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  authoritySubtitle: {
-    color: "#CBD5F5",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  notificationBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#E0E7FF",
-    borderRadius: 999,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-  },
-  notificationIcon: {
-    marginRight: 6,
-  },
-  notificationText: {
-    color: "#1E40AF",
-    fontWeight: "700",
-  },
-  authorityMetaRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 12,
-  },
-  metaPill: {
-    backgroundColor: "#1E293B",
-    borderRadius: 999,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginRight: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: "#334155",
-  },
-  metaPillText: {
-    color: "#E2E8F0",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  dutyRow: {
-    marginTop: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  dutyLabel: {
-    color: "#E2E8F0",
-    fontWeight: "600",
-  },
-  dutyToggle: {
-    width: 52,
-    height: 28,
-    borderRadius: 16,
-    padding: 3,
-    justifyContent: "center",
-  },
-  dutyToggleActive: {
-    backgroundColor: "#22C55E",
-  },
-  dutyToggleInactive: {
-    backgroundColor: "#334155",
-  },
-  dutyKnob: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: "#F8FAFC",
-  },
-  dutyKnobActive: {
-    alignSelf: "flex-end",
-  },
-  dutyKnobInactive: {
-    alignSelf: "flex-start",
-  },
-  alertCard: {
-    backgroundColor: "#FEF2F2",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#FECACA",
-  },
-  alertTitle: {
-    color: "#B91C1C",
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  alertText: {
-    color: "#7F1D1D",
-    marginBottom: 4,
-  },
-  actionRow: {
-    flexDirection: "row",
-    marginTop: 12,
-  },
-  actionButton: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  actionButtonSpacing: {
-    marginLeft: 10,
-  },
-  actionButtonPrimary: {
-    backgroundColor: "#2563EB",
-  },
-  actionButtonSecondary: {
-    borderWidth: 1,
-    borderColor: "#2563EB",
-    backgroundColor: "#EFF6FF",
-  },
-  actionButtonPrimaryText: {
-    color: "#F8FAFC",
-    fontWeight: "600",
-  },
-  actionButtonSecondaryText: {
-    color: "#1D4ED8",
-    fontWeight: "600",
-  },
-  optionList: {
-    marginBottom: 8,
-  },
-  optionItem: {
-    color: "#475569",
-    marginBottom: 6,
-  },
-  messageRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 12,
-  },
-  messageChip: {
-    backgroundColor: "#E2E8F0",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  messageChipText: {
-    color: "#1E293B",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  metricGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  metricCard: {
-    width: "48%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  metricValue: {
-    color: "#1E293B",
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  metricLabel: {
-    color: "#64748B",
-    fontSize: 12,
-    marginTop: 4,
-  },
-  authorityOptions: {
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  authorityOption: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    marginBottom: 12,
-  },
-  authorityOptionActive: {
-    borderColor: "#2563EB",
-    backgroundColor: "#EFF6FF",
-  },
-  authorityOptionTitle: {
-    color: "#0F172A",
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  authorityOptionText: {
-    color: "#475569",
-    lineHeight: 18,
-  },
-  selectionHints: {
-    marginBottom: 10,
-  },
-  cardBlockBlurred: {
-    opacity: 0.5,
-  },
-  verifyCard: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  successCard: {
-    backgroundColor: "#DCFCE7",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#86EFAC",
-  },
-  noticeCard: {
-    backgroundColor: "#FFF7ED",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#FDBA74",
-  },
-  noticeTitle: {
-    color: "#9A3412",
-    fontWeight: "600",
-    marginBottom: 8,
-  },
-  noticeText: {
-    color: "#9A3412",
-    lineHeight: 18,
-  },
-  cardTitle: {
-    color: "#1E293B",
-    fontWeight: "600",
-    marginBottom: 10,
-  },
-  cardText: {
-    color: "#475569",
-    marginBottom: 6,
-  },
-  lockedHintText: {
-    color: "#F59E0B",
-    fontSize: 12,
-    marginBottom: 10,
-  },
-  statusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  statusDotLarge: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#22C55E",
-    marginRight: 8,
-  },
-  statusText: {
-    color: "#A7F3D0",
-    flex: 1,
-    lineHeight: 18,
-  },
-  timelineRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginTop: 10,
-  },
-  timelineDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#334155",
-    marginRight: 10,
-    marginTop: 4,
-  },
-  timelineDotActive: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#38BDF8",
-    marginRight: 10,
-    marginTop: 4,
-  },
-  timelineTitle: {
-    color: "#E2E8F0",
-    fontWeight: "600",
-  },
-  timelineSubtitle: {
-    color: "#94A3B8",
-    marginTop: 4,
-  },
-  queueItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#1E2A44",
-  },
-  queueTitle: {
-    color: "#F8FAFC",
-    fontWeight: "600",
-  },
-  queueMeta: {
-    color: "#94A3B8",
-    marginTop: 4,
-  },
-  queueStatus: {
-    color: "#22C55E",
-    fontWeight: "700",
-  },
-  queueStatusAmber: {
-    color: "#F59E0B",
-    fontWeight: "700",
-  },
-  successText: {
-    color: "#16A34A",
-    marginTop: 10,
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    borderWidth: 1,
-    borderColor: "#38BDF8",
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  secondaryButtonText: {
-    color: "#38BDF8",
-    fontWeight: "600",
-  },
-  textButton: {
-    marginTop: 12,
-    alignItems: "center",
-  },
-  backButtonRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  backButton: {
-    padding: 8,
-    marginRight: 8,
-  },
-  logoutButton: {
-    marginTop: 8,
-  },
-  transportGrid: {
-    marginTop: 12,
-    gap: 12,
-  },
-  transportRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 12,
-  },
-  transportButton: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "#E2E8F0",
-    padding: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 100,
-  },
-  transportButtonSelected: {
-    backgroundColor: "#EFF6FF",
-    borderColor: "#3B82F6",
-  },
-  transportIcon: {
-    fontSize: 40,
-    marginBottom: 8,
-  },
-  transportButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#64748B",
-  },
-  transportButtonTextSelected: {
-    color: "#3B82F6",
-  },
-  profileCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  profileHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-  },
-  profileAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#2563EB",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 16,
-  },
-  profileAvatarText: {
-    color: "#FFFFFF",
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  profileName: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 4,
-  },
-  profileRole: {
-    fontSize: 14,
-    color: "#64748B",
-    fontWeight: "500",
-  },
-  profileDetails: {
-    marginTop: 0,
-  },
-  profileDetailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  profileDetailLabel: {
-    fontSize: 14,
-    color: "#64748B",
-    fontWeight: "500",
-    flex: 1,
-  },
-  profileDetailValue: {
-    fontSize: 14,
-    color: "#1E293B",
-    fontWeight: "600",
-    flex: 2,
-    textAlign: "right",
-  },
-});
+
 
 const App = () => (
   <SafeAreaProvider>

@@ -4,7 +4,6 @@ import {
   BackHandler,
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ScrollView,
   Switch,
@@ -364,46 +363,40 @@ const CarAutoDashboard = ({ onLogout }) => {
 
   // Render Vehicle Selection Screen
   const renderVehicleSelection = () => (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>SafeRide Guardian</Text>
-        <Text style={styles.headerSubtitle}>Select Your Vehicle Type</Text>
+    <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16, paddingBottom: 24 }}>
+      <View className="mb-6">
+        <Text className="text-3xl font-bold text-slate-800 mb-2">SafeRide Guardian</Text>
+        <Text className="text-lg font-semibold text-slate-600">Select Your Vehicle Type</Text>
       </View>
 
-      <View style={styles.selectionContainer}>
+      <View className="mb-6">
         <TouchableOpacity
-          style={[
-            styles.vehicleCard,
-            vehicleType === "cab" && styles.vehicleCardSelected,
-          ]}
+          className={`rounded-2xl p-6 mb-3 border-2 items-center relative ${vehicleType === "cab" ? "bg-blue-50 border-blue-600" : "bg-slate-50 border-slate-200"}`}
           onPress={() => handleVehicleSelection("cab")}
         >
-          <Text style={styles.vehicleIcon}>🚕</Text>
-          <Text style={styles.vehicleTitle}>Cab Driver</Text>
-          <Text style={styles.vehicleDescription}>
+          <Text className="text-5xl mb-3">🚕</Text>
+          <Text className="text-lg font-bold text-slate-800 mb-1">Cab Driver</Text>
+          <Text className="text-sm text-slate-500 text-center">
             For Ola / Uber / Private Taxi
           </Text>
           {vehicleType === "cab" && (
-            <View style={styles.checkmark}>
+            <View className="absolute top-3 right-3">
               <ShakyIcon name="checkmark-circle" size={24} color="#2563EB" />
             </View>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[
-            styles.vehicleCard,
-            vehicleType === "auto" && styles.vehicleCardSelected,
-          ]}
+          className={`rounded-2xl p-6 mb-3 border-2 items-center relative ${vehicleType === "auto" ? "bg-blue-50 border-blue-600" : "bg-slate-50 border-slate-200"}`}
           onPress={() => handleVehicleSelection("auto")}
         >
-          <Text style={styles.vehicleIcon}>🛺</Text>
-          <Text style={styles.vehicleTitle}>Auto Driver</Text>
-          <Text style={styles.vehicleDescription}>
+          <Text className="text-5xl mb-3">🛺</Text>
+          <Text className="text-lg font-bold text-slate-800 mb-1">Auto Driver</Text>
+          <Text className="text-sm text-slate-500 text-center">
             For Share Auto / Meter Auto
           </Text>
           {vehicleType === "auto" && (
-            <View style={styles.checkmark}>
+            <View className="absolute top-3 right-3">
               <ShakyIcon name="checkmark-circle" size={24} color="#2563EB" />
             </View>
           )}
@@ -411,14 +404,11 @@ const CarAutoDashboard = ({ onLogout }) => {
       </View>
 
       <TouchableOpacity
-        style={[
-          styles.primaryButton,
-          !vehicleType && styles.buttonDisabled,
-        ]}
+        className={`bg-blue-600 rounded-xl py-3.5 items-center mb-4 ${!vehicleType ? "opacity-50" : ""}`}
         onPress={handleContinueVehicleSelection}
         disabled={!vehicleType}
       >
-        <Text style={styles.primaryButtonText}>Continue</Text>
+        <Text className="text-white font-semibold text-base">Continue</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -427,24 +417,24 @@ const CarAutoDashboard = ({ onLogout }) => {
   const renderDutySetup = () => (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.flex1}
+      className="flex-1"
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16, paddingBottom: 24 }}>
+        <View className="mb-6">
           <TouchableOpacity
-            style={styles.backButton}
+            className="flex-row items-center mb-4"
             onPress={() => setCurrentStep("vehicleSelection")}
           >
             <ShakyIcon name="arrow-back" size={24} color="#2563EB" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Start Today's Duty</Text>
+          <Text className="text-3xl font-bold text-slate-800 mb-2">Start Today's Duty</Text>
         </View>
 
-        <View style={styles.formContainer}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>🚘 Vehicle Number *</Text>
+        <View className="mb-5">
+          <View className="mb-4">
+            <Text className="text-sm font-semibold text-slate-600 mb-2">🚘 Vehicle Number *</Text>
             <TextInput
-              style={styles.input}
+              className="bg-slate-50 border border-slate-300 rounded-xl py-3 px-3.5 text-sm text-slate-800"
               placeholder="TN-01-AB-1234"
               placeholderTextColor="#CBD5E1"
               value={vehicleNumber}
@@ -452,10 +442,10 @@ const CarAutoDashboard = ({ onLogout }) => {
             />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>📍 Starting Location *</Text>
+          <View className="mb-4">
+            <Text className="text-sm font-semibold text-slate-600 mb-2">📍 Starting Location *</Text>
             <TextInput
-              style={styles.input}
+              className="bg-slate-50 border border-slate-300 rounded-xl py-3 px-3.5 text-sm text-slate-800"
               placeholder="Enter your starting point"
               placeholderTextColor="#CBD5E1"
               value={startingLocation}
@@ -463,10 +453,10 @@ const CarAutoDashboard = ({ onLogout }) => {
             />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>📍 Ending Area (Optional)</Text>
+          <View className="mb-4">
+            <Text className="text-sm font-semibold text-slate-600 mb-2">📍 Ending Area (Optional)</Text>
             <TextInput
-              style={styles.input}
+              className="bg-slate-50 border border-slate-300 rounded-xl py-3 px-3.5 text-sm text-slate-800"
               placeholder="Where will you finish"
               placeholderTextColor="#CBD5E1"
               value={endingArea}
@@ -474,21 +464,21 @@ const CarAutoDashboard = ({ onLogout }) => {
             />
           </View>
 
-          <View style={styles.timeRow}>
-            <View style={[styles.inputGroup, styles.flex1]}>
-              <Text style={styles.label}>⏰ Shift Start Time *</Text>
+          <View className="flex-row gap-3 mb-4">
+            <View className="mb-4 flex-1">
+              <Text className="text-sm font-semibold text-slate-600 mb-2">⏰ Shift Start Time *</Text>
               <TextInput
-                style={styles.input}
+                className="bg-slate-50 border border-slate-300 rounded-xl py-3 px-3.5 text-sm text-slate-800"
                 placeholder="06:00 AM"
                 placeholderTextColor="#CBD5E1"
                 value={shiftStartTime}
                 onChangeText={setShiftStartTime}
               />
             </View>
-            <View style={[styles.inputGroup, styles.flex1]}>
-              <Text style={styles.label}>⏰ Shift End Time *</Text>
+            <View className="mb-4 flex-1">
+              <Text className="text-sm font-semibold text-slate-600 mb-2">⏰ Shift End Time *</Text>
               <TextInput
-                style={styles.input}
+                className="bg-slate-50 border border-slate-300 rounded-xl py-3 px-3.5 text-sm text-slate-800"
                 placeholder="02:00 PM"
                 placeholderTextColor="#CBD5E1"
                 value={shiftEndTime}
@@ -497,11 +487,11 @@ const CarAutoDashboard = ({ onLogout }) => {
             </View>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>📷 Upload ID (Optional)</Text>
-            <TouchableOpacity style={styles.uploadButton}>
+          <View className="mb-4">
+            <Text className="text-sm font-semibold text-slate-600 mb-2">📷 Upload ID (Optional)</Text>
+            <TouchableOpacity className="bg-slate-50 border-2 border-blue-600 border-dashed rounded-xl py-6 items-center justify-center">
               <ShakyIcon name="cloud-upload" size={24} color="#2563EB" />
-              <Text style={styles.uploadButtonText}>
+              <Text className="text-blue-600 font-semibold mt-2">
                 Tap to upload ID for verification
               </Text>
             </TouchableOpacity>
@@ -509,10 +499,10 @@ const CarAutoDashboard = ({ onLogout }) => {
         </View>
 
         <TouchableOpacity
-          style={styles.primaryButton}
+          className="bg-blue-600 rounded-xl py-3.5 items-center mb-4"
           onPress={handleStartDuty}
         >
-          <Text style={styles.primaryButtonText}>🔵 Start Duty</Text>
+          <Text className="text-white font-semibold text-base">🔵 Start Duty</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -522,40 +512,39 @@ const CarAutoDashboard = ({ onLogout }) => {
   const renderDashboard = () => (
     <>
       {!acceptedComplaint ? (
-        <ScrollView contentContainerStyle={styles.dashboardContent}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16, paddingBottom: 24 }}>
           {/* Header Section */}
-          <View style={styles.dashboardHeader}>
-            <View style={styles.driverInfo}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>D</Text>
+          <View className="flex-row justify-between items-center mb-5">
+            <View className="flex-row items-center flex-1">
+              <View className="w-[50px] h-[50px] rounded-full bg-blue-600 items-center justify-center mr-3">
+                <Text className="text-white text-2xl font-bold">D</Text>
               </View>
-              <View style={styles.driverDetails}>
-                <Text style={styles.driverName}>Driver Name</Text>
-                <Text style={styles.driverVehicle}>
+              <View className="flex-1">
+                <Text className="text-base font-bold text-slate-800">Driver Name</Text>
+                <Text className="text-sm text-slate-500">
                   {vehicleType === "cab" ? "🚕 Cab Driver" : "🛺 Auto Driver"}
                 </Text>
               </View>
             </View>
             <TouchableOpacity
-              style={styles.notificationBell}
-              onPress={() => {}}
+              className="relative p-2"
+              onPress={() => { }}
             >
               <ShakyIcon name="notifications" size={24} color="#2563EB" />
               {complaints.length > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{complaints.length}</Text>
+                <View className="absolute top-0 right-0 bg-red-500 rounded-full w-5 h-5 items-center justify-center">
+                  <Text className="text-white text-xs font-bold">{complaints.length}</Text>
                 </View>
               )}
             </TouchableOpacity>
           </View>
 
           {/* Online/Offline Toggle */}
-          <View style={styles.statusCard}>
-            <View style={styles.statusLeft}>
+          <View className="bg-slate-50 rounded-xl p-4 flex-row justify-between items-center mb-5 border border-slate-200">
+            <View className="flex-row items-center">
               <Animated.View
+                className={`w-3 h-3 rounded-full mr-2.5 ${isOnline ? "bg-green-500" : "bg-red-500"}`}
                 style={[
-                  styles.statusIndicator,
-                  isOnline && styles.statusOnline,
                   {
                     opacity: onlinePulseAnim.interpolate({
                       inputRange: [0, 1],
@@ -565,16 +554,16 @@ const CarAutoDashboard = ({ onLogout }) => {
                       {
                         scale: isOnline
                           ? onlinePulseAnim.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [1, 1.28],
-                            })
+                            inputRange: [0, 1],
+                            outputRange: [1, 1.28],
+                          })
                           : 1,
                       },
                     ],
                   },
                 ]}
               />
-              <Text style={styles.statusText}>
+              <Text className="text-base font-semibold text-slate-800">
                 {isOnline ? "Online" : "Offline"}
               </Text>
             </View>
@@ -587,26 +576,26 @@ const CarAutoDashboard = ({ onLogout }) => {
           </View>
 
           {/* Active Duty Card */}
-          <View style={styles.dutyCard}>
-            <Text style={styles.cardTitle}>🚘 Active Duty</Text>
-            <View style={styles.dutyInfo}>
-              <View style={styles.dutyRow}>
-                <Text style={styles.dutyLabel}>Vehicle:</Text>
-                <Text style={styles.dutyValue}>{vehicleNumber}</Text>
+          <View className="bg-slate-50 rounded-xl p-4 mb-5 border border-slate-200">
+            <Text className="text-base font-bold text-slate-800 mb-3">🚘 Active Duty</Text>
+            <View className="gap-2">
+              <View className="flex-row justify-between py-2 border-b border-slate-200">
+                <Text className="text-sm text-slate-500 font-medium">Vehicle:</Text>
+                <Text className="text-sm font-semibold text-slate-800">{vehicleNumber}</Text>
               </View>
-              <View style={styles.dutyRow}>
-                <Text style={styles.dutyLabel}>Location:</Text>
-                <Text style={styles.dutyValue}>{startingLocation}</Text>
+              <View className="flex-row justify-between py-2 border-b border-slate-200">
+                <Text className="text-sm text-slate-500 font-medium">Location:</Text>
+                <Text className="text-sm font-semibold text-slate-800">{startingLocation}</Text>
               </View>
-              <View style={styles.dutyRow}>
-                <Text style={styles.dutyLabel}>Shift:</Text>
-                <Text style={styles.dutyValue}>
+              <View className="flex-row justify-between py-2 border-b border-slate-200">
+                <Text className="text-sm text-slate-500 font-medium">Shift:</Text>
+                <Text className="text-sm font-semibold text-slate-800">
                   {shiftStartTime} - {shiftEndTime}
                 </Text>
               </View>
-              <View style={styles.dutyRow}>
-                <Text style={styles.dutyLabel}>Status:</Text>
-                <Text style={[styles.dutyValue, styles.statusActive]}>
+              <View className="flex-row justify-between py-2 border-b border-slate-200">
+                <Text className="text-sm text-slate-500 font-medium">Status:</Text>
+                <Text className="text-sm font-semibold text-green-500">
                   ✅ Active
                 </Text>
               </View>
@@ -614,8 +603,8 @@ const CarAutoDashboard = ({ onLogout }) => {
           </View>
 
           {/* Live Complaint Alerts */}
-          <View style={styles.complaintsSection}>
-            <Text style={styles.sectionTitle}>
+          <View className="mb-5">
+            <Text className="text-base font-bold text-slate-800 mb-3">
               🚨 Live Complaint Alerts ({complaints.length})
             </Text>
             {complaints.length > 0 ? (
@@ -624,40 +613,40 @@ const CarAutoDashboard = ({ onLogout }) => {
                 keyExtractor={(item) => item.id.toString()}
                 scrollEnabled={false}
                 renderItem={({ item }) => (
-                  <View style={styles.complaintCard}>
-                    <View style={styles.complaintHeader}>
-                      <Text style={styles.complaintTitle}>⚠ Lost Item Alert</Text>
-                      <Text style={styles.complaintTime}>{item.time}</Text>
+                  <View className="bg-orange-50 rounded-xl p-3.5 mb-3 border border-orange-300">
+                    <View className="flex-row justify-between items-center mb-2">
+                      <Text className="text-sm font-bold text-orange-900">⚠ Lost Item Alert</Text>
+                      <Text className="text-xs text-orange-800 font-medium">{item.time}</Text>
                     </View>
-                    <Text style={styles.complaintDetail}>
-                      👤 Passenger: <Text style={styles.bold}>{item.passengerName}</Text>
+                    <Text className="text-[13px] text-orange-800 mb-1">
+                      👤 Passenger: <Text className="font-bold">{item.passengerName}</Text>
                     </Text>
-                    <Text style={styles.complaintDetail}>
-                      📍 Location: <Text style={styles.bold}>{item.location}</Text>
+                    <Text className="text-[13px] text-orange-800 mb-1">
+                      📍 Location: <Text className="font-bold">{item.location}</Text>
                     </Text>
-                    <Text style={styles.complaintDetail}>
-                      📦 Item: <Text style={styles.bold}>{item.item}</Text>
+                    <Text className="text-[13px] text-orange-800 mb-1">
+                      📦 Item: <Text className="font-bold">{item.item}</Text>
                     </Text>
-                    <View style={styles.complaintActions}>
+                    <View className="flex-row gap-2.5 mt-3">
                       <TouchableOpacity
-                        style={styles.acceptButton}
+                        className="flex-1 bg-green-100 rounded-lg py-2.5 items-center border border-green-300"
                         onPress={() => handleAcceptComplaint(item)}
                       >
-                        <Text style={styles.acceptButtonText}>✅ ACCEPT</Text>
+                        <Text className="text-green-700 font-bold text-xs">✅ ACCEPT</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={styles.ignoreButton}
+                        className="flex-1 bg-red-100 rounded-lg py-2.5 items-center border border-red-200"
                         onPress={() => handleIgnoreComplaint(item.id)}
                       >
-                        <Text style={styles.ignoreButtonText}>❌ IGNORE</Text>
+                        <Text className="text-red-600 font-bold text-xs">❌ IGNORE</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
                 )}
               />
             ) : (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>
+              <View className="bg-slate-50 rounded-xl p-6 items-center">
+                <Text className="text-sm text-slate-500">
                   No complaints at the moment
                 </Text>
               </View>
@@ -665,38 +654,38 @@ const CarAutoDashboard = ({ onLogout }) => {
           </View>
 
           {/* Daily Summary Panel */}
-          <View style={styles.summaryPanel}>
-            <Text style={styles.sectionTitle}>📊 Daily Summary</Text>
-            <View style={styles.summaryGrid}>
-              <View style={styles.summaryCard}>
-                <Text style={styles.summaryNumber}>{recoveryStats.totalToday}</Text>
-                <Text style={styles.summaryLabel}>Today</Text>
+          <View className="bg-slate-50 rounded-xl p-4 mb-5 border border-slate-200">
+            <Text className="text-base font-bold text-slate-800 mb-3">📊 Daily Summary</Text>
+            <View className="flex-row flex-wrap gap-2.5">
+              <View className="flex-1 bg-white rounded-lg p-3 items-center border border-slate-200">
+                <Text className="text-xl font-bold text-blue-600 mb-1">{recoveryStats.totalToday}</Text>
+                <Text className="text-xs text-slate-500">Today</Text>
               </View>
-              <View style={styles.summaryCard}>
-                <Text style={styles.summaryNumber}>{recoveryStats.recovered}</Text>
-                <Text style={styles.summaryLabel}>Recovered</Text>
+              <View className="flex-1 bg-white rounded-lg p-3 items-center border border-slate-200">
+                <Text className="text-xl font-bold text-blue-600 mb-1">{recoveryStats.recovered}</Text>
+                <Text className="text-xs text-slate-500">Recovered</Text>
               </View>
-              <View style={styles.summaryCard}>
-                <Text style={styles.summaryNumber}>{recoveryStats.pending}</Text>
-                <Text style={styles.summaryLabel}>Pending</Text>
+              <View className="flex-1 bg-white rounded-lg p-3 items-center border border-slate-200">
+                <Text className="text-xl font-bold text-blue-600 mb-1">{recoveryStats.pending}</Text>
+                <Text className="text-xs text-slate-500">Pending</Text>
               </View>
-              <View style={styles.summaryCard}>
-                <Text style={styles.summaryNumber}>{recoveryStats.successRate}%</Text>
-                <Text style={styles.summaryLabel}>Success</Text>
+              <View className="flex-1 bg-white rounded-lg p-3 items-center border border-slate-200">
+                <Text className="text-xl font-bold text-blue-600 mb-1">{recoveryStats.successRate}%</Text>
+                <Text className="text-xs text-slate-500">Success</Text>
               </View>
             </View>
           </View>
 
           {/* Logout Button */}
           <TouchableOpacity
-            style={styles.logoutButton}
+            className="bg-red-100 rounded-xl py-3.5 items-center border border-red-200"
             onPress={() => {
               setCurrentStep("vehicleSelection");
               setIsOnline(false);
               onLogout?.();
             }}
           >
-            <Text style={styles.logoutButtonText}>🚪 End Duty</Text>
+            <Text className="text-red-600 font-semibold text-base">🚪 End Duty</Text>
           </TouchableOpacity>
         </ScrollView>
       ) : (
@@ -707,51 +696,51 @@ const CarAutoDashboard = ({ onLogout }) => {
 
   // Render Accepted Complaint Flow
   const renderAcceptedComplaintFlow = () => (
-    <ScrollView contentContainerStyle={styles.scrollContent}>
-      <View style={styles.backButtonContainer}>
+    <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16, paddingBottom: 24 }}>
+      <View className="mb-5">
         <TouchableOpacity
-          style={styles.backButton}
+          className="flex-row items-center mb-4"
           onPress={() => setAcceptedComplaint(null)}
         >
           <ShakyIcon name="arrow-back" size={24} color="#2563EB" />
-          <Text style={styles.backButtonText}>Back to Dashboard</Text>
+          <Text className="text-blue-600 ml-2 font-semibold">Back to Dashboard</Text>
         </TouchableOpacity>
       </View>
 
       {itemConfirmation === "itemPhoto" && (
         <View>
-          <Text style={styles.formTitle}>📸 Item Confirmation</Text>
-          <View style={styles.formContainer}>
-            <View style={styles.complaintSummary}>
-              <Text style={styles.summaryTitle}>Complaint Details</Text>
-              <Text style={styles.summaryText}>
+          <Text className="text-2xl font-bold text-slate-800 mb-4">📸 Item Confirmation</Text>
+          <View className="mb-5">
+            <View className="bg-blue-50 rounded-xl p-3.5 mb-4 border border-blue-200">
+              <Text className="text-sm font-bold text-blue-800 mb-2">Complaint Details</Text>
+              <Text className="text-[13px] text-blue-800 mb-1">
                 📦 Item: {acceptedComplaint.item}
               </Text>
-              <Text style={styles.summaryText}>
+              <Text className="text-[13px] text-blue-800 mb-1">
                 👤 Passenger: {acceptedComplaint.passengerName}
               </Text>
-              <Text style={styles.summaryText}>
+              <Text className="text-[13px] text-blue-800 mb-1">
                 📍 Location: {acceptedComplaint.location}
               </Text>
             </View>
 
-            <TouchableOpacity style={styles.uploadPhotoButton}>
+            <TouchableOpacity className="bg-slate-50 border-2 border-blue-600 border-dashed rounded-xl py-10 items-center justify-center mb-4">
               <ShakyIcon name="camera" size={40} color="#2563EB" />
-              <Text style={styles.uploadPhotoText}>Tap to Upload Photo</Text>
+              <Text className="text-blue-600 font-semibold mt-3">Tap to Upload Photo</Text>
             </TouchableOpacity>
 
-            <View style={styles.confirmationButtons}>
+            <View className="flex-row gap-3 mt-4">
               <TouchableOpacity
-                style={styles.confirmButton}
+                className="flex-1 bg-green-100 rounded-xl py-3.5 items-center border border-green-300"
                 onPress={() => handleItemConfirmed(true)}
               >
-                <Text style={styles.confirmButtonText}>✅ Item Found</Text>
+                <Text className="text-green-700 font-bold">✅ Item Found</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.denyButton}
+                className="flex-1 bg-red-100 rounded-xl py-3.5 items-center border border-red-200"
                 onPress={() => handleItemConfirmed(false)}
               >
-                <Text style={styles.denyButtonText}>❌ Item Not Found</Text>
+                <Text className="text-red-600 font-bold">❌ Item Not Found</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -760,12 +749,12 @@ const CarAutoDashboard = ({ onLogout }) => {
 
       {itemConfirmation === "meetingDetails" && itemFound && (
         <View>
-          <Text style={styles.formTitle}>📍 Meeting Details</Text>
-          <View style={styles.formContainer}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Meeting Point</Text>
+          <Text className="text-2xl font-bold text-slate-800 mb-4">📍 Meeting Details</Text>
+          <View className="mb-5">
+            <View className="mb-4">
+              <Text className="text-sm font-semibold text-slate-600 mb-2">Meeting Point</Text>
               <TextInput
-                style={styles.input}
+                className="bg-slate-50 border border-slate-300 rounded-xl py-3 px-3.5 text-sm text-slate-800"
                 placeholder="Enter meeting location"
                 placeholderTextColor="#CBD5E1"
                 value={meetingPoint}
@@ -773,10 +762,10 @@ const CarAutoDashboard = ({ onLogout }) => {
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Pickup Time</Text>
+            <View className="mb-4">
+              <Text className="text-sm font-semibold text-slate-600 mb-2">Pickup Time</Text>
               <TextInput
-                style={styles.input}
+                className="bg-slate-50 border border-slate-300 rounded-xl py-3 px-3.5 text-sm text-slate-800"
                 placeholder="Enter pickup time"
                 placeholderTextColor="#CBD5E1"
                 value={pickupTime}
@@ -786,34 +775,34 @@ const CarAutoDashboard = ({ onLogout }) => {
 
 
             <TouchableOpacity
-              style={[styles.locationButton, isShareingLocation && styles.locationButtonDisabled]}
+              className={`bg-blue-600 rounded-xl py-3.5 flex-row items-center justify-center mb-4 ${isShareingLocation ? "opacity-50" : ""}`}
               onPress={handleShareLiveLocation}
               disabled={isShareingLocation}
             >
               {isShareingLocation ? (
                 <>
                   <ActivityIndicator size="small" color="#FFFFFF" />
-                  <Text style={styles.locationButtonText}>Sharing...</Text>
+                  <Text className="text-white font-semibold ml-2">Sharing...</Text>
                 </>
               ) : (
                 <>
                   <Ionicons name="location" size={24} color="#FFFFFF" />
-                  <Text style={styles.locationButtonText}>Share Live Location</Text>
+                  <Text className="text-white font-semibold ml-2">Share Live Location</Text>
                 </>
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.locationButton}>
+            <TouchableOpacity className="bg-blue-600 rounded-xl py-3.5 flex-row items-center justify-center mb-4">
               <ShakyIcon name="location" size={24} color="#FFFFFF" />
-              <Text style={styles.locationButtonText}>Share Live Location</Text>
+              <Text className="text-white font-semibold ml-2">Share Live Location</Text>
 
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.primaryButton}
+              className="bg-blue-600 rounded-xl py-3.5 items-center mb-4"
               onPress={() => setShowQRModal(true)}
             >
-              <Text style={styles.primaryButtonText}>📍 Next: QR Handover</Text>
+              <Text className="text-white font-semibold text-base">📍 Next: QR Handover</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -821,20 +810,20 @@ const CarAutoDashboard = ({ onLogout }) => {
 
       {itemConfirmation === "notFound" && !itemFound && (
         <View>
-          <Text style={styles.formTitle}>❌ Item Not Found</Text>
-          <View style={styles.formContainer}>
-            <View style={styles.notFoundCard}>
-              <Text style={styles.notFoundTitle}>
+          <Text className="text-2xl font-bold text-slate-800 mb-4">❌ Item Not Found</Text>
+          <View className="mb-5">
+            <View className="bg-red-100 rounded-xl p-4 mb-4 border border-red-200">
+              <Text className="text-base font-bold text-red-600 mb-2">
                 Item Not Found Confirmation
               </Text>
-              <Text style={styles.notFoundText}>
+              <Text className="text-sm text-red-600 leading-5">
                 You have confirmed that the item is not in your vehicle. This
                 information will be recorded in the system.
               </Text>
             </View>
 
             <TouchableOpacity
-              style={styles.primaryButton}
+              className="bg-blue-600 rounded-xl py-3.5 items-center mb-4"
               onPress={() => {
                 setComplaints(
                   complaints.filter((c) => c.id !== acceptedComplaint.id)
@@ -842,7 +831,7 @@ const CarAutoDashboard = ({ onLogout }) => {
                 setAcceptedComplaint(null);
               }}
             >
-              <Text style={styles.primaryButtonText}>
+              <Text className="text-white font-semibold text-base">
                 Return to Dashboard
               </Text>
             </TouchableOpacity>
@@ -856,54 +845,54 @@ const CarAutoDashboard = ({ onLogout }) => {
         transparent={true}
         animationType="slide"
       >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
+        <SafeAreaView className="flex-1 bg-white">
+          <View className="flex-row justify-between items-center px-4 py-3 border-b border-slate-200">
             <TouchableOpacity
               onPress={() => setShowQRModal(false)}
             >
               <ShakyIcon name="close" size={28} color="#2563EB" />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>QR Handover</Text>
+            <Text className="text-lg font-bold text-slate-800">QR Handover</Text>
             <View style={{ width: 28 }} />
           </View>
 
-          <ScrollView contentContainerStyle={styles.modalContent}>
-            <View style={styles.qrSection}>
-              <Text style={styles.qrTitle}>📲 Scan Passenger's QR</Text>
-              <View style={styles.qrPlaceholder}>
+          <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16 }}>
+            <View className="items-center mb-6">
+              <Text className="text-base font-bold text-slate-800 mb-4">📲 Scan Passenger's QR</Text>
+              <View className="w-[200px] h-[200px] bg-slate-50 rounded-xl border-2 border-slate-300 items-center justify-center mb-4">
                 <ShakyIcon
                   name="qr-code"
                   size={80}
                   color="#CBD5E1"
                 />
               </View>
-              <TouchableOpacity style={styles.scanButton}>
+              <TouchableOpacity className="bg-blue-600 rounded-xl flex-row py-3.5 px-6 items-center justify-center">
                 <ShakyIcon name="camera" size={24} color="#FFFFFF" />
-                <Text style={styles.scanButtonText}>Scan QR Code</Text>
+                <Text className="text-white font-semibold ml-2">Scan QR Code</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.divider} />
+            <View className="h-px bg-slate-200 my-6" />
 
-            <View style={styles.qrSection}>
-              <Text style={styles.qrTitle}>🎫 Or Show Your QR</Text>
-              <View style={styles.qrPlaceholder}>
+            <View className="items-center mb-6">
+              <Text className="text-base font-bold text-slate-800 mb-4">🎫 Or Show Your QR</Text>
+              <View className="w-[200px] h-[200px] bg-slate-50 rounded-xl border-2 border-slate-300 items-center justify-center mb-4">
                 <ShakyIcon
                   name="qr-code"
                   size={80}
                   color="#CBD5E1"
                 />
               </View>
-              <Text style={styles.driverQRText}>
+              <Text className="text-[13px] text-slate-500 mt-3">
                 Driver QR - Let passenger scan this
               </Text>
             </View>
 
             <TouchableOpacity
-              style={styles.completeButton}
+              className="bg-green-500 rounded-xl py-3.5 items-center mt-4"
               onPress={handleCompleteHandover}
             >
-              <Text style={styles.completeButtonText}>
+              <Text className="text-white font-semibold text-base">
                 ✅ Complete Handover
               </Text>
             </TouchableOpacity>
@@ -915,18 +904,16 @@ const CarAutoDashboard = ({ onLogout }) => {
 
   return (
     <Animated.View
-      style={[
-        styles.animatedScreen,
+      className="flex-1" style={[
         {
           opacity: screenFadeAnim,
           transform: [{ translateY: screenSlideAnim }],
         },
       ]}
     >
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView className="flex-1 bg-white">
         <Animated.View
-          style={[
-            styles.flex1,
+          className="flex-1" style={[
             {
               opacity: stepFadeAnim,
               transform: [
@@ -949,608 +936,4 @@ const CarAutoDashboard = ({ onLogout }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  animatedScreen: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  flex1: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 16,
-    paddingBottom: 24,
-  },
-  dashboardContent: {
-    flexGrow: 1,
-    padding: 16,
-    paddingBottom: 24,
-  },
 
-  // Vehicle Selection Styles
-  header: {
-    marginBottom: 24,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 8,
-  },
-  headerSubtitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#475569",
-  },
-  selectionContainer: {
-    marginBottom: 24,
-  },
-  vehicleCard: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: "#E2E8F0",
-    alignItems: "center",
-    position: "relative",
-  },
-  vehicleCardSelected: {
-    backgroundColor: "#EFF6FF",
-    borderColor: "#2563EB",
-  },
-  vehicleIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  vehicleTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 4,
-  },
-  vehicleDescription: {
-    fontSize: 14,
-    color: "#64748B",
-    textAlign: "center",
-  },
-  checkmark: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-  },
-
-  // Form Styles
-  formContainer: {
-    marginBottom: 20,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#475569",
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: "#F8FAFC",
-    borderWidth: 1,
-    borderColor: "#CBD5E1",
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    fontSize: 14,
-    color: "#1E293B",
-  },
-  timeRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 16,
-  },
-  uploadButton: {
-    backgroundColor: "#F8FAFC",
-    borderWidth: 2,
-    borderColor: "#2563EB",
-    borderStyle: "dashed",
-    borderRadius: 12,
-    paddingVertical: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  uploadButtonText: {
-    color: "#2563EB",
-    fontWeight: "600",
-    marginTop: 8,
-  },
-
-  // Button Styles
-  primaryButton: {
-    backgroundColor: "#2563EB",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  backButtonText: {
-    color: "#2563EB",
-    marginLeft: 8,
-    fontWeight: "600",
-  },
-  backButtonContainer: {
-    marginBottom: 20,
-  },
-
-  // Dashboard Styles
-  dashboardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  driverInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#2563EB",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  avatarText: {
-    color: "#FFFFFF",
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  driverDetails: {
-    flex: 1,
-  },
-  driverName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
-  },
-  driverVehicle: {
-    fontSize: 14,
-    color: "#64748B",
-  },
-  notificationBell: {
-    position: "relative",
-    padding: 8,
-  },
-  badge: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    backgroundColor: "#EF4444",
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-
-  // Status Card
-  statusCard: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  statusLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  statusIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#EF4444",
-    marginRight: 10,
-  },
-  statusOnline: {
-    backgroundColor: "#22C55E",
-  },
-  statusText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1E293B",
-  },
-
-  // Duty Card
-  dutyCard: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 12,
-  },
-  dutyInfo: {
-    gap: 10,
-  },
-  dutyRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-  },
-  dutyLabel: {
-    fontSize: 14,
-    color: "#64748B",
-    fontWeight: "500",
-  },
-  dutyValue: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1E293B",
-  },
-  statusActive: {
-    color: "#22C55E",
-  },
-
-  // Complaints Section
-  complaintsSection: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 12,
-  },
-  complaintCard: {
-    backgroundColor: "#FFF7ED",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#FDBA74",
-  },
-  complaintHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  complaintTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#9A3412",
-  },
-  complaintTime: {
-    fontSize: 12,
-    color: "#9A3412",
-    fontWeight: "500",
-  },
-  complaintDetail: {
-    fontSize: 13,
-    color: "#9A3412",
-    marginBottom: 6,
-  },
-  bold: {
-    fontWeight: "700",
-  },
-  complaintActions: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 12,
-  },
-  acceptButton: {
-    flex: 1,
-    backgroundColor: "#DCFCE7",
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#86EFAC",
-  },
-  acceptButtonText: {
-    color: "#16A34A",
-    fontWeight: "700",
-    fontSize: 12,
-  },
-  ignoreButton: {
-    flex: 1,
-    backgroundColor: "#FEE2E2",
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#FECACA",
-  },
-  ignoreButtonText: {
-    color: "#DC2626",
-    fontWeight: "700",
-    fontSize: 12,
-  },
-  emptyState: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: 24,
-    alignItems: "center",
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: "#64748B",
-  },
-
-  // Summary Panel
-  summaryPanel: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  summaryGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  summaryCard: {
-    flex: 1,
-    minWidth: "48%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    padding: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  summaryNumber: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#2563EB",
-    marginBottom: 4,
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: "#64748B",
-  },
-
-  // Logout Button
-  logoutButton: {
-    backgroundColor: "#FEE2E2",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#FECACA",
-  },
-  logoutButtonText: {
-    color: "#DC2626",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-
-  // Complaint Flow Styles
-  formTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 16,
-  },
-  complaintSummary: {
-    backgroundColor: "#EFF6FF",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-  },
-  summaryTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#1E40AF",
-    marginBottom: 8,
-  },
-  summaryText: {
-    fontSize: 13,
-    color: "#1E40AF",
-    marginBottom: 6,
-  },
-  uploadPhotoButton: {
-    backgroundColor: "#F8FAFC",
-    borderWidth: 2,
-    borderColor: "#2563EB",
-    borderStyle: "dashed",
-    borderRadius: 12,
-    paddingVertical: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  uploadPhotoText: {
-    color: "#2563EB",
-    fontWeight: "600",
-    marginTop: 12,
-  },
-  confirmationButtons: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 16,
-  },
-  confirmButton: {
-    flex: 1,
-    backgroundColor: "#DCFCE7",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#86EFAC",
-  },
-  confirmButtonText: {
-    color: "#16A34A",
-    fontWeight: "700",
-  },
-  denyButton: {
-    flex: 1,
-    backgroundColor: "#FEE2E2",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#FECACA",
-  },
-  denyButtonText: {
-    color: "#DC2626",
-    fontWeight: "700",
-  },
-  locationButton: {
-    backgroundColor: "#2563EB",
-    borderRadius: 12,
-    paddingVertical: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  locationButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    marginLeft: 8,
-  },
-  notFoundCard: {
-    backgroundColor: "#FEE2E2",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#FECACA",
-  },
-  notFoundTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#DC2626",
-    marginBottom: 8,
-  },
-  notFoundText: {
-    fontSize: 14,
-    color: "#DC2626",
-    lineHeight: 20,
-  },
-
-  // Modal Styles
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1E293B",
-  },
-  modalContent: {
-    flexGrow: 1,
-    padding: 16,
-  },
-  qrSection: {
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  qrTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 16,
-  },
-  qrPlaceholder: {
-    width: 200,
-    height: 200,
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "#CBD5E1",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  scanButton: {
-    backgroundColor: "#2563EB",
-    borderRadius: 12,
-    flexDirection: "row",
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  scanButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    marginLeft: 8,
-  },
-  driverQRText: {
-    fontSize: 13,
-    color: "#64748B",
-    marginTop: 12,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#E2E8F0",
-    marginVertical: 24,
-  },
-  completeButton: {
-    backgroundColor: "#22C55E",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 16,
-  },
-  completeButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-});
-
-export default CarAutoDashboard;

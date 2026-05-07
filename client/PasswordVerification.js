@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import { Animated, Text, View } from "react-native";
 
 const RULES = [
   { key: "length", label: "Exactly 6 chars" },
@@ -36,27 +36,28 @@ const PasswordVerification = ({ checks, metCount }) => {
 
   return (
     <>
-      <View style={styles.barRow}>
+      <View className="mt-2.5 flex-row gap-1.5">
         {[0, 1, 2, 3].map((segment) => {
           const isActive = segment < metCount;
 
           return (
             <Animated.View
               key={segment}
-              style={[
-                styles.bar,
-                isActive && styles.barActive,
-                isActive && {
-                  transform: [
-                    {
-                      scaleY: pulseAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [1, 1.18],
-                      }),
-                    },
-                  ],
-                },
-              ]}
+              className={`flex-1 h-1 rounded-full ${isActive ? "bg-green-500 opacity-100" : "bg-slate-700 opacity-40"}`}
+              style={
+                isActive
+                  ? {
+                      transform: [
+                        {
+                          scaleY: pulseAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [1, 1.18],
+                          }),
+                        },
+                      ],
+                    }
+                  : undefined
+              }
             />
           );
         })}
@@ -70,14 +71,14 @@ const PasswordVerification = ({ checks, metCount }) => {
           }),
         }}
       >
-        <View style={styles.ruleRow}>
+        <View className="mt-2 flex-row flex-wrap gap-3">
           {RULES.map((rule) => {
             const isMet = Boolean(checks?.[rule.key]);
 
             return (
               <Text
                 key={rule.key}
-                style={[styles.ruleText, isMet && styles.ruleTextActive]}
+                className={`text-xs font-semibold ${isMet ? "text-emerald-500" : "text-slate-400"}`}
               >
                 {isMet ? "\u2713" : "\u25CB"} {rule.label}
               </Text>
@@ -88,39 +89,5 @@ const PasswordVerification = ({ checks, metCount }) => {
     </>
   );
 };
-
-const styles = StyleSheet.create({
-  barRow: {
-    marginTop: 10,
-    flexDirection: "row",
-    gap: 6,
-  },
-  bar: {
-    flex: 1,
-    height: 4,
-    borderRadius: 999,
-    backgroundColor: "#334155",
-    opacity: 0.4,
-  },
-  barActive: {
-    backgroundColor: "#22C55E",
-    opacity: 1,
-  },
-  ruleRow: {
-    marginTop: 8,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    rowGap: 6,
-  },
-  ruleText: {
-    color: "#94A3B8",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  ruleTextActive: {
-    color: "#10B981",
-  },
-});
 
 export default PasswordVerification;

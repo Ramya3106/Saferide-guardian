@@ -14,7 +14,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { PriorityBadgeList } from "../components/PriorityBadge";
-import { sendPassengerMessage } from "../services/complaintService";
+import axios from "axios";
+import { getApiBase } from "../../apiConfig";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -128,10 +129,18 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setMessages((prev) => [...prev, optimisticMessage]);
 
-      const result = await sendPassengerMessage(complaint._id, messageText, {
-        "X-User-Email": userEmail,
-        "X-User-Role": "Passenger",
-      });
+      const API_BASE = getApiBase();
+      const response = await axios.post(
+        `${API_BASE}/passenger/messages/${complaint._id}`,
+        { text: messageText },
+        {
+          headers: {
+            "x-user-email": userEmail,
+            "x-user-role": "Passenger",
+          },
+        }
+      );
+      const result = response.data;
 
       if (result) {
         onMessageSent();
