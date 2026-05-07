@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Image,
   KeyboardAvoidingView,
   LayoutAnimation,
   Platform,
@@ -13,7 +15,9 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { PriorityBadgeList } from "../components/PriorityBadge";
+import { Audio } from "expo-av";
 import axios from "axios";
 import { getApiBase } from "../../apiConfig";
 
@@ -28,7 +32,10 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
   const [isLoading, setIsLoading] = useState(true);
   const [locationData, setLocationData] = useState(null);
   const [locationLoading, setLocationLoading] = useState(false);
+  const [attachment, setAttachment] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
   const scrollViewRef = useRef(null);
+  const recordingRef = useRef(null);
   const colorScheme = useColorScheme();
 
   const theme = useMemo(() => {
@@ -69,6 +76,8 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
           sender: entry.staffName || "Officer",
           senderRole: entry.staffRole || "Rail security officer",
           text: entry.text,
+          attachmentUrl: entry.attachmentUrl || null,
+          messageType: entry.messageType || "text",
           timestamp: entry.timestamp,
           isOfficer: true,
         });
@@ -137,11 +146,12 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
   };
 
   const handleSendMessage = async () => {
-    if (!inputText.trim()) {
+    if (!inputText.trim() && !attachment) {
       return;
     }
 
     const messageText = inputText.trim();
+    const localAttachment = attachment;
     setInputText("");
     setIsSending(true);
 
@@ -152,18 +162,50 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
       sender: "You",
       senderRole: "Passenger",
       text: messageText,
+      attachmentUrl: localAttachment?.uri || null,
+      messageType: localAttachment?.type || "text",
       timestamp: new Date(),
       isOfficer: false,
     };
 
     try {
+      let attachmentUrl = null;
+      let messageType = localAttachment?.type || "text";
+
+      if (localAttachment?.uri) {
+        const API_BASE = getApiBase();
+        const formData = new FormData();
+        formData.append("file", {
+          uri: localAttachment.uri,
+          name: localAttachment.name || (localAttachment.type === "voice" ? "voice-note.m4a" : "complaint-attachment.jpg"),
+          type: localAttachment.mimeType || (localAttachment.type === "voice" ? "audio/m4a" : "image/jpeg"),
+        });
+
+        const uploadResponse = await axios.post(`${API_BASE}/uploads`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          timeout: 30000,
+        });
+
+        attachmentUrl = uploadResponse.data?.url || uploadResponse.data?.data?.url || null;
+        if (!attachmentUrl) {
+          throw new Error("Attachment upload failed");
+        }
+      }
+
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setMessages((prev) => [...prev, optimisticMessage]);
 
       const API_BASE = getApiBase();
       const response = await axios.post(
         `${API_BASE}/passenger/messages/${complaint._id}`,
-        { text: messageText },
+        {
+          text: messageText,
+          attachmentUrl,
+          messageType,
+          senderName: userEmail,
+        },
         {
           headers: {
             "x-user-email": userEmail,
@@ -174,6 +216,7 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
       const result = response.data;
 
       if (result) {
+        setAttachment(null);
         onMessageSent();
       } else {
         console.error("Failed to send message");
@@ -187,6 +230,93 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
     } finally {
       setIsSending(false);
     }
+  };
+
+  const pickImage = async (source) => {
+    try {
+      const permission = source === "camera"
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert("Permission needed", "Allow photo access to attach an image.");
+        return;
+      }
+
+      const pickerResult = source === "camera"
+        ? await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, quality: 0.8 })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, quality: 0.8 });
+
+      if (!pickerResult.canceled && pickerResult.assets?.[0]?.uri) {
+        const asset = pickerResult.assets[0];
+        setAttachment({
+          uri: asset.uri,
+          type: "image",
+          name: asset.fileName || `attachment-${Date.now()}.jpg`,
+          mimeType: asset.mimeType || "image/jpeg",
+        });
+      }
+    } catch (error) {
+      Alert.alert("Attachment failed", "Unable to select image right now.");
+    }
+  };
+
+  const startVoiceRecording = async () => {
+    try {
+      const permission = await Audio.requestPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Permission needed", "Allow microphone access to send a voice note.");
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: true,
+        staysActiveInBackground: false,
+      });
+
+      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      recordingRef.current = recording;
+      setIsRecording(true);
+    } catch (error) {
+      Alert.alert("Recording failed", "Unable to start voice recording.");
+    }
+  };
+
+  const stopVoiceRecording = async () => {
+    try {
+      const recording = recordingRef.current;
+      if (!recording) {
+        return;
+      }
+
+      setIsRecording(false);
+      recordingRef.current = null;
+      await recording.stopAndUnloadAsync();
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+      });
+
+      const uri = recording.getURI();
+      if (uri) {
+        setAttachment({
+          uri,
+          type: "voice",
+          name: `voice-note-${Date.now()}.m4a`,
+          mimeType: "audio/m4a",
+        });
+      }
+    } catch (error) {
+      setIsRecording(false);
+      recordingRef.current = null;
+      Alert.alert("Recording failed", "Unable to stop recording.");
+    }
+  };
+
+  const clearAttachment = () => {
+    setAttachment(null);
   };
 
   const trainName = complaint?.trainName || complaint?.vehicleNumber || "Rajdhani Express 12301";
@@ -228,6 +358,36 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
           <Text className="text-[#CBD5E1] text-xs leading-snug">{routeText}</Text>
           <PriorityBadgeList complaint={complaint} />
         </View>
+
+        {attachment ? (
+          <View className="rounded-2xl border px-3 py-2.5 gap-2" style={{ backgroundColor: theme.input, borderColor: theme.border }}>
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center gap-2">
+                <Ionicons name={attachment.type === "voice" ? "mic" : "image"} size={16} color={theme.accent} />
+                <Text className="text-[13px] font-bold" style={{ color: theme.text }}>
+                  {attachment.type === "voice" ? "Voice note ready" : "Image attached"}
+                </Text>
+              </View>
+              <Pressable onPress={clearAttachment}>
+                <Text className="text-[12px] font-semibold" style={{ color: theme.danger }}>Remove</Text>
+              </Pressable>
+            </View>
+
+            {attachment.type === "image" ? (
+              <Image source={{ uri: attachment.uri }} style={{ width: "100%", height: 180, borderRadius: 14 }} resizeMode="cover" />
+            ) : (
+              <View className="flex-row items-center gap-3 rounded-2xl px-3 py-3" style={{ backgroundColor: theme.card }}>
+                <View className="w-11 h-11 rounded-2xl items-center justify-center" style={{ backgroundColor: theme.accentSoft }}>
+                  <Ionicons name="mic" size={22} color={theme.accent} />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-[13px] font-bold" style={{ color: theme.text }}>Voice note captured</Text>
+                  <Text className="text-[11px]" style={{ color: theme.subtext }}>It will be uploaded when you send the message.</Text>
+                </View>
+              </View>
+            )}
+          </View>
+        ) : null}
 
         <View className="mx-3 mt-2 rounded-[18px] border p-3.5 gap-2" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
           <View className="flex-row items-center justify-between">
@@ -323,6 +483,23 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
                   {message.text}
                 </Text>
 
+                {message.attachmentUrl ? (
+                  message.messageType === "image" ? (
+                    <Image
+                      source={{ uri: message.attachmentUrl }}
+                      className="w-full h-40 rounded-xl mt-2"
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View className="flex-row items-center gap-2 rounded-xl px-3 py-2 mt-2" style={{ backgroundColor: message.isOfficer ? theme.chip : "rgba(255,255,255,0.12)" }}>
+                      <Ionicons name="mic" size={14} color={message.isOfficer ? theme.text : "#FFFFFF"} />
+                      <Text className={`text-[11px] font-semibold ${message.isOfficer ? "text-slate-700" : "text-white"}`}>
+                        Voice note attached
+                      </Text>
+                    </View>
+                  )
+                ) : null}
+
                 <Text className={`text-[10px] mt-1 ${message.isOfficer ? 'text-slate-400' : 'text-blue-100'}`}>
                   {formatTime(message.timestamp)}
                 </Text>
@@ -339,27 +516,52 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
       </ScrollView>
 
       {complaint?.status !== "Closed" ? (
-        <View className="flex-row border-t px-3 py-2.5 gap-2 items-end" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
-          <TextInput
-            className="flex-1 border rounded-[14px] px-3 py-2.5 max-h-[110px] text-[13px]"
-            style={{ backgroundColor: theme.input, borderColor: theme.inputBorder, color: theme.text }}
-            placeholder="Type your message..."
-            placeholderTextColor={theme.subtext}
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-            maxLength={500}
-            editable={!isSending}
-          />
+        <View className="border-t px-3 py-2.5 gap-2" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
+          <View className="flex-row gap-2 items-end">
+            <TextInput
+              className="flex-1 border rounded-[14px] px-3 py-2.5 max-h-[110px] text-[13px]"
+              style={{ backgroundColor: theme.input, borderColor: theme.inputBorder, color: theme.text }}
+              placeholder="Type your message..."
+              placeholderTextColor={theme.subtext}
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+              maxLength={500}
+              editable={!isSending}
+            />
 
-          <Pressable
-            className={`w-[42px] h-[42px] rounded-[14px] justify-center items-center ${isSending ? 'opacity-55' : ''}`}
-            style={{ backgroundColor: theme.accent }}
-            onPress={handleSendMessage}
-            disabled={isSending || !inputText.trim()}
-          >
-            {isSending ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Ionicons name="send" size={18} color="#FFFFFF" />}
-          </Pressable>
+            <Pressable
+              className={`w-[42px] h-[42px] rounded-[14px] justify-center items-center ${isSending ? 'opacity-55' : ''}`}
+              style={{ backgroundColor: theme.accent }}
+              onPress={handleSendMessage}
+              disabled={isSending || (!inputText.trim() && !attachment)}
+            >
+              {isSending ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Ionicons name="send" size={18} color="#FFFFFF" />}
+            </Pressable>
+          </View>
+
+          <View className="flex-row flex-wrap items-center gap-2">
+            <Pressable className="flex-row items-center gap-1.5 rounded-full px-3 py-2" style={{ backgroundColor: theme.accentSoft }} onPress={() => pickImage("gallery")}>
+              <Ionicons name="image" size={14} color={theme.accent} />
+              <Text className="text-[11px] font-semibold" style={{ color: theme.accent }}>Gallery</Text>
+            </Pressable>
+
+            <Pressable className="flex-row items-center gap-1.5 rounded-full px-3 py-2" style={{ backgroundColor: theme.accentSoft }} onPress={() => pickImage("camera")}>
+              <Ionicons name="camera" size={14} color={theme.accent} />
+              <Text className="text-[11px] font-semibold" style={{ color: theme.accent }}>Camera</Text>
+            </Pressable>
+
+            <Pressable
+              className="flex-row items-center gap-1.5 rounded-full px-3 py-2"
+              style={{ backgroundColor: isRecording ? theme.danger : theme.accentSoft }}
+              onPress={isRecording ? stopVoiceRecording : startVoiceRecording}
+            >
+              <Ionicons name={isRecording ? "stop" : "mic"} size={14} color={isRecording ? "#FFFFFF" : theme.accent} />
+              <Text className="text-[11px] font-semibold" style={{ color: isRecording ? "#FFFFFF" : theme.accent }}>
+                {isRecording ? "Stop" : "Voice"}
+              </Text>
+            </Pressable>
+          </View>
         </View>
       ) : (
         <View className="flex-row border-t px-4 py-3 justify-center items-center gap-2 bg-red-100 border-red-200">

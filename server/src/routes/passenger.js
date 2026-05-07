@@ -1045,6 +1045,8 @@ router.get("/messages/:complaintId", async (req, res) => {
       sender: msg.staffName || "Officer",
       senderRole: "Officer",
       text: msg.text,
+      attachmentUrl: msg.attachmentUrl || null,
+      messageType: msg.messageType || (msg.attachmentUrl ? "image" : "text"),
       timestamp: msg.timestamp,
       isOfficer: true,
       isInternalNote: msg.isInternalNote || false,
@@ -1062,6 +1064,8 @@ router.get("/messages/:complaintId", async (req, res) => {
       sender: reply.officerName || "Officer",
       senderRole: reply.officerRole,
       text: reply.message,
+      attachmentUrl: reply.attachmentUrl || null,
+      messageType: reply.messageType || (reply.attachmentUrl ? "image" : "text"),
       timestamp: reply.repliedAt,
       isOfficer: true,
     }));
@@ -1089,10 +1093,10 @@ router.post("/messages/:complaintId", async (req, res) => {
   try {
     const complaintId = req.params.complaintId;
     const userEmail = getUserEmail(req);
-    const { text } = req.body;
+    const { text, attachmentUrl = null, messageType = null, attachmentName = null } = req.body || {};
 
-    if (!text || !String(text).trim()) {
-      return failure(res, 400, "Message text required", "VALIDATION_ERROR");
+    if ((!text || !String(text).trim()) && !attachmentUrl) {
+      return failure(res, 400, "Message text or attachment required", "VALIDATION_ERROR");
     }
 
     const complaint = await Complaint.findOne({
@@ -1110,7 +1114,10 @@ router.post("/messages/:complaintId", async (req, res) => {
     const newMessage = {
       staffId: "passenger",
       staffName: "Passenger",
-      text: String(text).trim(),
+      text: text ? String(text).trim() : "",
+      attachmentUrl: attachmentUrl || null,
+      attachmentName: attachmentName || null,
+      messageType: messageType || (attachmentUrl ? "image" : "text"),
       timestamp: new Date(),
       isPassengerMessage: true,
     };
@@ -1124,10 +1131,11 @@ router.post("/messages/:complaintId", async (req, res) => {
       officerId: "passenger",
       officerName: complaint.passengerName,
       officerRole: "Passenger",
-      message: String(text).trim(),
+      message: text ? String(text).trim() : attachmentName || "Attachment",
       statusUpdate: complaint.status,
       visibleToPassenger: true,
-      messageType: "passenger-message",
+      messageType: messageType || (attachmentUrl ? "image" : "passenger-message"),
+      attachmentUrl: attachmentUrl || null,
       repliedAt: new Date(),
     });
 
@@ -1138,6 +1146,8 @@ router.post("/messages/:complaintId", async (req, res) => {
       senderName: complaint.passengerName,
       senderRole: "Passenger",
       messageText: String(text).trim(),
+      attachmentUrl: attachmentUrl || null,
+      messageType: messageType || (attachmentUrl ? "image" : "text"),
       message: passengerReply ? (passengerReply.toObject ? passengerReply.toObject() : passengerReply) : null,
       source: "passenger-message",
     });

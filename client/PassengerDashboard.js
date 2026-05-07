@@ -1192,6 +1192,53 @@ const PassengerDashboard = ({
                 <Text className="text-[13px] text-slate-600 mb-1.5">Route: {selectedTrackingComplaint.route}</Text>
                 <Text className="text-[13px] text-slate-600 mb-1.5">Routed to: {selectedTrackingComplaint.submitAuthority || "On-duty officers"}</Text>
                 <Text className="text-[13px] text-slate-600 mb-1.5">Priority: {trackingData?.priority || selectedTrackingComplaint.priority || "Normal"}</Text>
+
+                <View className="mt-3 rounded-2xl border border-blue-100 overflow-hidden" style={{ backgroundColor: "#EFF6FF" }}>
+                  <View className="px-4 py-3 border-b border-blue-100">
+                    <Text className="text-[12px] font-bold text-blue-800">Live route snapshot</Text>
+                    <Text className="text-[11px] text-blue-600 mt-0.5">A simple map-style view of the accepted complaint tracking.</Text>
+                  </View>
+
+                  <View className="px-4 py-4">
+                    <View className="flex-row items-center justify-between">
+                      <View className="items-center w-[28%] gap-2">
+                        <View className="w-9 h-9 rounded-full items-center justify-center bg-emerald-500">
+                          <Ionicons name="train" size={18} color="#fff" />
+                        </View>
+                        <Text className="text-[11px] font-semibold text-slate-700 text-center">Passenger complaint</Text>
+                        <Text className="text-[10px] text-slate-500 text-center">{selectedTrackingComplaint.fromLocation || selectedTrackingComplaint.boardingStation || "Origin"}</Text>
+                      </View>
+
+                      <View className="flex-1 items-center px-2">
+                        <View className="w-full h-[2px] bg-blue-200 relative">
+                          <View className="absolute left-[10%] top-[-4px] w-2.5 h-2.5 rounded-full bg-blue-500" />
+                          <View className="absolute left-[70%] top-[-4px] w-2.5 h-2.5 rounded-full bg-amber-500" />
+                        </View>
+                        <Text className="text-[10px] text-blue-700 mt-2 font-semibold">Live move</Text>
+                      </View>
+
+                      <View className="items-center w-[28%] gap-2">
+                        <View className="w-9 h-9 rounded-full items-center justify-center bg-blue-600">
+                          <Ionicons name="navigate" size={16} color="#fff" />
+                        </View>
+                        <Text className="text-[11px] font-semibold text-slate-700 text-center">Duty officer</Text>
+                        <Text className="text-[10px] text-slate-500 text-center">{trackingData?.meetingPoint || selectedTrackingComplaint.toLocation || "Next station"}</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                <View className="flex-row flex-wrap gap-2 mt-3">
+                  <View className="flex-1 min-w-[48%] bg-white border border-slate-200 rounded-xl p-3">
+                    <Text className="text-[11px] text-slate-500">Staff ETA</Text>
+                    <Text className="text-[15px] font-extrabold text-slate-800 mt-1">{trackingData?.staffEta || "Pending..."}</Text>
+                  </View>
+                  <View className="flex-1 min-w-[48%] bg-white border border-slate-200 rounded-xl p-3">
+                    <Text className="text-[11px] text-slate-500">Live status</Text>
+                    <Text className="text-[15px] font-extrabold text-slate-800 mt-1">{trackingData?.itemStatus || "Searching"}</Text>
+                  </View>
+                </View>
+
                 {trackingData?.staffResponseStatus ? <Text className="text-[13px] text-slate-600 mb-1.5">Officer update: {trackingData.staffResponseStatus}</Text> : null}
                 {trackingData?.seenAt ? <Text className="text-[13px] text-slate-600 mb-1.5">Seen at: {new Date(trackingData.seenAt).toLocaleString()}</Text> : null}
                 {trackingData?.acknowledgedAt ? <Text className="text-[13px] text-slate-600 mb-1.5">Acknowledged at: {new Date(trackingData.acknowledgedAt).toLocaleString()}</Text> : null}
