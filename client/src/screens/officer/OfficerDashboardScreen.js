@@ -107,6 +107,8 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
   const [sending, setSending] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+  // Track which notification IDs have been seen (badge clears when messages tab is opened)
+  const [seenIds, setSeenIds] = useState(new Set());
   const socketRef = useRef(null);
 
   const headers = useCallback(() => ({
@@ -379,29 +381,53 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
                 <Text className="text-slate-500 text-[14px]">No notifications yet</Text>
               </View>
             ) : (
-              notificationItems.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  className="bg-white rounded-2xl p-4 mb-3 border border-slate-200"
-                  onPress={() => fetchComplaintDetail(item)}
-                  activeOpacity={0.85}
-                >
-                  <View className="flex-row justify-between items-start gap-2">
-                    <Text className="text-slate-900 font-bold flex-1">
-                      {item.itemType || "Complaint"} - {item.status || "Submitted"}
-                    </Text>
-                    <Text className="text-slate-400 text-[11px]">
-                      {fmtNotificationTime(item.updatedAt || item.createdAt)}
-                    </Text>
-                  </View>
-                  <Text className="text-slate-600 mt-1.5 text-[13px]">
-                    {item.passengerName || "Passenger"} reported on {item.vehicleNumber || "train"}.
-                  </Text>
-                  <Text className="text-blue-700 mt-2 text-[12px] font-semibold">
-                    Tap to open complaint
-                  </Text>
-                </TouchableOpacity>
-              ))
+              <>
+                {/* Mark all as seen button — only shown when there are unseen items */}
+                {notificationItems.some(item => !seenIds.has(item.id)) && (
+                  <TouchableOpacity
+                    className="flex-row items-center justify-end gap-1.5 mb-3"
+                    onPress={handleMarkAllSeen}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="checkmark-done-outline" size={16} color="#1D4ED8" />
+                    <Text className="text-blue-700 text-[12px] font-semibold">Mark all as seen</Text>
+                  </TouchableOpacity>
+                )}
+                {notificationItems.map((item) => {
+                  const isUnseen = !seenIds.has(item.id) && ["New", "Submitted", "Reported"].includes(item.status);
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      className={`rounded-2xl p-4 mb-3 border ${isUnseen ? "bg-blue-50 border-blue-200" : "bg-white border-slate-200"}`}
+                      onPress={() => {
+                        setSeenIds(prev => { const n = new Set(prev); n.add(item.id); return n; });
+                        fetchComplaintDetail(item);
+                      }}
+                      activeOpacity={0.85}
+                    >
+                      <View className="flex-row justify-between items-start gap-2">
+                        <View className="flex-row items-center gap-2 flex-1">
+                          {isUnseen && (
+                            <View className="w-2 h-2 rounded-full bg-blue-600 mt-1" />
+                          )}
+                          <Text className="text-slate-900 font-bold flex-1">
+                            {item.itemType || "Complaint"} - {item.status || "Submitted"}
+                          </Text>
+                        </View>
+                        <Text className="text-slate-400 text-[11px]">
+                          {fmtNotificationTime(item.updatedAt || item.createdAt)}
+                        </Text>
+                      </View>
+                      <Text className="text-slate-600 mt-1.5 text-[13px]">
+                        {item.passengerName || "Passenger"} reported on {item.vehicleNumber || "train"}.
+                      </Text>
+                      <Text className="text-blue-700 mt-2 text-[12px] font-semibold">
+                        Tap to open complaint
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
             )}
           </ScrollView>
         );
@@ -410,7 +436,27 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
     }
   };
 
-  const urgentCount = complaints.filter(c => ["New", "Submitted", "Reported"].includes(c.status)).length;
+  const urgentCount = complaints.filter(c =>
+    ["New", "Submitted", "Reported"].includes(c.status) && !seenIds.has(c.id)
+  ).length;
+
+  // Mark all current notifications as seen when the messages tab is active
+  const handleOpenMessages = () => {
+    setActiveTab("messages");
+    setSeenIds(prev => {
+      const next = new Set(prev);
+      notificationItems.forEach(item => next.add(item.id));
+      return next;
+    });
+  };
+
+  const handleMarkAllSeen = () => {
+    setSeenIds(prev => {
+      const next = new Set(prev);
+      notificationItems.forEach(item => next.add(item.id));
+      return next;
+    });
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-blue-700" edges={["top"]}>
@@ -423,7 +469,7 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
             <Text className="text-blue-300 text-xs">{loc}</Text>
           </View>
         </View>
-        <TouchableOpacity className="relative p-1" onPress={() => setActiveTab("messages")}>
+        <TouchableOpacity className="relative p-1" onPress={handleOpenMessages}>
           <Ionicons name="notifications-outline" size={22} color="#fff" />
           {urgentCount > 0 && (
             <View className="absolute top-0 right-0 bg-red-500 rounded-lg min-w-[16px] h-4 items-center justify-center">
@@ -442,7 +488,11 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
           {TABS.map(tab => {
             const active = activeTab === tab.key;
             return (
-              <TouchableOpacity key={tab.key} className="flex-1 items-center gap-0.5" onPress={() => setActiveTab(tab.key)}>
+              <TouchableOpacity
+                key={tab.key}
+                className="flex-1 items-center gap-0.5"
+                onPress={() => tab.key === "messages" ? handleOpenMessages() : setActiveTab(tab.key)}
+              >
                 <Ionicons name={active ? tab.icon : `${tab.icon}-outline`} size={22} color={active ? "#1D4ED8" : "#94A3B8"} />
                 <Text className={`text-[11px] font-medium ${active ? "text-blue-700 font-bold" : "text-slate-400"}`}>{tab.label}</Text>
               </TouchableOpacity>
