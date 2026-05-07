@@ -2309,40 +2309,19 @@ const AppContent = () => {
   const renderRoleSelector = () => (
     <View style={styles.roleSelectorBlock}>
       {isOfficialRole ? (
-        <View style={styles.officerRoleGrid}>
-          {OFFICER_ROLES.map((item) => {
-            const selected = specificRole === item.key;
-
-            return (
-              <TouchableOpacity
-                key={item.key}
-                style={[
-                  styles.officerRoleCard,
-                  selected && styles.officerRoleCardActive,
-                ]}
-                onPress={() => setSpecificRole(item.key)}
-                activeOpacity={0.9}
-              >
-                <Text style={styles.officerRoleKey}>{item.key}</Text>
-                <Text
-                  style={[
-                    styles.officerRoleTitle,
-                    selected && styles.officerRoleTitleActive,
-                  ]}
-                >
-                  {item.title}
-                </Text>
-                <Text
-                  style={[
-                    styles.officerRoleDescription,
-                    selected && styles.officerRoleDescriptionActive,
-                  ]}
-                >
-                  {item.description}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+        <View style={styles.railwayAuthorityBadge}>
+          <View style={styles.railwayAuthorityIconRow}>
+            <Ionicons name="shield-checkmark" size={28} color="#2563EB" />
+            <View style={styles.railwayAuthorityTextContainer}>
+              <Text style={styles.railwayAuthorityTitle}>Railway Authority</Text>
+              <Text style={styles.railwayAuthoritySubtitle}>
+                TTR / RPF / TTE / Police
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.railwayAuthorityNote}>
+            Your specific role will be detected from your Professional ID.
+          </Text>
         </View>
       ) : (
         <View style={styles.roleRow}>
@@ -2363,11 +2342,6 @@ const AppContent = () => {
             </TouchableOpacity>
           ))}
         </View>
-      )}
-      {isOfficialRole && (
-        <Text style={styles.officerRoleHint}>
-          Select your officer unit before signing in.
-        </Text>
       )}
     </View>
   );
@@ -3754,12 +3728,19 @@ const AppContent = () => {
                           </View>
                         ) : null}
 
-                        <View style={styles.inputGroup}>
-                          <Text style={styles.label}>
-                            {requiredLabel(isOfficialRole ? "Officer role" : "Select role")}
-                          </Text>
-                          {renderRoleSelector()}
-                        </View>
+                        {!isOfficialRole && (
+                          <View style={styles.inputGroup}>
+                            <Text style={styles.label}>
+                              {requiredLabel("Select role")}
+                            </Text>
+                            {renderRoleSelector()}
+                          </View>
+                        )}
+                        {isOfficialRole && (
+                          <View style={styles.inputGroup}>
+                            {renderRoleSelector()}
+                          </View>
+                        )}
 
                         {isRegister && (
                           <View style={styles.inputGroup}>
@@ -5740,6 +5721,39 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 6,
     marginBottom: 6,
+  },
+  railwayAuthorityBadge: {
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1.5,
+    borderColor: "#BFDBFE",
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
+  },
+  railwayAuthorityIconRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  railwayAuthorityTextContainer: {
+    flex: 1,
+  },
+  railwayAuthorityTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#1E40AF",
+    letterSpacing: 0.2,
+  },
+  railwayAuthoritySubtitle: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#3B82F6",
+    marginTop: 2,
+  },
+  railwayAuthorityNote: {
+    fontSize: 11,
+    color: "#64748B",
+    fontStyle: "italic",
   },
   officerLoginBannerTag: {
     color: "#93C5FD",
