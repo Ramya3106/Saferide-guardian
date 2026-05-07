@@ -363,7 +363,7 @@ const CarAutoDashboard = ({ onLogout }) => {
 
   // Render Vehicle Selection Screen
   const renderVehicleSelection = () => (
-    <ScrollView contentContainerStyle={{flexGrow:1,padding:16,paddingBottom:24}}>
+    <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16, paddingBottom: 24 }}>
       <View className="mb-6">
         <Text className="text-3xl font-bold text-slate-800 mb-2">SafeRide Guardian</Text>
         <Text className="text-lg font-semibold text-slate-600">Select Your Vehicle Type</Text>
@@ -371,7 +371,7 @@ const CarAutoDashboard = ({ onLogout }) => {
 
       <View className="mb-6">
         <TouchableOpacity
-          className={`rounded-2xl p-6 mb-3 border-2 items-center relative ${vehicleType==="cab"?"bg-blue-50 border-blue-600":"bg-slate-50 border-slate-200"}`}
+          className={`rounded-2xl p-6 mb-3 border-2 items-center relative ${vehicleType === "cab" ? "bg-blue-50 border-blue-600" : "bg-slate-50 border-slate-200"}`}
           onPress={() => handleVehicleSelection("cab")}
         >
           <Text className="text-5xl mb-3">🚕</Text>
@@ -387,7 +387,7 @@ const CarAutoDashboard = ({ onLogout }) => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          className={`rounded-2xl p-6 mb-3 border-2 items-center relative ${vehicleType==="auto"?"bg-blue-50 border-blue-600":"bg-slate-50 border-slate-200"}`}
+          className={`rounded-2xl p-6 mb-3 border-2 items-center relative ${vehicleType === "auto" ? "bg-blue-50 border-blue-600" : "bg-slate-50 border-slate-200"}`}
           onPress={() => handleVehicleSelection("auto")}
         >
           <Text className="text-5xl mb-3">🛺</Text>
@@ -404,7 +404,7 @@ const CarAutoDashboard = ({ onLogout }) => {
       </View>
 
       <TouchableOpacity
-        className={`bg-blue-600 rounded-xl py-3.5 items-center mb-4 ${!vehicleType?"opacity-50":""}`}
+        className={`bg-blue-600 rounded-xl py-3.5 items-center mb-4 ${!vehicleType ? "opacity-50" : ""}`}
         onPress={handleContinueVehicleSelection}
         disabled={!vehicleType}
       >
@@ -419,7 +419,7 @@ const CarAutoDashboard = ({ onLogout }) => {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1"
     >
-      <ScrollView contentContainerStyle={{flexGrow:1,padding:16,paddingBottom:24}}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16, paddingBottom: 24 }}>
         <View className="mb-6">
           <TouchableOpacity
             className="flex-row items-center mb-4"
@@ -512,7 +512,7 @@ const CarAutoDashboard = ({ onLogout }) => {
   const renderDashboard = () => (
     <>
       {!acceptedComplaint ? (
-        <ScrollView contentContainerStyle={{flexGrow:1,padding:16,paddingBottom:24}}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16, paddingBottom: 24 }}>
           {/* Header Section */}
           <View className="flex-row justify-between items-center mb-5">
             <View className="flex-row items-center flex-1">
@@ -528,7 +528,7 @@ const CarAutoDashboard = ({ onLogout }) => {
             </View>
             <TouchableOpacity
               className="relative p-2"
-              onPress={() => {}}
+              onPress={() => { }}
             >
               <ShakyIcon name="notifications" size={24} color="#2563EB" />
               {complaints.length > 0 && (
@@ -554,9 +554,9 @@ const CarAutoDashboard = ({ onLogout }) => {
                       {
                         scale: isOnline
                           ? onlinePulseAnim.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: [1, 1.28],
-                            })
+                            inputRange: [0, 1],
+                            outputRange: [1, 1.28],
+                          })
                           : 1,
                       },
                     ],
@@ -696,7 +696,7 @@ const CarAutoDashboard = ({ onLogout }) => {
 
   // Render Accepted Complaint Flow
   const renderAcceptedComplaintFlow = () => (
-    <ScrollView contentContainerStyle={{flexGrow:1,padding:16,paddingBottom:24}}>
+    <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16, paddingBottom: 24 }}>
       <View className="mb-5">
         <TouchableOpacity
           className="flex-row items-center mb-4"
@@ -775,7 +775,7 @@ const CarAutoDashboard = ({ onLogout }) => {
 
 
             <TouchableOpacity
-              className={`bg-blue-600 rounded-xl py-3.5 flex-row items-center justify-center mb-4 ${isShareingLocation?"opacity-50":""}`}
+              className={`bg-blue-600 rounded-xl py-3.5 flex-row items-center justify-center mb-4 ${isShareingLocation ? "opacity-50" : ""}`}
               onPress={handleShareLiveLocation}
               disabled={isShareingLocation}
             >
@@ -856,7 +856,7 @@ const CarAutoDashboard = ({ onLogout }) => {
             <View style={{ width: 28 }} />
           </View>
 
-          <ScrollView contentContainerStyle={{flexGrow:1,padding:16}}>
+          <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16 }}>
             <View className="items-center mb-6">
               <Text className="text-base font-bold text-slate-800 mb-4">📲 Scan Passenger's QR</Text>
               <View className="w-[200px] h-[200px] bg-slate-50 rounded-xl border-2 border-slate-300 items-center justify-center mb-4">
@@ -936,7 +936,7 @@ const CarAutoDashboard = ({ onLogout }) => {
   );
 };
 
-const styles =.create({
+const styles = create({
   animatedScreen: {
     flex: 1,
   },
