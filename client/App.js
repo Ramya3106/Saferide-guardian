@@ -3720,10 +3720,15 @@ const AppContent = () => {
                         </Text>
                         {isOfficialRole && !isRegister ? (
                           <View style={styles.officerLoginBanner}>
-                            <Text style={styles.officerLoginBannerTag}>Officer access</Text>
-                            <Text style={styles.officerLoginBannerTitle}>Railway staff sign-in</Text>
+                            <View style={styles.railwayAuthorityIconRow}>
+                              <Ionicons name="shield-checkmark" size={26} color="#2563EB" />
+                              <View style={styles.railwayAuthorityTextContainer}>
+                                <Text style={styles.officerLoginBannerTag}>Officer access</Text>
+                                <Text style={styles.officerLoginBannerTitle}>Railway staff sign-in</Text>
+                              </View>
+                            </View>
                             <Text style={styles.officerLoginBannerText}>
-                              Use your officer role, username, and password to open the duty dashboard.
+                              Use your Professional ID and password to open the duty dashboard.
                             </Text>
                           </View>
                         ) : null}
@@ -3736,11 +3741,7 @@ const AppContent = () => {
                             {renderRoleSelector()}
                           </View>
                         )}
-                        {isOfficialRole && (
-                          <View style={styles.inputGroup}>
-                            {renderRoleSelector()}
-                          </View>
-                        )}
+
 
                         {isRegister && (
                           <View style={styles.inputGroup}>
