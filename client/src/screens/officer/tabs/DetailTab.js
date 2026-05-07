@@ -4,7 +4,7 @@ import {
   ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import LiveTrackingPanel from "../../components/LiveTrackingPanel";
+import LiveTrackingPanel from "../../../components/LiveTrackingPanel";
 
 const STATUS_META = {
   New:          { color: "#DC2626", bg: "#FEE2E2" },
