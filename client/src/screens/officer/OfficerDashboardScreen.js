@@ -357,7 +357,6 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
         dutyAttendance?.assignedStation ||
         dutyAttendance?.assignedRoute ||
         `${dutyUnit} duty desk`;
-      const nowIso = new Date().toISOString();
       const payload = {
         email: officerEmail || undefined,
         professionalId: professionalId || undefined,
@@ -373,22 +372,6 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
           : "Checked out from SafeRide Guardian",
       };
       showToast(next ? "Checking in..." : "Checking out...");
-      if (setOnDuty) {
-        setOnDuty(next);
-      }
-      setDutyAttendance((prev) => {
-        if (!next) {
-          if (!prev) return prev;
-          return { ...prev, checkOutTime: nowIso };
-        }
-        return {
-          ...(prev || {}),
-          checkInTime: prev?.checkInTime || nowIso,
-          assignedStation: prev?.assignedStation || fallbackLocation,
-          assignedRoute: prev?.assignedRoute || fallbackLocation,
-          dutyUnit: prev?.dutyUnit || dutyUnit,
-        };
-      });
       console.log(`[DUTY] Attempting ${next ? "check-in" : "check-out"} to ${API_BASE}${ep}`);
       console.log("[DUTY] Request headers:", headers());
       const res = await axios.post(`${API_BASE}${ep}`, payload, {
@@ -397,15 +380,19 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
       });
       console.log(`[DUTY] ${next ? "Check-in" : "Check-out"} success:`, res.data);
       const responseData = res.data?.data || res.data || {};
+      const confirmedOnDuty =
+        typeof responseData?.onDuty === "boolean"
+          ? responseData.onDuty
+          : resolveOnDutyState(responseData);
       if (setOnDuty) {
-        setOnDuty(resolveOnDutyState(responseData));
+        setOnDuty(confirmedOnDuty);
       }
       setDutyAttendance(responseData?.attendance || null);
-      showToast(next ? "Checked in successfully" : "Checked out successfully");
+      showToast(confirmedOnDuty ? "Checked in successfully" : "Checked out successfully");
       // Auto-join/leave officer socket room for real-time updates
       try {
         const officerRoomId = professionalId || officerEmail || authUserId || (res.data?.attendance?.officerId) || (res.data?.attendance?.officerEmail);
-        if (next) {
+        if (confirmedOnDuty) {
           socketService.joinOfficer(officerRoomId);
           socketService.joinDuty(dutyUnit); // join duty-unit pool for train complaint dispatch
         } else {
@@ -413,16 +400,14 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
           socketService.leaveDuty(dutyUnit); // leave duty pool when going off duty
         }
       } catch (e) { /* silent */ }
-      if (next) {
+      if (confirmedOnDuty) {
         loadComplaints();
-        setActiveTab("profile");
       } else {
         setSelectedComplaint(null);
         setComplaints([]);
         setNewAlertCount(0);
-        setActiveTab("dashboard");
       }
-      return next;
+      return confirmedOnDuty;
     } catch (error) {
       if (setOnDuty) {
         setOnDuty(previousOnDuty);
@@ -451,7 +436,6 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
           setOnDuty(true);
         }
         showToast("Already checked in. Synced duty status.");
-        setActiveTab("profile");
         return true;
       }
       showToast(serverMessage || "Duty update failed");
