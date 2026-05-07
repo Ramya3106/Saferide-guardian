@@ -1,4 +1,5 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
 const router = express.Router();
@@ -1032,6 +1033,7 @@ router.post("/duty/check-out", async (req, res) => {
     }
 
     activeAttendance.status = "INACTIVE";
+    activeAttendance.dutyStatus = "INACTIVE";
     activeAttendance.checkOutTime = new Date();
     activeAttendance.notes = String(req.body?.dutyNote || activeAttendance.notes || "").trim() || null;
     await activeAttendance.save();

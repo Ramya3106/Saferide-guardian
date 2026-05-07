@@ -1012,7 +1012,7 @@ const AppContent = () => {
   // Specific role selection for TTR/RPF/Police
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [specificRole, setSpecificRole] = useState("");
-  const [onDuty, setOnDuty] = useState(true);
+  const [onDuty, setOnDuty] = useState(false);
   const [authToken, setAuthToken] = useState("");
   const [authUserId, setAuthUserId] = useState("");
   const [authUserRole, setAuthUserRole] = useState("");
