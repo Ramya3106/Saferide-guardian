@@ -403,7 +403,11 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
         return true;
       }
       showToast(serverMessage || "Duty update failed");
-      alert(`Failed to ${onDuty ? "check out" : "check in"}: ${serverMessage || error.message}`);
+      Alert.alert(
+        `Failed to ${next ? "check in" : "check out"}`,
+        serverMessage || error.message || "Please check your connection and try again.",
+        [{ text: "OK" }],
+      );
       return null;
     } finally { setSyncing(false); }
   };
