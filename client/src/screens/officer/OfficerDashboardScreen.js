@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, Platform, ToastAndroid, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
@@ -54,6 +54,47 @@ const TABS = [
   { key: "profile", icon: "person", label: "Profile" },
 ];
 
+const showToast = (message) => {
+  if (!message) return;
+  if (Platform.OS === "android") {
+    ToastAndroid.show(message, ToastAndroid.SHORT);
+  }
+};
+
+const fmtNotificationTime = (value) => {
+  if (!value) return "Just now";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Just now";
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const resolveOnDutyState = (payload = {}) => {
+  const explicitOnDuty =
+    typeof payload?.onDuty === "boolean" ? payload.onDuty : null;
+  const officerOnDuty =
+    typeof payload?.officer?.onDutyStatus === "boolean"
+      ? payload.officer.onDutyStatus
+      : null;
+  const attendance = payload?.attendance || null;
+  const attendanceStatus = String(
+    attendance?.status || attendance?.dutyStatus || "",
+  ).toUpperCase();
+  const attendanceSuggestsOnDuty = Boolean(
+    attendance &&
+      !attendance?.checkOutTime &&
+      attendanceStatus !== "INACTIVE",
+  );
+
+  if (explicitOnDuty !== null) return explicitOnDuty;
+  if (officerOnDuty !== null) return officerOnDuty;
+  return attendanceSuggestsOnDuty;
+};
+
 export default function OfficerDashboardScreen({ roleLabel, officerEmail, professionalId, specificRole, staffName, authToken, authUserId, onLogout, onDuty, setOnDuty }) {
   const dutyUnit = parseRole(professionalId, specificRole);
   const officerName = staffName || officerEmail || professionalId || "Officer";
@@ -85,7 +126,9 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
       });
       const data = res.data?.data || res.data || {};
       setDutyAttendance(data?.attendance || null);
-      if (setOnDuty) setOnDuty(Boolean(data?.onDuty));
+      if (setOnDuty) {
+        setOnDuty(resolveOnDutyState(data));
+      }
     } catch { /* silent */ }
   }, [officerEmail, professionalId, headers, setOnDuty]);
 
@@ -155,20 +198,61 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
   }, [officerEmail, professionalId, dutyUnit]);
 
   const syncDuty = async () => {
+    const previousOnDuty = Boolean(onDuty);
+    const previousAttendance = dutyAttendance;
     setSyncing(true);
     try {
       const next = !onDuty;
       const ep = next ? "/auth/duty/check-in" : "/auth/duty/check-out";
-      console.log(`[DUTY] Attempting ${next ? "check-in" : "check-out"} to ${API_BASE}${ep}`);
-      console.log("[DUTY] Request headers:", headers());
-      const res = await axios.post(`${API_BASE}${ep}`, {
+      const fallbackLocation =
+        dutyAttendance?.assignedStation ||
+        dutyAttendance?.assignedRoute ||
+        `${dutyUnit} duty desk`;
+      const nowIso = new Date().toISOString();
+      const payload = {
         email: officerEmail || undefined,
         professionalId: professionalId || undefined,
         dutyUnit,
-      }, { headers: headers(), timeout: 10000 });
+        assignedTrain: dutyAttendance?.assignedTrain || null,
+        assignedRoute: dutyAttendance?.assignedRoute || null,
+        assignedStation: fallbackLocation,
+        assignedShift: dutyAttendance?.assignedShift || null,
+        dutyStation: fallbackLocation,
+        dutyDesk: "Duty desk",
+        dutyNote: next
+          ? "Checked in from SafeRide Guardian"
+          : "Checked out from SafeRide Guardian",
+      };
+      showToast(next ? "Checking in..." : "Checking out...");
+      if (setOnDuty) {
+        setOnDuty(next);
+      }
+      setDutyAttendance((prev) => {
+        if (!next) {
+          if (!prev) return prev;
+          return { ...prev, checkOutTime: nowIso };
+        }
+        return {
+          ...(prev || {}),
+          checkInTime: prev?.checkInTime || nowIso,
+          assignedStation: prev?.assignedStation || fallbackLocation,
+          assignedRoute: prev?.assignedRoute || fallbackLocation,
+          dutyUnit: prev?.dutyUnit || dutyUnit,
+        };
+      });
+      console.log(`[DUTY] Attempting ${next ? "check-in" : "check-out"} to ${API_BASE}${ep}`);
+      console.log("[DUTY] Request headers:", headers());
+      const res = await axios.post(`${API_BASE}${ep}`, payload, {
+        headers: headers(),
+        timeout: 20000,
+      });
       console.log(`[DUTY] ${next ? "Check-in" : "Check-out"} success:`, res.data);
-      if (setOnDuty) setOnDuty(next);
-      setDutyAttendance(res.data?.attendance || null);
+      const responseData = res.data?.data || res.data || {};
+      if (setOnDuty) {
+        setOnDuty(resolveOnDutyState(responseData));
+      }
+      setDutyAttendance(responseData?.attendance || null);
+      showToast(next ? "Checked in successfully" : "Checked out successfully");
       // Auto-join/leave officer socket room for real-time updates
       try {
         const officerRoomId = professionalId || officerEmail || authUserId || (res.data?.attendance?.officerId) || (res.data?.attendance?.officerEmail);
@@ -178,9 +262,18 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
           socketService.leaveOfficer(officerRoomId);
         }
       } catch (e) { /* silent */ }
-      if (next) loadComplaints();
+      if (next) {
+        loadComplaints();
+        setActiveTab("profile");
+      } else {
+        setActiveTab("dashboard");
+      }
       return next;
     } catch (error) {
+      if (setOnDuty) {
+        setOnDuty(previousOnDuty);
+      }
+      setDutyAttendance(previousAttendance || null);
       console.error("[DUTY] Error:", error.message);
       if (error.response) {
         console.error("[DUTY] Response status:", error.response.status);
@@ -190,7 +283,25 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
       } else {
         console.error("[DUTY] Request setup error:", error);
       }
-      alert(`Failed to ${onDuty ? "check out" : "check in"}: ${error.response?.data?.message || error.message}`);
+      const serverMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.response?.data?.data?.message;
+      const normalizedMessage = String(serverMessage || "").toLowerCase();
+      const alreadyOnDuty =
+        error?.response?.status === 409 &&
+        normalizedMessage.includes("already checked in");
+      if (alreadyOnDuty) {
+        await loadDutyStatus();
+        if (setOnDuty) {
+          setOnDuty(true);
+        }
+        showToast("Already checked in. Synced duty status.");
+        setActiveTab("profile");
+        return true;
+      }
+      showToast(serverMessage || "Duty update failed");
+      alert(`Failed to ${onDuty ? "check out" : "check in"}: ${serverMessage || error.message}`);
       return null;
     } finally { setSyncing(false); }
   };
@@ -228,11 +339,15 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
   const TAB_TITLES = {
     dashboard: { TTR: "TTR Dashboard", TTE: "TTE Dashboard", RPF: "RPF Dashboard", Police: "Police Dashboard" }[dutyUnit] || "Officer Dashboard",
     complaints: "All Complaints",
-    messages: "Messages",
+    messages: "Notifications",
     profile: "Duty Status",
   };
   const headerTitle = selectedComplaint ? "Complaint Details" : (TAB_TITLES[activeTab] || "Officer Dashboard");
   const loc = dutyAttendance?.assignedStation || dutyAttendance?.assignedRoute || "Chennai Central (MAS)";
+  const notificationItems = complaints
+    .slice()
+    .sort((left, right) => new Date(right.updatedAt || right.createdAt || 0).getTime() - new Date(left.updatedAt || left.createdAt || 0).getTime())
+    .slice(0, 25);
 
   const renderContent = () => {
     if (selectedComplaint) {
@@ -255,12 +370,43 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
       );
       case "complaints": return <ComplaintsTab complaints={complaints} loading={loading} onViewComplaint={fetchComplaintDetail} refreshing={refreshing} onRefresh={refresh} />;
       case "profile": return <DutyTab onDuty={onDuty} dutyAttendance={dutyAttendance} dutyUnit={dutyUnit} officerName={officerName} officerEmail={officerEmail} professionalId={professionalId} syncing={syncing} onToggleDuty={syncDuty} onLogout={onLogout} refreshing={refreshing} onRefresh={refresh} />;
-      default: return (
-        <View className="flex-1 justify-center items-center gap-3 bg-slate-50">
-          <Ionicons name="chatbubble-outline" size={48} color="#CBD5E1" />
-          <Text className="text-slate-400 text-[15px]">Messages coming soon</Text>
-        </View>
-      );
+      case "messages":
+        return (
+          <ScrollView className="flex-1 bg-slate-100" contentContainerStyle={{ padding: 16, paddingBottom: 28 }}>
+            {notificationItems.length === 0 ? (
+              <View className="bg-white rounded-2xl p-6 items-center gap-2">
+                <Ionicons name="notifications-off-outline" size={34} color="#94A3B8" />
+                <Text className="text-slate-500 text-[14px]">No notifications yet</Text>
+              </View>
+            ) : (
+              notificationItems.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  className="bg-white rounded-2xl p-4 mb-3 border border-slate-200"
+                  onPress={() => fetchComplaintDetail(item)}
+                  activeOpacity={0.85}
+                >
+                  <View className="flex-row justify-between items-start gap-2">
+                    <Text className="text-slate-900 font-bold flex-1">
+                      {item.itemType || "Complaint"} - {item.status || "Submitted"}
+                    </Text>
+                    <Text className="text-slate-400 text-[11px]">
+                      {fmtNotificationTime(item.updatedAt || item.createdAt)}
+                    </Text>
+                  </View>
+                  <Text className="text-slate-600 mt-1.5 text-[13px]">
+                    {item.passengerName || "Passenger"} reported on {item.vehicleNumber || "train"}.
+                  </Text>
+                  <Text className="text-blue-700 mt-2 text-[12px] font-semibold">
+                    Tap to open complaint
+                  </Text>
+                </TouchableOpacity>
+              ))
+            )}
+          </ScrollView>
+        );
+      default:
+        return null;
     }
   };
 
@@ -277,7 +423,7 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
             <Text className="text-blue-300 text-xs">{loc}</Text>
           </View>
         </View>
-        <TouchableOpacity className="relative p-1">
+        <TouchableOpacity className="relative p-1" onPress={() => setActiveTab("messages")}>
           <Ionicons name="notifications-outline" size={22} color="#fff" />
           {urgentCount > 0 && (
             <View className="absolute top-0 right-0 bg-red-500 rounded-lg min-w-[16px] h-4 items-center justify-center">

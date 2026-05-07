@@ -1789,6 +1789,13 @@ const AppContent = () => {
     setIsAuthenticated(true);
   };
 
+  const handleRailwayLoginBack = () => {
+    setShowRoleSelection(false);
+    setSpecificRole("");
+    setForgotPasswordMode(false);
+    setError("");
+  };
+
   const handleSwitchMode = () => {
     setMode((prev) => (prev === "login" ? "register" : "login"));
     resetForm();
@@ -3431,11 +3438,7 @@ const AppContent = () => {
                         <View className="flex-row items-center mb-4">
                           <TouchableOpacity
                             className="p-2 mr-2"
-                            onPress={() => {
-                              setShowRoleSelection(false);
-                              setSpecificRole("");
-                              setError("");
-                            }}
+                            onPress={handleRailwayLoginBack}
                           >
                             <Ionicons
                               name="arrow-back"

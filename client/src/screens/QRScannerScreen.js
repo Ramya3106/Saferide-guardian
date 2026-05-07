@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,39 +8,50 @@ import {
   Dimensions,
   SafeAreaView,
   Animated,
-  Image,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
-const QRScannerScreen = ({ onScanComplete, route }) => {
+const SCAN_COOLDOWN_MS = 1200;
+
+const QRScannerScreen = ({ onScanComplete }) => {
   const navigation = useNavigation();
   const [hasPermission, requestPermission] = useCameraPermissions();
   const [isScanning, setIsScanning] = useState(true);
   const [scannedData, setScannedData] = useState(null);
   const scanlineAnimation = useRef(new Animated.Value(0)).current;
+  const animationLoopRef = useRef(null);
+  const lastScanRef = useRef({ data: "", at: 0 });
   const { width, height } = Dimensions.get("window");
   const frameSize = Math.min(width, height) * 0.75;
 
   // Animate the scanning line
   useEffect(() => {
     if (isScanning) {
-      Animated.loop(
+      animationLoopRef.current = Animated.loop(
         Animated.sequence([
           Animated.timing(scanlineAnimation, {
             toValue: frameSize - 10,
-            duration: 2000,
-            useNativeDriver: false,
+            duration: 1500,
+            useNativeDriver: true,
           }),
           Animated.timing(scanlineAnimation, {
             toValue: 0,
-            duration: 2000,
-            useNativeDriver: false,
+            duration: 1500,
+            useNativeDriver: true,
           }),
-        ])
-      ).start();
+        ]),
+      );
+      animationLoopRef.current.start();
+    } else {
+      animationLoopRef.current?.stop();
+      scanlineAnimation.setValue(0);
     }
+
+    return () => {
+      animationLoopRef.current?.stop();
+    };
   }, [isScanning, frameSize, scanlineAnimation]);
 
   // Request camera permission
@@ -50,9 +61,21 @@ const QRScannerScreen = ({ onScanComplete, route }) => {
     }
   }, [hasPermission]);
 
-  const handleBarCodeScanned = ({ type, data }) => {
-    if (!isScanning) return;
+  const resetScanState = useCallback(() => {
+    setIsScanning(true);
+    setScannedData(null);
+  }, []);
 
+  const handleBarCodeScanned = useCallback(({ data }) => {
+    if (!isScanning || !data) return;
+
+    const now = Date.now();
+    const isDuplicate =
+      lastScanRef.current.data === data &&
+      now - lastScanRef.current.at < SCAN_COOLDOWN_MS;
+    if (isDuplicate) return;
+
+    lastScanRef.current = { data, at: now };
     setIsScanning(false);
     setScannedData(data);
 
@@ -64,10 +87,7 @@ const QRScannerScreen = ({ onScanComplete, route }) => {
       Alert.alert("QR Code Scanned", `Data: ${data}`, [
         {
           text: "Scan Again",
-          onPress: () => {
-            setIsScanning(true);
-            setScannedData(null);
-          },
+          onPress: resetScanState,
         },
         {
           text: "Copy",
@@ -83,7 +103,7 @@ const QRScannerScreen = ({ onScanComplete, route }) => {
         },
       ]);
     }
-  };
+  }, [isScanning, navigation, onScanComplete, resetScanState]);
 
   if (!hasPermission) {
     return (
@@ -185,10 +205,7 @@ const QRScannerScreen = ({ onScanComplete, route }) => {
 
                 <TouchableOpacity
                   style={styles.scanAgainButton}
-                  onPress={() => {
-                    setIsScanning(true);
-                    setScannedData(null);
-                  }}
+                  onPress={resetScanState}
                 >
                   <Ionicons name="reload" size={20} color="white" />
                   <Text style={styles.scanAgainButtonText}>Scan Again</Text>
