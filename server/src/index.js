@@ -105,6 +105,116 @@ const startServer = async () => {
         socket.join(`complaint:${String(complaintId)}`);
       }
     });
+
+    // Relay typing indicator to other participants in complaint room
+    socket.on("chat:typing", (payload) => {
+      try {
+        if (payload && payload.complaintId) {
+          socket.to(`complaint:${String(payload.complaintId)}`).emit("chat:typing", payload);
+        }
+      } catch (e) { /* ignore */ }
+    });
+
+    // Handle read receipts - update ChatMessage readBy and notify room
+    socket.on("chat:read", async (payload) => {
+      try {
+        const ChatMessage = require("./models/ChatMessage");
+        if (!payload) return;
+        const { complaintId, messageIds, readerId } = payload;
+        if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) return;
+        const now = new Date();
+        await ChatMessage.updateMany(
+          { _id: { $in: messageIds } },
+          { $push: { readBy: { userId: readerId || null, readAt: now } } }
+        );
+        if (complaintId) {
+          socket.to(`complaint:${String(complaintId)}`).emit("chat:read", { complaintId, messageIds, readerId, readAt: now });
+        }
+      } catch (e) { console.error("chat:read handler error:", e.message); }
+    });
+
+    // Allow clients to send chat messages over socket (server will persist and re-emit)
+    socket.on("chat:message", async (payload) => {
+      try {
+        const ChatMessage = require("./models/ChatMessage");
+        if (!payload || !payload.complaintId) return;
+        const msg = await ChatMessage.create({
+          complaintId: payload.complaintId,
+          senderType: payload.senderType || "PASSENGER",
+          senderId: payload.senderId || null,
+          senderName: payload.senderName || null,
+          senderRole: payload.senderRole || null,
+          messageText: payload.messageText || null,
+          messageType: payload.messageType || (payload.attachmentUrl ? "image" : "text"),
+          attachmentUrl: payload.attachmentUrl || null,
+          quickReplyKey: payload.quickReplyKey || null,
+          createdAt: new Date(),
+        });
+
+        const emitPayload = {
+          complaintId: String(payload.complaintId),
+          message: msg.toObject ? msg.toObject() : msg,
+        };
+        // Emit to complaint room and passenger/officer rooms
+        socket.to(`complaint:${String(payload.complaintId)}`).emit("chat:message", emitPayload);
+        // Also emit back to sender to confirm
+        socket.emit("chat:message:sent", emitPayload);
+      } catch (e) { console.error("chat:message handler error:", e.message); }
+    });
+
+    // Receive officer live location updates and persist + broadcast
+    socket.on("location:update", async (payload) => {
+      try {
+        if (!payload) return;
+        const LiveLocation = require("./models/LiveLocation");
+        const officerKey = String(payload.officerKey || payload.senderId || payload.staffId || "").trim();
+        const trainNumber = payload.trainNumber || payload.assignedTrain || null;
+        const latitude = Number(payload.latitude ?? payload.lat ?? payload.latitude) || null;
+        const longitude = Number(payload.longitude ?? payload.lng ?? payload.longitude) || null;
+        const now = new Date();
+
+        if (!officerKey || latitude == null || longitude == null) {
+          // insufficient data
+          return;
+        }
+
+        const doc = await LiveLocation.create({
+          officerKey,
+          trainNumber: trainNumber || null,
+          latitude,
+          longitude,
+          accuracy: payload.accuracy || null,
+          speed: payload.speed || null,
+          heading: payload.heading || null,
+          liveLocationSnapshot: payload || null,
+          recordedAt: now,
+        });
+
+        const emitPayload = {
+          officerKey,
+          officerId: payload.senderId || payload.staffId || null,
+          officerName: payload.senderName || null,
+          trainNumber: trainNumber || null,
+          latitude,
+          longitude,
+          accuracy: payload.accuracy || null,
+          speed: payload.speed || null,
+          heading: payload.heading || null,
+          recordedAt: now,
+        };
+
+        // Broadcast to complaint room if provided, and to passenger and officer rooms
+        if (payload.complaintId) {
+          socket.to(`complaint:${String(payload.complaintId)}`).emit("location:update", emitPayload);
+          try { socket.to(`passenger:${String(payload.passengerId || payload.passengerEmail)}`).emit("location:update", emitPayload); } catch(e){}
+        }
+
+        // Always emit to officer's room so other officer clients can see
+        try { socket.to(`officer:${officerKey}`).emit("location:update", emitPayload); } catch(e){}
+      } catch (e) {
+        console.error("location:update handler error:", e.message);
+      }
+    });
   });
 
   server.listen(PORT, () => {

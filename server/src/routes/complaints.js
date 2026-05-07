@@ -988,6 +988,160 @@ router.patch("/:id/staff/accept", requireOfficerRole, async (req, res) => {
   }
 });
 
+
+// POST /api/complaints/:id/chat - Create a chat message for a complaint (passenger or officer)
+router.post("/:id/chat", async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) return failure(res, 404, "Complaint not found", "NOT_FOUND");
+
+    const ChatMessage = require("../models/ChatMessage");
+    const passengerEmail = String(req.headers["x-user-email"] || req.body?.passengerEmail || "").trim().toLowerCase();
+
+    // Try to resolve officer identity
+    const currentOfficer = await resolveCurrentOfficer(req).catch(() => null);
+    let senderType = "PASSENGER";
+    let senderId = passengerEmail || null;
+    let senderName = req.body?.senderName || req.headers["x-user-name"] || null;
+    let senderRole = null;
+
+    if (currentOfficer && currentOfficer.onDutyStatus && complaintMatchesOfficer(complaint, currentOfficer)) {
+      senderType = "OFFICER";
+      senderId = currentOfficer.staffId || currentOfficer.staffEmail || senderId;
+      senderName = currentOfficer.staffName || senderName;
+      senderRole = currentOfficer.dutyUnit || currentOfficer.staffRole || null;
+    }
+
+    const { messageText, messageType = "text", attachmentUrl = null, quickReplyKey = null, visibleToPassenger = true } = req.body || {};
+    if (!messageText && !attachmentUrl) {
+      return failure(res, 400, "Message text or attachment required", "VALIDATION_ERROR");
+    }
+
+    const msg = await ChatMessage.create({
+      complaintId: complaint._id,
+      senderType,
+      senderId: String(senderId || ""),
+      senderName: String(senderName || ""),
+      senderRole: senderRole || null,
+      messageText: messageText || null,
+      messageType: messageType || (attachmentUrl ? "image" : "text"),
+      attachmentUrl: attachmentUrl || null,
+      quickReplyKey: quickReplyKey || null,
+      createdAt: new Date(),
+    });
+
+    // Emit message to complaint room and passenger/officer rooms
+    const io = require("../utils/socket").getIo();
+    const payload = {
+      complaintId: String(complaint._id),
+      message: msg.toObject ? msg.toObject() : msg,
+      senderType,
+      senderId,
+      senderName,
+      senderRole,
+      messageText: msg.messageText,
+      messageType: msg.messageType,
+      attachmentUrl: msg.attachmentUrl,
+      quickReplyKey: msg.quickReplyKey,
+    };
+
+    // Notify complaint room
+    if (io) {
+      try { io.to(`complaint:${String(complaint._id)}`).emit("chat:message", payload); } catch (e) { }
+      // Notify passenger
+      try { io.to(`passenger:${String(complaint.passengerEmail)}`).emit("chat:message", payload); } catch (e) { }
+      // Notify assigned officers
+      if (Array.isArray(complaint.assignedStaff)) {
+        complaint.assignedStaff.forEach((entry) => {
+          const targets = [];
+          if (entry.staffId) targets.push(`officer:${String(entry.staffId)}`);
+          if (entry.staffEmail) targets.push(`officer:${String(entry.staffEmail)}`);
+          targets.forEach((room) => { try { io.to(room).emit("chat:message", payload); } catch(e){} });
+        });
+      }
+    } else {
+      // Fallback: use emitSocketEvent to attempt broadcast
+      emitSocketEvent("chat:message", payload);
+    }
+
+    return success(res, 201, "Message created", { message: msg });
+  } catch (error) {
+    console.error("Create chat message error:", error.message);
+    return failure(res, 500, "Unable to send message", "INTERNAL_ERROR", error.message);
+  }
+});
+
+
+// GET /api/complaints/:id/location - Get live location data (officer + train) and ETA
+router.get("/:id/location", async (req, res) => {
+  try {
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) return failure(res, 404, "Complaint not found", "NOT_FOUND");
+
+    const LiveLocation = require("../models/LiveLocation");
+
+    // Find latest live locations for officers assigned to this complaint
+    const assigned = Array.isArray(complaint.assignedStaff) ? complaint.assignedStaff : [];
+    const officerKeys = assigned.map((a) => (a.staffId || a.staffEmail || null)).filter(Boolean);
+
+    const officerLocations = [];
+    if (officerKeys.length > 0) {
+      const latest = await Promise.all(
+        officerKeys.map(async (key) => {
+          const loc = await LiveLocation.findOne({ officerKey: String(key) }).sort({ recordedAt: -1 }).lean();
+          return loc || null;
+        }),
+      );
+      latest.forEach((l) => { if (l) officerLocations.push(l); });
+    }
+
+    // For train-level info, try to find latest LiveLocation by trainNumber
+    const trainNumber = complaint.trainNumber || complaint.vehicleNumber || null;
+    let trainLocation = null;
+    if (trainNumber) {
+      trainLocation = await LiveLocation.findOne({ trainNumber: String(trainNumber) }).sort({ recordedAt: -1 }).lean();
+    }
+
+    // Compute ETA to complaint.lastSeenLocation if coordinates available
+    const getCoordsFromComplaint = (c) => {
+      if (!c) return null;
+      if (c.sharedLocation && c.sharedLocation.latitude && c.sharedLocation.longitude) return { latitude: c.sharedLocation.latitude, longitude: c.sharedLocation.longitude };
+      if (c.currentLat && c.currentLng) return { latitude: c.currentLat, longitude: c.currentLng };
+      return null;
+    };
+
+    const targetCoords = getCoordsFromComplaint(complaint) || getCoordsFromComplaint({ currentLat: complaint.currentLat, currentLng: complaint.currentLng });
+
+    const haversine = (from, to) => {
+      if (!from || !to) return null;
+      const toRad = (v) => (v * Math.PI) / 180;
+      const R = 6371; // km
+      const dLat = toRad(to.latitude - from.latitude);
+      const dLon = toRad(to.longitude - from.longitude);
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(toRad(from.latitude)) * Math.cos(toRad(to.latitude)) * Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c; // km
+    };
+
+    const estimates = officerLocations.map((loc) => {
+      const distanceKm = targetCoords ? haversine({ latitude: loc.latitude, longitude: loc.longitude }, targetCoords) : null;
+      const speedKmh = (loc.speed && Number.isFinite(loc.speed)) ? (Number(loc.speed) * 3.6) : 30; // assume 30 km/h if not provided
+      const etaMin = distanceKm && speedKmh ? Math.round((distanceKm / speedKmh) * 60) : null;
+      return { officerKey: loc.officerKey, latitude: loc.latitude, longitude: loc.longitude, recordedAt: loc.recordedAt, distanceKm, etaMin };
+    });
+
+    return success(res, 200, "Live location data", {
+      complaintId: String(complaint._id),
+      trainLocation,
+      officerLocations: estimates,
+      targetCoords,
+    });
+  } catch (error) {
+    console.error("Get location data error:", error.message);
+    return failure(res, 500, "Unable to fetch location data", "INTERNAL_ERROR", error.message);
+  }
+});
+
 // PATCH /api/complaints/:id/staff/start-investigation - Officer starts investigation
 router.patch("/:id/staff/start-investigation", requireOfficerRole, async (req, res) => {
   try {
