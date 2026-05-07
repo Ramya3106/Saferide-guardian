@@ -1130,7 +1130,7 @@ const DriverConductorDashboard = ({
   );
 };
 
-const styles =.create({
+const styles =create({
   animatedScreen: {
     flex: 1,
   },
