@@ -301,31 +301,73 @@ router.post("/", async (req, res) => {
     await savedComplaint.save();
 
     const complaintSnapshot = savedComplaint.toObject ? savedComplaint.toObject() : savedComplaint;
-    emitSocketEvent("complaint:new", {
+    // Targeted socket notifications: notify only routed officers' rooms + passenger/complaint rooms
+    const io = require("../utils/socket").getIo();
+    const payload = {
       complaintId: String(savedComplaint._id),
       complaint: complaintSnapshot,
       routedOfficers,
       queueNotifications,
       assignmentStrategy: routingResult?.assignmentStrategy || null,
       escalationLevel: routingResult?.escalationLevel || null,
-    });
+    };
+
+    if (io && Array.isArray(routedOfficers) && routedOfficers.length > 0) {
+      // Emit to each officer's room by staffId and staffEmail if available
+      routedOfficers.forEach((off) => {
+        const targets = [];
+        if (off.staffId) targets.push(`officer:${String(off.staffId)}`);
+        if (off.staffEmail) targets.push(`officer:${String(off.staffEmail)}`);
+        targets.forEach((room) => {
+          try { io.to(room).emit("complaint:new", payload); } catch (e) { /* ignore */ }
+        });
+      });
+      // Also notify passenger and complaint rooms
+      try { io.to(`passenger:${String(savedComplaint.passengerEmail)}`).emit("complaint:new", payload); } catch (e) { }
+      try { io.to(`complaint:${String(savedComplaint._id)}`).emit("complaint:new", payload); } catch (e) { }
+    } else {
+      // Fallback to global emit (no routed officers)
+      emitSocketEvent("complaint:new", payload);
+    }
 
     if (queueNotifications.length > 0) {
-      emitSocketEvent("complaint:escalation", {
+      const escPayload = {
         complaintId: String(savedComplaint._id),
         complaint: complaintSnapshot,
         escalationLevel: "UNASSIGNED_URGENT_QUEUE",
         routingReason: routingResult?.routingReason || "Queued for supervisor review",
         queueNotifications,
-      });
+      };
+      const io = require("../utils/socket").getIo();
+      if (io) {
+        try { io.to(`passenger:${String(savedComplaint.passengerEmail)}`).emit("complaint:escalation", escPayload); } catch(e){}
+        try { io.to(`complaint:${String(savedComplaint._id)}`).emit("complaint:escalation", escPayload); } catch(e){}
+      } else {
+        emitSocketEvent("complaint:escalation", escPayload);
+      }
     } else if (routingResult?.escalationLevel && routingResult.escalationLevel !== "TRAIN_LEVEL") {
-      emitSocketEvent("complaint:escalation", {
+      const escPayload = {
         complaintId: String(savedComplaint._id),
         complaint: complaintSnapshot,
         escalationLevel: routingResult.escalationLevel,
         routingReason: routingResult?.routingReason || null,
         routedOfficers,
-      });
+      };
+      const io = require("../utils/socket").getIo();
+      if (io && Array.isArray(routedOfficers) && routedOfficers.length > 0) {
+        routedOfficers.forEach((off) => {
+          const targets = [];
+          if (off.staffId) targets.push(`officer:${String(off.staffId)}`);
+          if (off.staffEmail) targets.push(`officer:${String(off.staffEmail)}`);
+          targets.forEach((room) => {
+            try { io.to(room).emit("complaint:escalation", escPayload); } catch (e) { }
+          });
+        });
+        try { io.to(`passenger:${String(savedComplaint.passengerEmail)}`).emit("complaint:escalation", escPayload); } catch(e){}
+        try { io.to(`complaint:${String(savedComplaint._id)}`).emit("complaint:escalation", escPayload); } catch(e){}
+      } else {
+        emitSocketEvent("complaint:escalation", escPayload);
+      }
     }
 
     await logAction({
@@ -868,47 +910,57 @@ router.patch("/:id/staff/accept", requireOfficerRole, async (req, res) => {
       statusUpdate: "Accepted",
     });
 
-    // Create passenger notification message
-    const passengerNotification = await ComplaintReply.create({
+    // Create passenger-facing chat/system message and emit detailed payload including officer info
+    const ChatMessage = require('../models/ChatMessage');
+    const passengerChat = await ChatMessage.create({
       complaintId: complaint._id,
-      officerId: currentOfficer.staffId || currentOfficer.staffEmail,
-      officerName: currentOfficer.staffName,
-      officerRole: currentOfficer.dutyUnit || "TTR",
-      message: `Your complaint has been accepted by an on-duty ${currentOfficer.dutyUnit || "TTR"} officer. We are now investigating your case.`,
-      statusUpdate: "Accepted",
-      visibleToPassenger: true,
-      messageType: "system",
-      repliedAt: new Date(),
+      senderType: 'OFFICER',
+      senderId: currentOfficer.staffId || currentOfficer.staffEmail,
+      senderName: currentOfficer.staffName,
+      senderRole: currentOfficer.dutyUnit || currentOfficer.staffRole || 'TTR',
+      messageText: `Your complaint has been accepted by ${currentOfficer.dutyUnit || currentOfficer.staffRole || 'TTR'} officer ${currentOfficer.staffName}. We are investigating your case.`,
+      messageType: 'system',
+      createdAt: new Date(),
     });
 
-    emitSocketEvent("complaint:accepted", {
+    const officerDetails = {
+      name: currentOfficer.staffName || null,
+      role: currentOfficer.dutyUnit || currentOfficer.staffRole || null,
+      dutyCoach: currentOfficer.assignedTrain || currentOfficer.assignedStation || currentOfficer.assignedShift || null,
+      currentLocation: currentOfficer.liveLocationSnapshot || currentOfficer.currentLocation || null,
+    };
+
+    emitSocketEvent('complaint:accepted', {
       complaintId: String(complaint._id),
       passengerId: complaint.passengerId,
       complaint: complaint.toObject ? complaint.toObject() : complaint,
       acceptedAt: complaint.acceptedAt,
       actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
-      source: "officer-accept",
+      source: 'officer-accept',
+      officer: officerDetails,
     });
 
-    emitSocketEvent("complaint:status-change", {
+    emitSocketEvent('complaint:status-change', {
       complaintId: String(complaint._id),
       passengerId: complaint.passengerId,
       complaint: complaint.toObject ? complaint.toObject() : complaint,
       previousStatus,
-      newStatus: "Accepted",
+      newStatus: 'Accepted',
       actorRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
-      source: "officer-accept",
+      source: 'officer-accept',
+      officer: officerDetails,
     });
 
-    // Send passenger notification
-    emitSocketEvent("passenger:message", {
+    // Send passenger chat message event with officer details
+    emitSocketEvent('passenger:message', {
       complaintId: String(complaint._id),
       passengerId: complaint.passengerId,
-      message: passengerNotification ? (passengerNotification.toObject ? passengerNotification.toObject() : passengerNotification) : null,
+      message: passengerChat.toObject ? passengerChat.toObject() : passengerChat,
       senderName: currentOfficer.staffName,
       senderRole: currentOfficer.dutyUnit || currentOfficer.staffRole,
-      messageText: `Your complaint has been accepted by an on-duty ${currentOfficer.dutyUnit || "TTR"} officer.`,
-      source: "officer-accept",
+      officer: officerDetails,
+      messageText: passengerChat.messageText,
+      source: 'officer-accept',
     });
 
     await logAction({
