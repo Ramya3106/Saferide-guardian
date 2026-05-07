@@ -13,7 +13,6 @@ import {
   Linking,
   Animated,
   Pressable,
-
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -26,13 +25,80 @@ const API_BASE = getApiBase();
 const SOCKET_BASE = API_BASE.replace(/\/api\/?$/, "");
 const AnimatedIonicon = Animated.createAnimatedComponent(Ionicons);
 
-const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUserRole, onLogout }) => {
+const PassengerDashboard = ({
+  userEmail,
+  userName,
+  userPhone,
+  authToken,
+  authUserRole,
+  onLogout,
+}) => {
   const iconShakeValue = useRef(new Animated.Value(0)).current;
   const iconShakeLoopRef = useRef(null);
   const screenFadeAnim = useRef(new Animated.Value(0)).current;
   const screenSlideAnim = useRef(new Animated.Value(18)).current;
   const notificationPulseAnim = useRef(new Animated.Value(0)).current;
   const actionBeaconAnim = useRef(new Animated.Value(0)).current;
+
+  const [activeJourney, setActiveJourney] = useState(null);
+  const [complaints, setComplaints] = useState([]);
+  const [currentComplaint, setCurrentComplaint] = useState(null);
+  const [gpsEnabled, setGpsEnabled] = useState(true);
+  const [showComplaintModal, setShowComplaintModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [showTrackingModal, setShowTrackingModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [selectedTrackingComplaint, setSelectedTrackingComplaint] = useState(null);
+  const [trackingData, setTrackingData] = useState(null);
+  const [transportType, setTransportType] = useState(null);
+  const [modalStep, setModalStep] = useState(1);
+  const [vehicleNumber, setVehicleNumber] = useState("");
+  const [itemType, setItemType] = useState("");
+  const [description, setDescription] = useState("");
+  const [fromLocation, setFromLocation] = useState("");
+  const [toLocation, setToLocation] = useState("");
+  const [departureTime, setDepartureTime] = useState("");
+  const [arrivalTime, setArrivalTime] = useState("");
+  const [photoUri, setPhotoUri] = useState(null);
+  const socketRef = useRef(null);
+
+  const requestHeaders = (extra = {}) => ({
+    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+    "X-User-Role": authUserRole || "Passenger",
+    ...extra,
+  });
+
+  const getSubmitAuthority = (type) => {
+    switch (type) {
+      case "train":
+        return "TTR / RPF";
+      case "car":
+        return "Car Driver";
+      case "bus":
+        return "Driver / Conductor";
+      case "auto":
+        return "Auto Driver";
+      default:
+        return "Staff";
+    }
+  };
+
+  const getTransportIcon = (type) => {
+    switch (type) {
+      case "train":
+        return "train";
+      case "car":
+        return "car";
+      case "bus":
+        return "bus";
+      case "auto":
+        return "bicycle";
+      default:
+        return "help";
+    }
+  };
 
   const buildIconShakeAnimation = () =>
     Animated.loop(
@@ -128,128 +194,6 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     };
   }, [actionBeaconAnim, notificationPulseAnim]);
 
-  const iconShakeStyle = {
-    transform: [{ translateX: iconShakeValue }],
-  };
-
-  const ShakyIcon = ({ style, ...props }) => (
-    <Pressable onHoverIn={startIconShake} onHoverOut={stopIconShake}>
-      <AnimatedIonicon {...props} style={[iconShakeStyle, style]} />
-    </Pressable>
-  );
-
-
-  // State management
-  const [activeJourney, setActiveJourney] = useState(null);
-  const [complaints, setComplaints] = useState([]);
-  const [currentComplaint, setCurrentComplaint] = useState(null);
-  const [gpsEnabled, setGpsEnabled] = useState(true);
-  const [showComplaintModal, setShowComplaintModal] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [showNotificationModal, setShowNotificationModal] = useState(false);
-  const [showTrackingModal, setShowTrackingModal] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [trackingLoading, setTrackingLoading] = useState(false);
-  const [selectedTrackingComplaint, setSelectedTrackingComplaint] =
-    useState(null);
-  const [trackingData, setTrackingData] = useState(null);
-  const socketRef = useRef(null);
-
-  const requestHeaders = (extra = {}) => ({
-    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-    "X-User-Role": authUserRole || "Passenger",
-    ...extra,
-  });
-
-  // Transport selection
-  const [transportType, setTransportType] = useState(null); // 'train', 'car', 'bus', 'auto'
-  const [modalStep, setModalStep] = useState(1); // 1 = transport selection, 2 = form
-
-  // Complaint form fields
-  const [vehicleNumber, setVehicleNumber] = useState("");
-  const [itemType, setItemType] = useState("");
-  const [description, setDescription] = useState("");
-  const [fromLocation, setFromLocation] = useState("");
-  const [toLocation, setToLocation] = useState("");
-  const [departureTime, setDepartureTime] = useState("");
-  const [arrivalTime, setArrivalTime] = useState("");
-  const [photoUri, setPhotoUri] = useState(null);
-
-  const acceptedComplaints = complaints.filter(
-    (complaint) =>
-      complaint.status === "Accepted" ||
-      (typeof complaint?.sharedLocation?.latitude === "number" &&
-        typeof complaint?.sharedLocation?.longitude === "number"),
-  );
-  const notificationCount = acceptedComplaints.length;
-
-  const pickPhoto = async (source) => {
-    try {
-      if (source === "camera") {
-        const cameraPermission =
-          await ImagePicker.requestCameraPermissionsAsync();
-        if (!cameraPermission.granted) {
-          Alert.alert(
-            "Camera Permission Needed",
-            "Allow camera access to capture an item photo.",
-          );
-          return;
-        }
-
-        const cameraResult = await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          quality: 0.8,
-        });
-
-        if (!cameraResult.canceled && cameraResult.assets?.[0]?.uri) {
-          setPhotoUri(cameraResult.assets[0].uri);
-        }
-        return;
-      }
-
-      const mediaPermission =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!mediaPermission.granted) {
-        Alert.alert(
-          "Gallery Permission Needed",
-          "Allow photo library access to select an item photo.",
-        );
-        return;
-      }
-
-      const libraryResult = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
-      if (!libraryResult.canceled && libraryResult.assets?.[0]?.uri) {
-        setPhotoUri(libraryResult.assets[0].uri);
-      }
-    } catch (error) {
-      Alert.alert("Upload Failed", "Unable to select image. Please try again.");
-    }
-  };
-
-  const handleUploadItemPhoto = () => {
-    Alert.alert("Upload Item Photo", "Choose image source", [
-      {
-        text: "Open Camera",
-        onPress: () => pickPhoto("camera"),
-      },
-      {
-        text: "Choose from Gallery",
-        onPress: () => pickPhoto("gallery"),
-      },
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-    ]);
-  };
-
-  // Fetch active journey on load
   useEffect(() => {
     fetchActiveJourney();
     fetchComplaintHistory();
@@ -284,12 +228,16 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
       const normalizedPassenger = String(userEmail || "").trim().toLowerCase();
       const candidatePassenger = String(
         incomingComplaint?.passengerEmail ||
-        incomingComplaint?.passengerId ||
-        payload?.passengerId ||
-        "",
+          incomingComplaint?.passengerId ||
+          payload?.passengerId ||
+          "",
       ).trim().toLowerCase();
 
-      if (candidatePassenger && normalizedPassenger && candidatePassenger !== normalizedPassenger) {
+      if (
+        candidatePassenger &&
+        normalizedPassenger &&
+        candidatePassenger !== normalizedPassenger
+      ) {
         return;
       }
 
@@ -297,7 +245,9 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
         ...incomingComplaint,
         _id: incomingComplaint?._id || complaintId,
         complaintId: incomingComplaint?.complaintId || complaintId,
-        messages: Array.isArray(incomingComplaint?.messages) ? incomingComplaint.messages : [],
+        messages: Array.isArray(incomingComplaint?.messages)
+          ? incomingComplaint.messages
+          : [],
       };
 
       setComplaints((current) => {
@@ -332,10 +282,10 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
       setTrackingData((current) =>
         current && String(current?.complaintId || current?._id) === String(complaintId)
           ? {
-            ...current,
-            ...mergedComplaint,
-            status: mergedComplaint.status || current.status,
-          }
+              ...current,
+              ...mergedComplaint,
+              status: mergedComplaint.status || current.status,
+            }
           : current,
       );
     };
@@ -347,7 +297,6 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     socket.on("complaint:location-update", mergeComplaintRecord);
     socket.on("complaint:escalation", mergeComplaintRecord);
 
-    // Listen for passenger messages (real-time updates when officer sends message)
     socket.on("passenger:message", (payload) => {
       if (payload?.complaintId) {
         mergeComplaintRecord(payload);
@@ -413,14 +362,21 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     );
 
     return () => subscription.remove();
-  }, [
-    showComplaintModal,
-    showHistoryModal,
-    showNotificationModal,
-    showTrackingModal,
-  ]);
+  }, [showComplaintModal, showHistoryModal, showNotificationModal, showTrackingModal]);
 
-  // Fetch active journey data
+  useEffect(() => {
+    if (!showTrackingModal || !selectedTrackingComplaint?._id) {
+      return undefined;
+    }
+
+    const interval = setInterval(() => {
+      fetchTrackingData(selectedTrackingComplaint._id);
+    }, 5000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showTrackingModal, selectedTrackingComplaint?._id]);
+
   const fetchActiveJourney = async () => {
     try {
       const response = await axios.get(`${API_BASE}/passenger/dashboard`, {
@@ -433,7 +389,6 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     }
   };
 
-  // Fetch complaint history
   const fetchComplaintHistory = async () => {
     setLoading(true);
     try {
@@ -513,26 +468,11 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     setShowTrackingModal(true);
   };
 
-  useEffect(() => {
-    if (!showTrackingModal || !selectedTrackingComplaint?._id) {
-      return undefined;
-    }
-
-    const interval = setInterval(() => {
-      fetchTrackingData(selectedTrackingComplaint._id);
-    }, 5000);
-
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showTrackingModal, selectedTrackingComplaint?._id]);
-
-  // Handle transport selection
   const handleTransportSelect = (type) => {
     setTransportType(type);
     setModalStep(2);
   };
 
-  // Reset modal state
   const resetComplaintModal = () => {
     setShowComplaintModal(false);
     setModalStep(1);
@@ -547,22 +487,75 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     setPhotoUri(null);
   };
 
-  // Create complaint
+  const pickPhoto = async (source) => {
+    try {
+      if (source === "camera") {
+        const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+        if (!cameraPermission.granted) {
+          Alert.alert(
+            "Camera Permission Needed",
+            "Allow camera access to capture an item photo.",
+          );
+          return;
+        }
+
+        const cameraResult = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 0.8,
+        });
+
+        if (!cameraResult.canceled && cameraResult.assets?.[0]?.uri) {
+          setPhotoUri(cameraResult.assets[0].uri);
+        }
+        return;
+      }
+
+      const mediaPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!mediaPermission.granted) {
+        Alert.alert(
+          "Gallery Permission Needed",
+          "Allow photo library access to select an item photo.",
+        );
+        return;
+      }
+
+      const libraryResult = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (!libraryResult.canceled && libraryResult.assets?.[0]?.uri) {
+        setPhotoUri(libraryResult.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert("Upload Failed", "Unable to select image. Please try again.");
+    }
+  };
+
+  const handleUploadItemPhoto = () => {
+    Alert.alert("Upload Item Photo", "Choose image source", [
+      { text: "Open Camera", onPress: () => pickPhoto("camera") },
+      { text: "Choose from Gallery", onPress: () => pickPhoto("gallery") },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
+
   const handleCreateComplaint = async () => {
     if (!vehicleNumber.trim() || !itemType.trim() || !description.trim()) {
-      alert("Please fill in all required fields");
+      Alert.alert("Validation", "Please fill in all required fields");
       return;
     }
 
     if (!fromLocation.trim() || !toLocation.trim()) {
-      alert("Please fill in from and to locations");
+      Alert.alert("Validation", "Please fill in from and to locations");
       return;
     }
 
     setLoading(true);
     try {
       const submitAuthority = getSubmitAuthority(transportType);
-
       const response = await axios.post(
         `${API_BASE}/passenger/complaints`,
         {
@@ -576,7 +569,6 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
           arrivalTime,
           lastSeenLocation: fromLocation,
           timestamp: new Date().toISOString(),
-          journeyId: activeJourney?._id,
           route: `${fromLocation} → ${toLocation}`,
           submitAuthority,
           photoUri,
@@ -597,55 +589,22 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
       setTrackingData(null);
       setShowTrackingModal(true);
       resetComplaintModal();
-      alert(`Request submitted successfully to ${submitAuthority}!`);
+      Alert.alert("Submitted", `Request submitted successfully to ${submitAuthority}!`);
     } catch (error) {
-      const backendMessage =
-        error?.response?.data?.message || error.message || "Unknown error";
-      alert("Error creating complaint: " + backendMessage);
+      const backendMessage = error?.response?.data?.message || error.message || "Unknown error";
+      Alert.alert("Error", `Error creating complaint: ${backendMessage}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Get submit authority based on transport type
-  const getSubmitAuthority = (type) => {
-    switch (type) {
-      case "train":
-        return "TTR / RPF";
-      case "car":
-        return "Car Driver";
-      case "bus":
-        return "Driver / Conductor";
-      case "auto":
-        return "Auto Driver";
-      default:
-        return "Staff";
-    }
-  };
-
-  // Get transport icon
-  const getTransportIcon = (type) => {
-    switch (type) {
-      case "train":
-        return "train";
-      case "car":
-        return "car";
-      case "bus":
-        return "bus";
-      case "auto":
-        return "bicycle"; // Using bicycle as closest to auto
-      default:
-        return "help";
-    }
-  };
-
-  // Update GPS status
   const handleGpsToggle = async () => {
-    setGpsEnabled(!gpsEnabled);
+    const nextEnabled = !gpsEnabled;
+    setGpsEnabled(nextEnabled);
     try {
       await axios.post(
         `${API_BASE}/passenger/gps`,
-        { enabled: !gpsEnabled },
+        { enabled: nextEnabled },
         {
           headers: requestHeaders({ "X-User-Email": userEmail }),
         },
@@ -655,9 +614,23 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     }
   };
 
-  // ============ RENDER SECTIONS ============
+  const acceptedComplaints = complaints.filter(
+    (complaint) =>
+      complaint.status === "Accepted" ||
+      (typeof complaint?.sharedLocation?.latitude === "number" &&
+        typeof complaint?.sharedLocation?.longitude === "number"),
+  );
+  const notificationCount = acceptedComplaints.length;
 
-  // Section 1: Header
+  const ShakyIcon = ({ style, ...props }) => (
+    <Pressable onHoverIn={startIconShake} onHoverOut={stopIconShake}>
+      <AnimatedIonicon
+        {...props}
+        style={[{ transform: [{ translateX: iconShakeValue }] }, style]}
+      />
+    </Pressable>
+  );
+
   const renderHeader = () => (
     <View className="bg-white pt-3 pb-4 px-4 border-b border-slate-200 flex-row justify-between items-center">
       <View className="flex-1 flex-row justify-between items-center">
@@ -665,13 +638,18 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
           <Text className="text-lg font-bold text-slate-800">{userName}</Text>
           <Text className="text-xs text-slate-500 mt-1">📞 {userPhone}</Text>
         </View>
-        <TouchableOpacity className="flex-row items-center bg-slate-100 px-2.5 py-1.5 rounded-lg gap-1" onPress={handleGpsToggle}>
+        <TouchableOpacity
+          className="flex-row items-center bg-slate-100 px-2.5 py-1.5 rounded-lg gap-1"
+          onPress={handleGpsToggle}
+        >
           <ShakyIcon
             name={gpsEnabled ? "location" : "location-outline"}
             size={20}
             color={gpsEnabled ? "#22C55E" : "#64748B"}
           />
-          <Text className="text-[11px] font-semibold text-slate-600">GPS {gpsEnabled ? "ON" : "OFF"}</Text>
+          <Text className="text-[11px] font-semibold text-slate-600">
+            GPS {gpsEnabled ? "ON" : "OFF"}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -687,10 +665,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
           ],
         }}
       >
-        <TouchableOpacity
-          className="relative p-2"
-          onPress={handleOpenNotifications}
-        >
+        <TouchableOpacity className="relative p-2" onPress={handleOpenNotifications}>
           <Ionicons name="notifications-outline" size={24} color="#1E293B" />
           {notificationCount > 0 && (
             <View className="absolute top-0 right-0 bg-red-500 rounded-full min-w-[20px] h-5 justify-center items-center">
@@ -702,35 +677,20 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     </View>
   );
 
-  // Section 2: Active Journey Card
   const renderActiveJourney = () => (
     <View className="mb-5">
       <Text className="text-lg font-bold text-slate-800 mb-2.5">✈️ Active Journey</Text>
       {activeJourney ? (
         <View className="bg-white rounded-xl p-3.5 border border-slate-200">
           <View className="flex-row justify-between items-center mb-2">
-            <Text className="text-base font-bold text-slate-800">
-              🚌 {activeJourney.vehicleNumber}
-            </Text>
+            <Text className="text-base font-bold text-slate-800">🚌 {activeJourney.vehicleNumber}</Text>
             <Text className="bg-green-500 text-white px-2.5 py-1 rounded-xl text-[10px] font-bold">ACTIVE</Text>
           </View>
           <Text className="text-sm text-slate-600 mb-1.5">🛣️ {activeJourney.route}</Text>
-          <Text className="text-[13px] text-slate-500 mb-1.5">
-            ⏰ {activeJourney.estimatedDuration || "2h 15min"}
-          </Text>
-          {activeJourney.driverName && (
-            <Text className="text-xs text-slate-400 mb-1">
-              👨‍✈️ Driver: {activeJourney.driverName}
-            </Text>
-          )}
-          {activeJourney.conductorName && (
-            <Text className="text-xs text-slate-400 mb-1">
-              👨‍✈️ Conductor: {activeJourney.conductorName}
-            </Text>
-          )}
-          <Text className="text-xs text-slate-400 mb-1">
-            📍 Current: {activeJourney.currentStop}
-          </Text>
+          <Text className="text-[13px] text-slate-500 mb-1.5">⏰ {activeJourney.estimatedDuration || "2h 15min"}</Text>
+          {activeJourney.driverName && <Text className="text-xs text-slate-400 mb-1">👨‍✈️ Driver: {activeJourney.driverName}</Text>}
+          {activeJourney.conductorName && <Text className="text-xs text-slate-400 mb-1">👨‍✈️ Conductor: {activeJourney.conductorName}</Text>}
+          <Text className="text-xs text-slate-400 mb-1">📍 Current: {activeJourney.currentStop}</Text>
         </View>
       ) : (
         <View className="bg-white rounded-xl p-3.5 border border-slate-200">
@@ -740,7 +700,6 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     </View>
   );
 
-  // Section 3: Primary Action Button
   const renderPrimaryAction = () => (
     <View className="mb-5">
       <Animated.View
@@ -766,21 +725,13 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     </View>
   );
 
-  // Section 4: Complaint Creation Panel
   const renderComplaintPanel = () => (
-    <Modal
-      visible={showComplaintModal}
-      transparent
-      animationType="slide"
-      onRequestClose={resetComplaintModal}
-    >
+    <Modal visible={showComplaintModal} transparent animationType="slide" onRequestClose={resetComplaintModal}>
       <View className="flex-1 bg-black/50 justify-end">
         <View className="bg-white rounded-t-2xl p-4 max-h-[90%]">
           <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-slate-200">
             <Text className="text-lg font-bold text-slate-800">
-              {modalStep === 1
-                ? "Report Lost Item"
-                : `Lost Item - ${transportType?.toUpperCase()}`}
+              {modalStep === 1 ? "Report Lost Item" : `Lost Item - ${transportType?.toUpperCase()}`}
             </Text>
             <TouchableOpacity onPress={resetComplaintModal}>
               <ShakyIcon name="close" size={24} color="#1E293B" />
@@ -789,59 +740,35 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
 
           <ScrollView className="max-h-[400px]">
             {modalStep === 1 ? (
-              // STEP 1: Transport Selection
               <View>
                 <Text className="text-lg font-bold text-slate-800 text-center mb-6 mt-2">
                   In which transport did you lose your item?
                 </Text>
-
                 <View className="flex-row flex-wrap justify-between gap-3 mb-5">
-                  <TouchableOpacity
-                    className="w-[48%] bg-blue-50 border-2 border-blue-200 rounded-xl py-4 px-2.5 items-center justify-center min-h-[120px]"
-                    onPress={() => handleTransportSelect("train")}
-                  >
-                    <ShakyIcon name="train" size={40} color="#2563EB" />
-                    <Text className="mt-2.5 text-sm font-semibold text-slate-800 text-center">🚆 Train</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    className="w-[48%] bg-blue-50 border-2 border-blue-200 rounded-xl py-4 px-2.5 items-center justify-center min-h-[120px]"
-                    onPress={() => handleTransportSelect("car")}
-                  >
-                    <ShakyIcon name="car" size={40} color="#2563EB" />
-                    <Text className="mt-2.5 text-sm font-semibold text-slate-800 text-center">🚗 Car</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    className="w-[48%] bg-blue-50 border-2 border-blue-200 rounded-xl py-4 px-2.5 items-center justify-center min-h-[120px]"
-                    onPress={() => handleTransportSelect("bus")}
-                  >
-                    <ShakyIcon name="bus" size={40} color="#2563EB" />
-                    <Text className="mt-2.5 text-sm font-semibold text-slate-800 text-center">🚌 Bus</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    className="w-[48%] bg-blue-50 border-2 border-blue-200 rounded-xl py-4 px-2.5 items-center justify-center min-h-[120px]"
-                    onPress={() => handleTransportSelect("auto")}
-                  >
-                    <ShakyIcon name="bicycle" size={40} color="#2563EB" />
-                    <Text className="mt-2.5 text-sm font-semibold text-slate-800 text-center">🛺 Auto</Text>
-                  </TouchableOpacity>
+                  {[
+                    ["train", "🚆 Train", "train"],
+                    ["car", "🚗 Car", "car"],
+                    ["bus", "🚌 Bus", "bus"],
+                    ["auto", "🛺 Auto", "bicycle"],
+                  ].map(([type, label, icon]) => (
+                    <TouchableOpacity
+                      key={type}
+                      className="w-[48%] bg-blue-50 border-2 border-blue-200 rounded-xl py-4 px-2.5 items-center justify-center min-h-[120px]"
+                      onPress={() => handleTransportSelect(type)}
+                    >
+                      <ShakyIcon name={icon} size={40} color="#2563EB" />
+                      <Text className="mt-2.5 text-sm font-semibold text-slate-800 text-center">{label}</Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               </View>
             ) : (
-              // STEP 2: Dynamic Form Based on Transport
               <View>
-                {/* Back Button */}
-                <TouchableOpacity
-                  className="flex-row items-center gap-1.5 mb-4 py-2"
-                  onPress={() => setModalStep(1)}
-                >
+                <TouchableOpacity className="flex-row items-center gap-1.5 mb-4 py-2" onPress={() => setModalStep(1)}>
                   <ShakyIcon name="arrow-back" size={20} color="#2563EB" />
                   <Text className="text-blue-600 text-sm font-semibold">Change Transport</Text>
                 </TouchableOpacity>
 
-                {/* Vehicle Number Field */}
                 <View className="mb-4">
                   <Text className="text-xs font-semibold text-slate-600 mb-1.5">
                     {transportType === "train"
@@ -868,7 +795,6 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                   />
                 </View>
 
-                {/* Item Type Dropdown */}
                 <View className="mb-4">
                   <Text className="text-xs font-semibold text-slate-600 mb-1.5">📦 Item Type</Text>
                   <TextInput
@@ -879,7 +805,6 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                   />
                 </View>
 
-                {/* Item Description */}
                 <View className="mb-4">
                   <Text className="text-xs font-semibold text-slate-600 mb-1.5">📝 Item Description</Text>
                   <TextInput
@@ -892,12 +817,9 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                   />
                 </View>
 
-                {/* From Location */}
                 <View className="mb-4">
                   <Text className="text-xs font-semibold text-slate-600 mb-1.5">
-                    {transportType === "train"
-                      ? "🚉 From Station"
-                      : "📍 From Location"}
+                    {transportType === "train" ? "🚉 From Station" : "📍 From Location"}
                   </Text>
                   <TextInput
                     className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-slate-800 text-sm"
@@ -913,12 +835,9 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                   />
                 </View>
 
-                {/* To Location */}
                 <View className="mb-4">
                   <Text className="text-xs font-semibold text-slate-600 mb-1.5">
-                    {transportType === "train"
-                      ? "🚉 To Station"
-                      : "📍 To Location"}
+                    {transportType === "train" ? "🚉 To Station" : "📍 To Location"}
                   </Text>
                   <TextInput
                     className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-slate-800 text-sm"
@@ -934,7 +853,6 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                   />
                 </View>
 
-                {/* Departure Time */}
                 <View className="mb-4">
                   <Text className="text-xs font-semibold text-slate-600 mb-1.5">⏰ Departure Time</Text>
                   <TextInput
@@ -945,7 +863,6 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                   />
                 </View>
 
-                {/* Arrival Time */}
                 <View className="mb-4">
                   <Text className="text-xs font-semibold text-slate-600 mb-1.5">⏱️ Arrival Time</Text>
                   <TextInput
@@ -956,28 +873,15 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                   />
                 </View>
 
-                {/* Auto-captured Details */}
                 <View className="bg-blue-50 border-l-4 border-blue-400 rounded-lg p-3 mb-4">
-                  <Text className="text-xs font-semibold text-blue-800 mb-2">
-                    Auto-captured details:
-                  </Text>
-                  <Text className="text-xs text-blue-700 mb-1">
-                    📍 Current Location: {fromLocation || "Pending..."}
-                  </Text>
-                  <Text className="text-xs text-blue-700 mb-1">
-                    🕒 Timestamp: {new Date().toLocaleTimeString()}
-                  </Text>
+                  <Text className="text-xs font-semibold text-blue-800 mb-2">Auto-captured details:</Text>
+                  <Text className="text-xs text-blue-700 mb-1">📍 Current Location: {fromLocation || "Pending..."}</Text>
+                  <Text className="text-xs text-blue-700 mb-1">🕒 Timestamp: {new Date().toLocaleTimeString()}</Text>
                 </View>
 
-                {/* Upload Photo */}
-                <TouchableOpacity
-                  className="flex-row items-center justify-center gap-2 border border-blue-600 rounded-lg py-3 mb-4"
-                  onPress={handleUploadItemPhoto}
-                >
+                <TouchableOpacity className="flex-row items-center justify-center gap-2 border border-blue-600 rounded-lg py-3 mb-4" onPress={handleUploadItemPhoto}>
                   <ShakyIcon name="camera" size={20} color="#2563EB" />
-                  <Text className="text-blue-600 font-semibold">
-                    📸 Upload Item Photo (Optional)
-                  </Text>
+                  <Text className="text-blue-600 font-semibold">📸 Upload Item Photo (Optional)</Text>
                 </TouchableOpacity>
 
                 {photoUri && (
@@ -996,17 +900,11 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
           </ScrollView>
 
           {modalStep === 2 && (
-            <TouchableOpacity
-              className="bg-blue-600 rounded-lg py-3.5 items-center mt-2.5"
-              onPress={handleCreateComplaint}
-              disabled={loading}
-            >
+            <TouchableOpacity className="bg-blue-600 rounded-lg py-3.5 items-center mt-2.5" onPress={handleCreateComplaint} disabled={loading}>
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text className="text-white font-bold text-base">
-                  ➡️ Submit to {getSubmitAuthority(transportType)}
-                </Text>
+                <Text className="text-white font-bold text-base">➡️ Submit to {getSubmitAuthority(transportType)}</Text>
               )}
             </TouchableOpacity>
           )}
@@ -1015,32 +913,15 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     </Modal>
   );
 
-  // Section 5: Complaint Status Tracker
   const renderComplaintTracker = () => {
     if (!currentComplaint) return null;
 
     const statuses = [
       { key: "submitted", label: "🟡 Complaint Submitted", completed: true },
-      {
-        key: "notified",
-        label: "🔵 Staff Notified",
-        completed: currentComplaint.staffNotified,
-      },
-      {
-        key: "found",
-        label: "🟢 Item Found",
-        completed: currentComplaint.itemFound,
-      },
-      {
-        key: "scheduled",
-        label: "📍 Meeting Scheduled",
-        completed: currentComplaint.meetingScheduled,
-      },
-      {
-        key: "collected",
-        label: "✅ Item Collected",
-        completed: currentComplaint.itemCollected,
-      },
+      { key: "notified", label: "🔵 Staff Notified", completed: currentComplaint.staffNotified },
+      { key: "found", label: "🟢 Item Found", completed: currentComplaint.itemFound },
+      { key: "scheduled", label: "📍 Meeting Scheduled", completed: currentComplaint.meetingScheduled },
+      { key: "collected", label: "✅ Item Collected", completed: currentComplaint.itemCollected },
     ];
 
     return (
@@ -1050,16 +931,11 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
           {statuses.map((status, index) => (
             <View key={status.key}>
               <View className="flex-row items-center mb-2">
-                <View
-                  className={`w-3 h-3 rounded-full mr-3 ${status.completed ? "bg-blue-600" : "bg-slate-300"}`}
-                >
-                  <Text className="text-[13px] text-slate-600 flex-1">{status.label}</Text>
-                </View>
+                <View className={`w-3 h-3 rounded-full mr-3 ${status.completed ? "bg-blue-600" : "bg-slate-300"}`} />
+                <Text className="text-[13px] text-slate-600 flex-1">{status.label}</Text>
               </View>
               {index < statuses.length - 1 && (
-                <View
-                  className={`w-0.5 h-[30px] ml-[5px] mb-1 ${status.completed ? "bg-blue-600" : "bg-slate-300"}`}
-                />
+                <View className={`w-0.5 h-[30px] ml-[5px] mb-1 ${status.completed ? "bg-blue-600" : "bg-slate-300"}`} />
               )}
             </View>
           ))}
@@ -1068,7 +944,6 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     );
   };
 
-  // Section 6: Live Tracking Map
   const renderLiveTracking = () => {
     if (!currentComplaint) return null;
 
@@ -1078,15 +953,12 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
         <View className="bg-slate-50 rounded-xl p-10 items-center border border-slate-200">
           <ShakyIcon name="map" size={48} color="#CBD5E1" />
           <Text className="text-sm font-semibold text-slate-600 mt-3">Live map view</Text>
-          <Text className="text-xs text-slate-400 mt-1">
-            Staff location & ETA: {currentComplaint.staffEta || "Pending..."}
-          </Text>
+          <Text className="text-xs text-slate-400 mt-1">Staff location & ETA: {currentComplaint.staffEta || "Pending..."}</Text>
         </View>
       </View>
     );
   };
 
-  // Section 7: Staff Message Panel - Using Message Thread Component
   const renderStaffMessages = () => {
     if (!currentComplaint) return null;
 
@@ -1102,10 +974,9 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
               "x-user-phone": userPhone,
               Authorization: `Bearer ${authToken}`,
             },
-          }
+          },
         );
 
-        // Message was sent successfully, UI will update via socket event
         if (response.data?.complaint) {
           setCurrentComplaint({
             ...currentComplaint,
@@ -1133,7 +1004,6 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     );
   };
 
-  // Section 8: QR Code Pickup
   const renderQRCodePickup = () => {
     if (!currentComplaint || !currentComplaint.itemFound) return null;
 
@@ -1144,14 +1014,9 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
           <View className="items-center py-6 border-2 border-blue-200 rounded-xl bg-blue-50 mb-3">
             <ShakyIcon name="qr-code" size={80} color="#2563EB" />
             <Text className="text-sm font-semibold text-blue-800 mt-3 text-center">Scan this QR to collect item</Text>
-            <Text className="text-[11px] text-slate-400 mt-1">
-              ID: {currentComplaint._id?.substring(0, 8)}
-            </Text>
+            <Text className="text-[11px] text-slate-400 mt-1">ID: {currentComplaint._id?.substring(0, 8)}</Text>
           </View>
-          <TouchableOpacity
-            className="bg-blue-600 rounded-lg py-3 flex-row items-center justify-center gap-2"
-            onPress={() => alert("Camera scan coming soon!")}
-          >
+          <TouchableOpacity className="bg-blue-600 rounded-lg py-3 flex-row items-center justify-center gap-2" onPress={() => Alert.alert("Scan", "Camera scan coming soon!") }>
             <ShakyIcon name="camera" size={20} color="#FFFFFF" />
             <Text className="text-white font-bold">📷 Scan Item QR</Text>
           </TouchableOpacity>
@@ -1160,18 +1025,11 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     );
   };
 
-  // Section 9: Complaint History
   const renderComplaintHistory = () => (
     <View className="mb-5">
       <View className="flex-row justify-between items-center">
         <Text className="text-lg font-bold text-slate-800 mb-2.5">📋 Complaint History</Text>
-        <TouchableOpacity
-          className="flex-row items-center gap-1"
-          onPress={() => {
-            setShowHistoryModal(true);
-            fetchComplaintHistory();
-          }}
-        >
+        <TouchableOpacity className="flex-row items-center gap-1" onPress={() => { setShowHistoryModal(true); fetchComplaintHistory(); }}>
           <Text className="text-blue-600 font-semibold text-[13px]">View All</Text>
           <ShakyIcon name="chevron-forward" size={16} color="#2563EB" />
         </TouchableOpacity>
@@ -1182,19 +1040,11 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
           {complaints.slice(0, 3).map((complaint) => (
             <View key={complaint._id} className="bg-white rounded-lg p-3 mb-2.5 flex-row justify-between items-center border border-slate-200">
               <View>
-                <Text className="text-sm font-semibold text-slate-800">
-                  {complaint.itemType}
-                </Text>
-                <Text className="text-xs text-slate-500 mt-0.5">
-                  {complaint.vehicleNumber} • {complaint.route}
-                </Text>
-                <Text className="text-[11px] text-slate-400 mt-0.5">
-                  {new Date(complaint.createdAt).toLocaleDateString()}
-                </Text>
+                <Text className="text-sm font-semibold text-slate-800">{complaint.itemType}</Text>
+                <Text className="text-xs text-slate-500 mt-0.5">{complaint.vehicleNumber} • {complaint.route}</Text>
+                <Text className="text-[11px] text-slate-400 mt-0.5">{new Date(complaint.createdAt).toLocaleDateString()}</Text>
               </View>
-              <View
-                className={`px-2.5 py-1.5 rounded-lg ${complaint.status === "Recovered" ? "bg-green-100" : complaint.status === "Closed" ? "bg-indigo-100" : "bg-slate-100"}`}
-              >
+              <View className={`px-2.5 py-1.5 rounded-lg ${complaint.status === "Recovered" ? "bg-green-100" : complaint.status === "Closed" ? "bg-indigo-100" : "bg-slate-100"}`}>
                 <Text className="text-[11px] font-semibold text-slate-800">{complaint.status}</Text>
               </View>
             </View>
@@ -1206,31 +1056,21 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     </View>
   );
 
-  // Section 10: Emergency & Help
   const renderEmergencyHelp = () => (
     <View className="mb-5">
       <Text className="text-lg font-bold text-slate-800 mb-2.5">🆘 Emergency & Help</Text>
       <View className="flex-row justify-around gap-3">
-        <TouchableOpacity
-          className="flex-1 bg-white rounded-lg p-4 items-center border border-slate-200"
-          onPress={() => alert("Calling emergency hotline...")}
-        >
+        <TouchableOpacity className="flex-1 bg-white rounded-lg p-4 items-center border border-slate-200" onPress={() => Alert.alert("Emergency", "Calling emergency hotline...") }>
           <ShakyIcon name="call" size={28} color="#DC2626" />
           <Text className="text-[11px] font-semibold text-slate-800 mt-2 text-center">Emergency Call</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          className="flex-1 bg-white rounded-lg p-4 items-center border border-slate-200"
-          onPress={() => alert("📞 Helpline: +91-XXXX-XXXXX")}
-        >
+        <TouchableOpacity className="flex-1 bg-white rounded-lg p-4 items-center border border-slate-200" onPress={() => Alert.alert("Helpline", "📞 Helpline: +91-XXXX-XXXXX") }>
           <ShakyIcon name="information-circle" size={28} color="#2563EB" />
           <Text className="text-[11px] font-semibold text-slate-800 mt-2 text-center">Helpline</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          className="flex-1 bg-white rounded-lg p-4 items-center border border-slate-200"
-          onPress={() => alert("FAQ coming soon!")}
-        >
+        <TouchableOpacity className="flex-1 bg-white rounded-lg p-4 items-center border border-slate-200" onPress={() => Alert.alert("FAQ", "FAQ coming soon!") }>
           <ShakyIcon name="help-circle" size={28} color="#7C3AED" />
           <Text className="text-[11px] font-semibold text-slate-800 mt-2 text-center">FAQ & Help</Text>
         </TouchableOpacity>
@@ -1238,14 +1078,8 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     </View>
   );
 
-  // Complaint History Modal
   const renderHistoryModal = () => (
-    <Modal
-      visible={showHistoryModal}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setShowHistoryModal(false)}
-    >
+    <Modal visible={showHistoryModal} transparent animationType="slide" onRequestClose={() => setShowHistoryModal(false)}>
       <View className="flex-1 bg-black/50 justify-end">
         <View className="bg-white rounded-t-2xl p-4 max-h-[90%]">
           <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-slate-200">
@@ -1257,38 +1091,20 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
 
           <ScrollView className="max-h-[400px]">
             {loading ? (
-              <ActivityIndicator
-                size="large"
-                color="#2563EB"
-                style={{ marginTop: 20 }}
-              />
+              <ActivityIndicator size="large" color="#2563EB" style={{ marginTop: 20 }} />
             ) : complaints.length > 0 ? (
               complaints.map((complaint) => (
                 <View key={complaint._id} className="bg-slate-50 rounded-lg p-3.5 mb-3 border border-slate-200">
                   <View className="flex-row justify-between items-center mb-2">
-                    <Text className="text-sm font-bold text-slate-800">
-                      {complaint.itemType}
-                    </Text>
-                    <View
-                      className={`px-2.5 py-1.5 rounded-lg ${complaint.status === "Recovered" ? "bg-green-100" : "bg-slate-100"}`}
-                    >
-                      <Text className="text-[11px] font-semibold text-slate-800">
-                        {complaint.status}
-                      </Text>
+                    <Text className="text-sm font-bold text-slate-800">{complaint.itemType}</Text>
+                    <View className={`px-2.5 py-1.5 rounded-lg ${complaint.status === "Recovered" ? "bg-green-100" : "bg-slate-100"}`}>
+                      <Text className="text-[11px] font-semibold text-slate-800">{complaint.status}</Text>
                     </View>
                   </View>
-                  <Text className="text-xs text-slate-600 mb-1">
-                    🚌 {complaint.vehicleNumber}
-                  </Text>
-                  <Text className="text-xs text-slate-600 mb-1">
-                    🛣️ {complaint.route}
-                  </Text>
-                  <Text className="text-xs text-slate-600 mb-1">
-                    📝 {complaint.description}
-                  </Text>
-                  <Text className="text-[11px] text-slate-400 mt-1.5">
-                    {new Date(complaint.createdAt).toLocaleString()}
-                  </Text>
+                  <Text className="text-xs text-slate-600 mb-1">🚌 {complaint.vehicleNumber}</Text>
+                  <Text className="text-xs text-slate-600 mb-1">🛣️ {complaint.route}</Text>
+                  <Text className="text-xs text-slate-600 mb-1">📝 {complaint.description}</Text>
+                  <Text className="text-[11px] text-slate-400 mt-1.5">{new Date(complaint.createdAt).toLocaleString()}</Text>
                 </View>
               ))
             ) : (
@@ -1301,12 +1117,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
   );
 
   const renderNotificationModal = () => (
-    <Modal
-      visible={showNotificationModal}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setShowNotificationModal(false)}
-    >
+    <Modal visible={showNotificationModal} transparent animationType="slide" onRequestClose={() => setShowNotificationModal(false)}>
       <View className="flex-1 bg-black/50 justify-end">
         <View className="bg-white rounded-t-2xl p-4 max-h-[90%]">
           <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-slate-200">
@@ -1322,20 +1133,11 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
             ) : (
               acceptedComplaints.map((complaint) => (
                 <View key={complaint._id} className="bg-slate-50 rounded-lg p-3 mb-3 border border-slate-200">
-                  <Text className="text-sm font-bold text-slate-900 mb-1">
-                    Your complaint has been accepted.
-                  </Text>
-                  <Text className="text-xs text-slate-600 mb-2.5">
-                    Item: {complaint.itemType} • {complaint.vehicleNumber}
-                  </Text>
-                  <TouchableOpacity
-                    className="bg-blue-600 rounded-lg py-2 px-2.5 flex-row items-center justify-center gap-1.5"
-                    onPress={() => handleOpenLiveTracking(complaint)}
-                  >
+                  <Text className="text-sm font-bold text-slate-900 mb-1">Your complaint has been accepted.</Text>
+                  <Text className="text-xs text-slate-600 mb-2.5">Item: {complaint.itemType} • {complaint.vehicleNumber}</Text>
+                  <TouchableOpacity className="bg-blue-600 rounded-lg py-2 px-2.5 flex-row items-center justify-center gap-1.5" onPress={() => handleOpenLiveTracking(complaint)}>
                     <Ionicons name="navigate" size={16} color="#FFFFFF" />
-                    <Text className="text-white text-xs font-bold">
-                      Live Tracking
-                    </Text>
+                    <Text className="text-white text-xs font-bold">Live Tracking</Text>
                   </TouchableOpacity>
                 </View>
               ))
@@ -1347,101 +1149,43 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
   );
 
   const renderTrackingModal = () => (
-    <Modal
-      visible={showTrackingModal}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setShowTrackingModal(false)}
-    >
+    <Modal visible={showTrackingModal} transparent animationType="slide" onRequestClose={() => setShowTrackingModal(false)}>
       <View className="flex-1 bg-black/50 justify-end">
         <View className="bg-white rounded-t-2xl p-4 max-h-[90%]">
           <View className="flex-row justify-between items-center mb-4 pb-3 border-b border-slate-200">
             <Text className="text-lg font-bold text-slate-800">Complaint Tracking</Text>
-            <TouchableOpacity
-              onPress={() => {
-                setShowTrackingModal(false);
-                setTrackingData(null);
-                setSelectedTrackingComplaint(null);
-              }}
-            >
+            <TouchableOpacity onPress={() => { setShowTrackingModal(false); setTrackingData(null); setSelectedTrackingComplaint(null); }}>
               <Ionicons name="close" size={24} color="#1E293B" />
             </TouchableOpacity>
           </View>
 
           <View className="max-h-[400px]">
             {trackingLoading ? (
-              <ActivityIndicator
-                size="large"
-                color="#2563EB"
-                style={{ marginTop: 20 }}
-              />
+              <ActivityIndicator size="large" color="#2563EB" style={{ marginTop: 20 }} />
             ) : selectedTrackingComplaint ? (
               <View className="bg-slate-50 border border-slate-200 rounded-lg p-3.5">
                 <Text className="text-[15px] font-bold text-slate-800 mb-2">Complaint submitted successfully</Text>
-                <Text className="text-[13px] text-slate-600 mb-1.5">
-                  Complaint ID: {selectedTrackingComplaint.complaintId || selectedTrackingComplaint._id?.substring(0, 10)}
-                </Text>
-                <Text className="text-[13px] text-slate-600 mb-1.5">
-                  Status: {trackingData?.status || selectedTrackingComplaint.status || "Submitted"}
-                </Text>
-                <Text className="text-[13px] text-slate-600 mb-1.5">
-                  Item: {selectedTrackingComplaint.itemType} • {selectedTrackingComplaint.vehicleNumber}
-                </Text>
-                <Text className="text-[13px] text-slate-600 mb-1.5">
-                  Route: {selectedTrackingComplaint.route}
-                </Text>
-                <Text className="text-[13px] text-slate-600 mb-1.5">
-                  Routed to: {selectedTrackingComplaint.submitAuthority || "On-duty officers"}
-                </Text>
-                <Text className="text-[13px] text-slate-600 mb-1.5">
-                  Priority: {trackingData?.priority || selectedTrackingComplaint.priority || "Normal"}
-                </Text>
-                {trackingData?.staffResponseStatus ? (
-                  <Text className="text-[13px] text-slate-600 mb-1.5">
-                    Officer update: {trackingData.staffResponseStatus}
-                  </Text>
-                ) : null}
-                {trackingData?.seenAt ? (
-                  <Text className="text-[13px] text-slate-600 mb-1.5">
-                    Seen at: {new Date(trackingData.seenAt).toLocaleString()}
-                  </Text>
-                ) : null}
-                {trackingData?.acknowledgedAt ? (
-                  <Text className="text-[13px] text-slate-600 mb-1.5">
-                    Acknowledged at: {new Date(trackingData.acknowledgedAt).toLocaleString()}
-                  </Text>
-                ) : null}
-                {trackingData?.officerNotes ? (
-                  <Text className="text-[13px] text-slate-600 mb-1.5">Officer notes: {trackingData.officerNotes}</Text>
-                ) : null}
-                {trackingData?.coachRemark ? (
-                  <Text className="text-[13px] text-slate-600 mb-1.5">Coach remark: {trackingData.coachRemark}</Text>
-                ) : null}
-                {trackingData?.stationRemark ? (
-                  <Text className="text-[13px] text-slate-600 mb-1.5">Station remark: {trackingData.stationRemark}</Text>
-                ) : null}
-                {trackingData?.meetingPoint ? (
-                  <Text className="text-[13px] text-slate-600 mb-1.5">Meeting point: {trackingData.meetingPoint}</Text>
-                ) : null}
-                {trackingData?.meetingTime ? (
-                  <Text className="text-[13px] text-slate-600 mb-1.5">Meeting time: {trackingData.meetingTime}</Text>
-                ) : null}
+                <Text className="text-[13px] text-slate-600 mb-1.5">Complaint ID: {selectedTrackingComplaint.complaintId || selectedTrackingComplaint._id?.substring(0, 10)}</Text>
+                <Text className="text-[13px] text-slate-600 mb-1.5">Status: {trackingData?.status || selectedTrackingComplaint.status || "Submitted"}</Text>
+                <Text className="text-[13px] text-slate-600 mb-1.5">Item: {selectedTrackingComplaint.itemType} • {selectedTrackingComplaint.vehicleNumber}</Text>
+                <Text className="text-[13px] text-slate-600 mb-1.5">Route: {selectedTrackingComplaint.route}</Text>
+                <Text className="text-[13px] text-slate-600 mb-1.5">Routed to: {selectedTrackingComplaint.submitAuthority || "On-duty officers"}</Text>
+                <Text className="text-[13px] text-slate-600 mb-1.5">Priority: {trackingData?.priority || selectedTrackingComplaint.priority || "Normal"}</Text>
+                {trackingData?.staffResponseStatus ? <Text className="text-[13px] text-slate-600 mb-1.5">Officer update: {trackingData.staffResponseStatus}</Text> : null}
+                {trackingData?.seenAt ? <Text className="text-[13px] text-slate-600 mb-1.5">Seen at: {new Date(trackingData.seenAt).toLocaleString()}</Text> : null}
+                {trackingData?.acknowledgedAt ? <Text className="text-[13px] text-slate-600 mb-1.5">Acknowledged at: {new Date(trackingData.acknowledgedAt).toLocaleString()}</Text> : null}
+                {trackingData?.officerNotes ? <Text className="text-[13px] text-slate-600 mb-1.5">Officer notes: {trackingData.officerNotes}</Text> : null}
+                {trackingData?.coachRemark ? <Text className="text-[13px] text-slate-600 mb-1.5">Coach remark: {trackingData.coachRemark}</Text> : null}
+                {trackingData?.stationRemark ? <Text className="text-[13px] text-slate-600 mb-1.5">Station remark: {trackingData.stationRemark}</Text> : null}
+                {trackingData?.meetingPoint ? <Text className="text-[13px] text-slate-600 mb-1.5">Meeting point: {trackingData.meetingPoint}</Text> : null}
+                {trackingData?.meetingTime ? <Text className="text-[13px] text-slate-600 mb-1.5">Meeting time: {trackingData.meetingTime}</Text> : null}
                 {trackingData?.liveLocationAvailable && trackingData?.staffLocation ? (
                   <View>
                     <Text className="text-[13px] text-slate-600 font-bold mt-1.5 mb-1">Live officer location</Text>
-                    <Text className="text-[13px] text-slate-600 mb-1.5">
-                      Latitude: {trackingData.staffLocation.latitude}
-                    </Text>
-                    <Text className="text-[13px] text-slate-600 mb-1.5">
-                      Longitude: {trackingData.staffLocation.longitude}
-                    </Text>
-                    <Text className="text-[13px] text-slate-600 mb-1.5">
-                      Updated: {trackingData.staffLocation.lastUpdated ? new Date(trackingData.staffLocation.lastUpdated).toLocaleTimeString() : "--"}
-                    </Text>
-                    <TouchableOpacity
-                      className="bg-blue-600 rounded-lg py-2 px-2.5 flex-row items-center justify-center gap-1.5 mt-2"
-                      onPress={() => openDriverLiveMap(trackingData)}
-                    >
+                    <Text className="text-[13px] text-slate-600 mb-1.5">Latitude: {trackingData.staffLocation.latitude}</Text>
+                    <Text className="text-[13px] text-slate-600 mb-1.5">Longitude: {trackingData.staffLocation.longitude}</Text>
+                    <Text className="text-[13px] text-slate-600 mb-1.5">Updated: {trackingData.staffLocation.lastUpdated ? new Date(trackingData.staffLocation.lastUpdated).toLocaleTimeString() : "--"}</Text>
+                    <TouchableOpacity className="bg-blue-600 rounded-lg py-2 px-2.5 flex-row items-center justify-center gap-1.5 mt-2" onPress={() => openDriverLiveMap(trackingData)}>
                       <Ionicons name="navigate" size={16} color="#FFFFFF" />
                       <Text className="text-white text-xs font-bold">Open live map</Text>
                     </TouchableOpacity>
@@ -1451,43 +1195,16 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
                   <View>
                     <Text className="text-[13px] text-slate-600 font-bold mt-1.5 mb-1">Latest timeline</Text>
                     {trackingData.updates.slice(0, 5).map((entry, index) => (
-                      <Text key={`${entry.timestamp || "update"}-${index}`} className="text-[13px] text-slate-600 mb-1.5">
-                        - {entry.text || "Status updated"}
-                        {entry.staffName ? ` (${entry.staffName})` : ""}
-                        {entry.timestamp ? ` at ${new Date(entry.timestamp).toLocaleTimeString()}` : ""}
-                      </Text>
+                      <Text key={`${entry.timestamp || "update"}-${index}`} className="text-[13px] text-slate-600 mb-1.5">- {entry.text || "Status updated"}{entry.staffName ? ` (${entry.staffName})` : ""}{entry.timestamp ? ` at ${new Date(entry.timestamp).toLocaleTimeString()}` : ""}</Text>
                     ))}
                   </View>
                 ) : null}
-                <Text className="text-[13px] text-slate-600 mb-1.5">
-                  Next step: Officers on duty will review, reply, and coordinate recovery.
-                </Text>
-              </View>
-            ) : trackingData?.liveLocationAvailable ? (
-              <View className="bg-slate-50 border border-slate-200 rounded-lg p-3.5">
-                <Text className="text-[15px] font-bold text-slate-800 mb-2">Driver Live Location</Text>
-                <Text className="text-[13px] text-slate-600 mb-1.5">
-                  Latitude: {trackingData.staffLocation.latitude}
-                </Text>
-                <Text className="text-[13px] text-slate-600 mb-1.5">
-                  Longitude: {trackingData.staffLocation.longitude}
-                </Text>
-                <Text className="text-[13px] text-slate-600 mb-1.5">
-                  Updated: {new Date(trackingData.staffLocation.lastUpdated).toLocaleTimeString()}
-                </Text>
-                <Text className="text-[13px] text-slate-600 mb-1.5">
-                  Meeting Point: {trackingData.meetingPoint || "Pending"}
-                </Text>
-                <Text className="text-[13px] text-slate-600 mb-1.5">
-                  Status: {trackingData.status || "Accepted"}
-                </Text>
+                <Text className="text-[13px] text-slate-600 mb-1.5">Next step: Officers on duty will review, reply, and coordinate recovery.</Text>
               </View>
             ) : (
               <View className="bg-slate-50 border border-slate-200 rounded-lg p-3.5">
                 <Text className="text-[15px] font-bold text-slate-800 mb-2">Tracking in progress</Text>
-                <Text className="text-[13px] text-slate-600 mb-1.5">
-                  Waiting for duty officer acknowledgement and live updates.
-                </Text>
+                <Text className="text-[13px] text-slate-600 mb-1.5">Waiting for duty officer acknowledgement and live updates.</Text>
               </View>
             )}
           </View>
@@ -1498,12 +1215,11 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
 
   return (
     <Animated.View
-      className="flex-1" style={[
-        {
-          opacity: screenFadeAnim,
-          transform: [{ translateY: screenSlideAnim }],
-        },
-      ]}
+      className="flex-1"
+      style={{
+        opacity: screenFadeAnim,
+        transform: [{ translateY: screenSlideAnim }],
+      }}
     >
       <ScrollView className="flex-1 bg-slate-50">
         {renderHeader()}
@@ -1513,6 +1229,7 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
           {renderPrimaryAction()}
           {renderComplaintPanel()}
           {renderComplaintTracker()}
+          {renderLiveTracking()}
           {renderStaffMessages()}
           {renderQRCodePickup()}
           {renderComplaintHistory()}
@@ -1530,644 +1247,5 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
     </Animated.View>
   );
 };
-
-const styles = create({
-  animatedScreen: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-  },
-  headerSection: {
-    backgroundColor: "#FFFFFF",
-    paddingTop: 12,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  headerContent: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  passengerName: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1E293B",
-  },
-  mobileNumber: {
-    fontSize: 12,
-    color: "#64748B",
-    marginTop: 4,
-  },
-  gpsButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F1F5F9",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    gap: 4,
-  },
-  gpsText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#475569",
-  },
-  notificationBell: {
-    position: "relative",
-    padding: 8,
-  },
-  notificationBadge: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    backgroundColor: "#EF4444",
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  badgeText: {
-    color: "#FFFFFF",
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  content: {
-    padding: 16,
-  },
-  section: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 10,
-  },
-  journeyCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  journeyHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  vehicleNumber: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
-  },
-  badge: {
-    backgroundColor: "#22C55E",
-    color: "#FFFFFF",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  journeyRoute: {
-    fontSize: 14,
-    color: "#475569",
-    marginBottom: 6,
-  },
-  journeyTime: {
-    fontSize: 13,
-    color: "#64748B",
-    marginBottom: 6,
-  },
-  journeyMeta: {
-    fontSize: 12,
-    color: "#94A3B8",
-    marginBottom: 4,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: "#94A3B8",
-    textAlign: "center",
-    paddingVertical: 20,
-  },
-  primaryActionButton: {
-    backgroundColor: "#EF4444",
-    borderRadius: 12,
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-    shadowColor: "#DC2626",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  primaryActionText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    letterSpacing: 1,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 16,
-    maxHeight: "90%",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1E293B",
-  },
-  modalBody: {
-    maxHeight: 400,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#475569",
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: "#F8FAFC",
-    borderWidth: 1,
-    borderColor: "#CBD5E1",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: "#1E293B",
-    fontSize: 14,
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: "top",
-  },
-  autoFillSection: {
-    backgroundColor: "#EFF6FF",
-    borderLeftWidth: 4,
-    borderLeftColor: "#3B82F6",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  autoFillLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#1E40AF",
-    marginBottom: 8,
-  },
-  autoFillText: {
-    fontSize: 12,
-    color: "#1E40AF",
-    marginBottom: 4,
-  },
-  uploadPhotoButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderColor: "#2563EB",
-    borderRadius: 8,
-    paddingVertical: 12,
-    marginBottom: 16,
-  },
-  uploadPhotoText: {
-    color: "#2563EB",
-    fontWeight: "600",
-  },
-  photoPreviewWrapper: {
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-    backgroundColor: "#EFF6FF",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 16,
-  },
-  photoPreview: {
-    width: "100%",
-    height: 160,
-    borderRadius: 8,
-    backgroundColor: "#E2E8F0",
-  },
-  photoPreviewMetaRow: {
-    marginTop: 8,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  photoUploadedText: {
-    color: "#1E40AF",
-    fontWeight: "600",
-    fontSize: 12,
-  },
-  removePhotoText: {
-    color: "#DC2626",
-    fontWeight: "600",
-    fontSize: 12,
-  },
-  submitButton: {
-    backgroundColor: "#2563EB",
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  submitButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-    fontSize: 16,
-  },
-  trackerCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  statusStep: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  statusCircle: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#CBD5E1",
-    marginRight: 12,
-  },
-  statusCircleActive: {
-    backgroundColor: "#2563EB",
-  },
-  statusStepText: {
-    fontSize: 13,
-    color: "#475569",
-    flex: 1,
-  },
-  statusLine: {
-    width: 2,
-    height: 30,
-    backgroundColor: "#CBD5E1",
-    marginLeft: 5,
-    marginBottom: 4,
-  },
-  statusLineActive: {
-    backgroundColor: "#2563EB",
-  },
-  mapPlaceholder: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: 40,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  mapText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#475569",
-    marginTop: 12,
-  },
-  mapSubtext: {
-    fontSize: 12,
-    color: "#94A3B8",
-    marginTop: 4,
-  },
-  messagesCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  messageItem: {
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-  },
-  messageStaff: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#1E293B",
-  },
-  messageText: {
-    fontSize: 13,
-    color: "#475569",
-    marginTop: 4,
-  },
-  messageTime: {
-    fontSize: 11,
-    color: "#94A3B8",
-    marginTop: 4,
-  },
-  noMessagesText: {
-    fontSize: 13,
-    color: "#94A3B8",
-    textAlign: "center",
-    paddingVertical: 16,
-  },
-  qrCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  qrPlaceholder: {
-    alignItems: "center",
-    paddingVertical: 24,
-    borderWidth: 2,
-    borderColor: "#DBEAFE",
-    borderRadius: 12,
-    backgroundColor: "#F0F9FF",
-    marginBottom: 12,
-  },
-  qrText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1E40AF",
-    marginTop: 12,
-    textAlign: "center",
-  },
-  questionText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1E293B",
-    textAlign: "center",
-    marginBottom: 24,
-    marginTop: 10,
-  },
-  transportGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    rowGap: 12,
-    columnGap: 12,
-    marginBottom: 20,
-  },
-  transportButton: {
-    width: "48%",
-    backgroundColor: "#F0F9FF",
-    borderWidth: 2,
-    borderColor: "#BFDBFE",
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 120,
-  },
-  transportButtonText: {
-    marginTop: 10,
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1E293B",
-    textAlign: "center",
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 16,
-    paddingVertical: 8,
-  },
-  backButtonText: {
-    color: "#2563EB",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  qrId: {
-    fontSize: 11,
-    color: "#94A3B8",
-    marginTop: 4,
-  },
-  scanButton: {
-    backgroundColor: "#2563EB",
-    borderRadius: 8,
-    paddingVertical: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  scanButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-  },
-  historyHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  viewAllButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  viewAllText: {
-    color: "#2563EB",
-    fontWeight: "600",
-    fontSize: 13,
-  },
-  historyItem: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  historyItemTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1E293B",
-  },
-  historyItemMeta: {
-    fontSize: 12,
-    color: "#64748B",
-    marginTop: 2,
-  },
-  historyItemDate: {
-    fontSize: 11,
-    color: "#94A3B8",
-    marginTop: 2,
-  },
-  statusBadge: {
-    backgroundColor: "#F1F5F9",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  statusBadgeSuccess: {
-    backgroundColor: "#DCFCE7",
-  },
-  statusBadgeInfo: {
-    backgroundColor: "#E0E7FF",
-  },
-  statusBadgeText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#1E293B",
-  },
-  notificationItem: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  notificationTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#0F172A",
-    marginBottom: 4,
-  },
-  notificationMeta: {
-    fontSize: 12,
-    color: "#475569",
-    marginBottom: 10,
-  },
-  liveTrackingButton: {
-    backgroundColor: "#2563EB",
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  liveTrackingButtonText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  trackingCard: {
-    backgroundColor: "#F8FAFC",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 10,
-    padding: 14,
-  },
-  trackingTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 8,
-  },
-  trackingMeta: {
-    fontSize: 13,
-    color: "#475569",
-    marginBottom: 6,
-  },
-  historyFullItem: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  historyFullHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  historyFullTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#1E293B",
-  },
-  historyFullMeta: {
-    fontSize: 12,
-    color: "#475569",
-    marginBottom: 4,
-  },
-  historyFullDate: {
-    fontSize: 11,
-    color: "#94A3B8",
-    marginTop: 6,
-  },
-  emergencyGrid: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    gap: 12,
-  },
-  emergencyButton: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    padding: 16,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  emergencyButtonText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#1E293B",
-    marginTop: 8,
-    textAlign: "center",
-  },
-  logoutButton: {
-    backgroundColor: "#64748B",
-    borderRadius: 8,
-    paddingVertical: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  logoutButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-    padding: 10
-  },
-});
 
 export default PassengerDashboard;
