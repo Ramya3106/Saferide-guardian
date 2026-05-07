@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -26,6 +26,8 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [locationData, setLocationData] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(false);
   const scrollViewRef = useRef(null);
   const colorScheme = useColorScheme();
 
@@ -88,6 +90,35 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
     }, 80);
     return () => clearTimeout(timer);
   }, [messages]);
+
+  const loadLocationData = useCallback(async () => {
+    if (!complaint?._id) {
+      setLocationData(null);
+      return;
+    }
+
+    setLocationLoading(true);
+    try {
+      const API_BASE = getApiBase();
+      const response = await axios.get(`${API_BASE}/complaints/${complaint._id}/location`, {
+        headers: {
+          "x-user-email": userEmail,
+          "x-user-role": "Passenger",
+        },
+      });
+      setLocationData(response.data?.data || response.data || null);
+    } catch {
+      setLocationData(null);
+    } finally {
+      setLocationLoading(false);
+    }
+  }, [complaint?._id, userEmail]);
+
+  useEffect(() => {
+    loadLocationData();
+    const timer = setInterval(loadLocationData, 20000);
+    return () => clearInterval(timer);
+  }, [loadLocationData]);
 
   const formatTime = (timestamp) => {
     if (!timestamp) return "Just now";
@@ -162,6 +193,8 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
   const coachLabel = complaint?.coach || "B2";
   const seatLabel = complaint?.seat || "18";
   const routeText = complaint?.route || `${complaint?.boardingStation || "NDLS"} -> ${complaint?.destinationStation || "CSMT"}`;
+  const bestEstimate = Array.isArray(locationData?.estimates) ? locationData.estimates.find((item) => item?.etaMin != null) : null;
+  const officerLocations = Array.isArray(locationData?.officerLocations) ? locationData.officerLocations : [];
 
   return (
     <KeyboardAvoidingView
@@ -194,6 +227,53 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
           </View>
           <Text className="text-[#CBD5E1] text-xs leading-snug">{routeText}</Text>
           <PriorityBadgeList complaint={complaint} />
+        </View>
+
+        <View className="mx-3 mt-2 rounded-[18px] border p-3.5 gap-2" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center gap-2">
+              <Ionicons name="locate" size={16} color={theme.accent} />
+              <Text className="text-[15px] font-extrabold" style={{ color: theme.text }}>Live Officer Location</Text>
+            </View>
+            <Text className="text-[11px] font-semibold" style={{ color: theme.subtext }}>
+              {locationLoading ? "Updating..." : "Auto refresh"}
+            </Text>
+          </View>
+
+          {bestEstimate ? (
+            <View className="rounded-2xl px-3 py-2.5" style={{ backgroundColor: theme.accentSoft }}>
+              <Text className="text-[12px] font-bold" style={{ color: theme.text }}>
+                Nearest officer ETA: {bestEstimate.etaMin != null ? `${bestEstimate.etaMin} min` : "Pending"}
+              </Text>
+              <Text className="text-[11px] mt-0.5" style={{ color: theme.subtext }}>
+                Distance: {bestEstimate.distanceKm != null ? `${bestEstimate.distanceKm.toFixed(1)} km` : "Unknown"}
+              </Text>
+            </View>
+          ) : (
+            <Text className="text-[12px]" style={{ color: theme.subtext }}>
+              No live officer location yet. Once an on-duty railway authority accepts the complaint, tracking will appear here.
+            </Text>
+          )}
+
+          {officerLocations.length > 0 ? (
+            <View className="gap-2 pt-1">
+              {officerLocations.slice(0, 3).map((item, index) => (
+                <View key={`${item.officerKey || index}-${item.recordedAt || index}`} className="flex-row items-center justify-between rounded-2xl px-3 py-2" style={{ backgroundColor: theme.input }}>
+                  <View>
+                    <Text className="text-[12px] font-bold" style={{ color: theme.text }}>
+                      Officer {index + 1}
+                    </Text>
+                    <Text className="text-[11px]" style={{ color: theme.subtext }}>
+                      {item.latitude?.toFixed ? item.latitude.toFixed(4) : item.latitude}, {item.longitude?.toFixed ? item.longitude.toFixed(4) : item.longitude}
+                    </Text>
+                  </View>
+                  <Text className="text-[11px] font-semibold" style={{ color: theme.accent }}>
+                    {item.etaMin != null ? `${item.etaMin} min` : "Tracking"}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
         </View>
       </View>
 

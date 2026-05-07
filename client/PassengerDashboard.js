@@ -397,7 +397,18 @@ const PassengerDashboard = ({
         headers: requestHeaders({ "X-User-Email": userEmail }),
       });
       const payload = response.data?.data || response.data || {};
-      setComplaints(payload.complaints || []);
+      const nextComplaints = Array.isArray(payload.complaints) ? payload.complaints : [];
+      setComplaints(nextComplaints);
+
+      setCurrentComplaint((current) => {
+        if (current && nextComplaints.some((item) => String(item?._id || item?.id) === String(current?._id || current?.id))) {
+          return current;
+        }
+
+        return nextComplaints.find((item) =>
+          ["Accepted", "Staff Notified", "Submitted", "Reported"].includes(String(item?.status || "")),
+        ) || nextComplaints[0] || null;
+      });
     } catch (error) {
       console.log("Error fetching complaints:", error.message);
     } finally {
@@ -467,6 +478,13 @@ const PassengerDashboard = ({
     setSelectedTrackingComplaint(complaint);
     await fetchTrackingData(complaint?._id);
     setShowTrackingModal(true);
+  };
+
+  const handleOpenComplaintChat = (complaint) => {
+    setCurrentComplaint(complaint);
+    setShowTrackingModal(false);
+    setShowHistoryModal(false);
+    setShowNotificationModal(false);
   };
 
   const handleTransportSelect = (type) => {
@@ -1019,16 +1037,38 @@ const PassengerDashboard = ({
       {complaints.length > 0 ? (
         <View>
           {complaints.slice(0, 3).map((complaint) => (
-            <View key={complaint._id} className="bg-white rounded-lg p-3 mb-2.5 flex-row justify-between items-center border border-slate-200">
-              <View>
+            <TouchableOpacity
+              key={complaint._id}
+              className="bg-white rounded-lg p-3 mb-2.5 flex-row justify-between items-center border border-slate-200"
+              activeOpacity={0.85}
+            >
+              <View className="flex-1 pr-3">
                 <Text className="text-sm font-semibold text-slate-800">{complaint.itemType}</Text>
                 <Text className="text-xs text-slate-500 mt-0.5">{complaint.vehicleNumber} • {complaint.route}</Text>
                 <Text className="text-[11px] text-slate-400 mt-0.5">{new Date(complaint.createdAt).toLocaleDateString()}</Text>
               </View>
-              <View className={`px-2.5 py-1.5 rounded-lg ${complaint.status === "Recovered" ? "bg-green-100" : complaint.status === "Closed" ? "bg-indigo-100" : "bg-slate-100"}`}>
-                <Text className="text-[11px] font-semibold text-slate-800">{complaint.status}</Text>
+              <View className="items-end gap-2">
+                <View className={`px-2.5 py-1.5 rounded-lg ${complaint.status === "Recovered" ? "bg-green-100" : complaint.status === "Closed" ? "bg-indigo-100" : "bg-slate-100"}`}>
+                  <Text className="text-[11px] font-semibold text-slate-800">{complaint.status}</Text>
+                </View>
+                <View className="flex-row items-center gap-2">
+                  <TouchableOpacity
+                    className="px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-200"
+                    onPress={() => handleOpenLiveTracking(complaint)}
+                    activeOpacity={0.8}
+                  >
+                    <Text className="text-[11px] font-semibold text-blue-700">Track</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    className="px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200"
+                    onPress={() => handleOpenComplaintChat(complaint)}
+                    activeOpacity={0.8}
+                  >
+                    <Text className="text-[11px] font-semibold text-emerald-700">Chat</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       ) : (
