@@ -96,12 +96,17 @@ const resolveAuthorityFilter = (staffRole) => {
 const TRAIN_AUTHORITY = "TTR / TTE / RPF / Police";
 
 const normalizeSubmitAuthority = (value) => {
+  if (value && typeof value === "object") {
+    const { transportType } = value;
+    if (/train/i.test(String(transportType || ""))) {
+      return TRAIN_AUTHORITY;
+    }
+    return "Staff";
+  }
   const normalized = String(value || "").trim();
-
   if (/ttr|tte|rpf|police/i.test(normalized)) {
     return TRAIN_AUTHORITY;
   }
-
   return normalized || "Staff";
 };
 
@@ -314,6 +319,17 @@ router.post("/complaints", async (req, res) => {
     const qrCode = `QR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const complaintId = `CRN-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 
+    // Resolve variables from request body or defaults
+    const resolvedComplaintType = complaintType || "Lost Item";
+    const resolvedComplaintDescription = complaintDescription || description || "";
+    const resolvedComplaintTime = complaintTime || timestamp || new Date().toISOString();
+    const resolvedPassengerPhoneMasked = passengerPhoneMasked || maskPhoneNumber(req.headers["x-user-phone"]);
+    const resolvedTrainName = trainName || "";
+    const resolvedCoach = coach || "";
+    const resolvedSeat = seat || "";
+    const resolvedLocation = currentTrainLocation || lastSeenLocation || fromLocation || "Unknown";
+    const submitAuthorityValue = submitAuthority || normalizeSubmitAuthority({ transportType, itemType, description });
+
     console.log("📝 Creating complaint for email:", userEmail);
 
     // Calculate priority based on multiple factors
@@ -360,8 +376,8 @@ router.post("/complaints", async (req, res) => {
       currentLat: currentLat != null ? Number(currentLat) : null,
       currentLng: currentLng != null ? Number(currentLng) : null,
       timestamp: resolvedComplaintTime,
-      journeyId: journeyId || null,
-      route: route || `${fromLocation} → ${toLocation}`,
+      journeyId: journeyId && mongoose.Types.ObjectId.isValid(journeyId) ? new mongoose.Types.ObjectId(journeyId) : null,
+      route: route || (fromLocation && toLocation ? `${fromLocation} → ${toLocation}` : fromLocation || toLocation || "Unknown route"),
       submitAuthority: submitAuthorityValue,
       complaintId,
       qrCode,
@@ -374,9 +390,9 @@ router.post("/complaints", async (req, res) => {
         timeoutMs: 300000, // 5 minutes for demo
         startedAt: new Date(),
       },
-      assignedStaff,
+      assignedStaff: [],
       alertPriorityReason: priorityReason,
-      dispatchMode: assignedStaff.length > 0 ? "On-duty dispatch" : "Unassigned fallback",
+      dispatchMode: "Pending assignment",
     });
 
     console.log("💾 Saving complaint to MongoDB...");

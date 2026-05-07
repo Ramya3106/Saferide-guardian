@@ -997,21 +997,24 @@ const PassengerDashboard = ({ userEmail, userName, userPhone, authToken, authUse
           </ScrollView>
 
           {modalStep === 2 && (
-            <TouchableOpacity
-              style={styles.submitButton}
-              onPress={handleCreateComplaint}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.submitButtonText}>
-                  ➡️ Submit to {getSubmitAuthority(transportType)}
-                </Text>
-              )}
-            </TouchableOpacity>
+            <View style={{height: 60}} />
           )}
         </View>
+        {modalStep === 2 && (
+          <TouchableOpacity
+            style={styles.submitButton}
+            onPress={handleCreateComplaint}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitButtonText}>
+                ➡️ Submit to {getSubmitAuthority(transportType)}
+              </Text>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     </Modal>
   );
@@ -1713,6 +1716,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     padding: 16,
     maxHeight: "90%",
+    flex: 1,
+    position: 'relative',
   },
   modalHeader: {
     flexDirection: "row",
@@ -1729,7 +1734,8 @@ const styles = StyleSheet.create({
     color: "#1E293B",
   },
   modalBody: {
-    maxHeight: 400,
+    maxHeight: '70%',
+    paddingBottom: 80,
   },
   inputGroup: {
     marginBottom: 16,
@@ -1782,7 +1788,8 @@ const styles = StyleSheet.create({
     borderColor: "#2563EB",
     borderRadius: 8,
     paddingVertical: 12,
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    marginBottom: 80,
   },
   uploadPhotoText: {
     color: "#2563EB",
@@ -1823,7 +1830,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
-    marginTop: 10,
+    marginHorizontal: 0,
+    marginBottom: 0,
+    position: 'absolute',
+    bottom: 20,
+    left: 16,
+    right: 16,
+    zIndex: 10,
   },
   submitButtonText: {
     color: "#FFFFFF",

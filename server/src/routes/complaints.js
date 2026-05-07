@@ -285,7 +285,7 @@ router.post("/", async (req, res) => {
     savedComplaint.assignedToUnit = routedOfficers.length > 0 ? (routedOfficers[0]?.dutyUnit || null) : null;
     savedComplaint.assignedRole = routedOfficers.length > 0 ? (routedOfficers[0]?.dutyUnit === "POLICE" ? "Police" : routedOfficers[0]?.dutyUnit || null) : null;
     savedComplaint.assignedOfficerId = routedOfficers[0]?.staffId || null;
-    savedComplaint.assignedOfficerName = routedOfficers[0]?.staffName || submitAuthorityValue || null;
+    savedComplaint.assignedOfficerName = routedOfficers[0]?.staffName || submitAuthority || null;
     savedComplaint.assignedAt = routedOfficers.length > 0 ? new Date() : null;
     savedComplaint.staffEta = routedOfficers.length > 0 ? "6 mins" : "Pending assignment";
     savedComplaint.status = routedOfficers.length > 0 ? "Staff Notified" : "Submitted";
