@@ -1,4 +1,5 @@
 import io from "socket.io-client";
+import { getApiBase } from "../../apiConfig";
 
 let socket = null;
 
@@ -8,7 +9,7 @@ let socket = null;
  * @param {object} options - Socket connection options
  * @returns {object} Socket instance
  */
-export const initSocket = (serverUrl = "http://localhost:5000", options = {}) => {
+export const initSocket = (serverUrl = getApiBase().replace(/\/api\/?$/, ""), options = {}) => {
   if (socket && socket.connected) {
     return socket;
   }
