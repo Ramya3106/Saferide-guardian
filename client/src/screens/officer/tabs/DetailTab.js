@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import LiveTrackingPanel from "../../components/LiveTrackingPanel";
 
 const STATUS_META = {
   New:          { color: "#DC2626", bg: "#FEE2E2" },
@@ -268,6 +269,12 @@ export default function DetailTab({ complaint, sending, detailLoading, onBack, o
             }
           </View>
         </View>
+
+        <LiveTrackingPanel
+          complaintId={complaint.id}
+          title="Live Complaint Tracking"
+          emptyMessage="Tracking will appear once location sharing starts for this complaint."
+        />
 
         {/* Status Update */}
         <View className="bg-white rounded-2xl p-4 mb-3">

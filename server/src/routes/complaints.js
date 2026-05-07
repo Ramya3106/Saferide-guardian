@@ -1132,6 +1132,10 @@ router.get("/:id/location", async (req, res) => {
 
     return success(res, 200, "Live location data", {
       complaintId: String(complaint._id),
+      status: complaint.status,
+      staffEta: complaint.staffEta || null,
+      staffResponseStatus: complaint.staffResponseStatus || null,
+      sharedLocation: complaint.sharedLocation || null,
       trainLocation,
       officerLocations: estimates,
       targetCoords,

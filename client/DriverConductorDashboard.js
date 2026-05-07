@@ -22,6 +22,7 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { getApiBase } from "./apiConfig";
 import * as Location from "expo-location";
+import LiveTrackingPanel from "./src/components/LiveTrackingPanel";
 
 const API_BASE = getApiBase();
 
@@ -1036,6 +1037,12 @@ const DriverConductorDashboard = ({
                 onChangeText={setPickupTime}
               />
             </View>
+
+            <LiveTrackingPanel
+              complaintId={acceptedComplaint?.id}
+              title="Live Recovery Tracking"
+              emptyMessage="Tracking will appear here after location sharing starts."
+            />
 
 
             <TouchableOpacity

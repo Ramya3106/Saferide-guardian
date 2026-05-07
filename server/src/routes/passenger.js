@@ -59,6 +59,19 @@ const requireOfficerRole = (req, res, next) => {
   return next();
 };
 
+const STAFF_ROLES = new Set(["TTR/RPF/Police", "Driver/Conductor", "Cab/Auto"]);
+
+const requireStaffRole = (req, res, next) => {
+  const userRole = getUserRole(req);
+  if (!STAFF_ROLES.has(userRole)) {
+    return res.status(403).json({
+      message: "Staff role required to access this resource",
+      error: "INSUFFICIENT_ROLE"
+    });
+  }
+  return next();
+};
+
 const resolveTransportFilters = (staffRole) => {
   switch ((staffRole || "").toLowerCase()) {
     case "cab":
@@ -506,11 +519,11 @@ router.get("/complaints", async (req, res) => {
   }
 });
 
-// GET /api/passenger/live-alerts - Live complaints for staff (Officer role only)
-// Shows all active train complaints when officer is on duty.
-// Falls back to showing all train complaints even when off-duty so the
-// dashboard is never completely empty during testing.
-router.get("/live-alerts", requireOfficerRole, async (req, res) => {
+// GET /api/passenger/live-alerts - Live complaints for staff dashboards
+// Shows active complaints filtered by transport/staff role.
+// Falls back to showing matching complaints even when the backing staff
+// profile is unavailable so the dashboard is never completely empty during testing.
+router.get("/live-alerts", requireStaffRole, async (req, res) => {
   try {
     const { staffRole } = req.query;
     const transportFilters = resolveTransportFilters(staffRole);
@@ -1332,6 +1345,14 @@ router.post("/share-location/:complaintId", async (req, res) => {
     complaint.assignedOfficerName = complaint.assignedOfficerName || complaint.staffName || null;
 
     await complaint.save();
+
+    emitSocketEvent("complaint:location-update", {
+      complaintId: String(complaint._id),
+      passengerId: complaint.passengerId,
+      complaint: complaint.toObject ? complaint.toObject() : complaint,
+      sharedLocation: complaint.sharedLocation,
+      source: "share-location",
+    });
 
     console.log(
       `📍 Location shared for complaint ${complaintId}: Lat ${latitude}, Lng ${longitude}`
