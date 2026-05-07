@@ -1,5 +1,6 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
 const router = express.Router();
@@ -146,6 +147,16 @@ const isValidProfessionalId = (role, idValue) => {
 const normalizeProfessionalId = (value) => (value || "").trim().toUpperCase();
 
 const canLookupUserById = (value) => mongoose.Types.ObjectId.isValid(String(value || ""));
+
+const toDeterministicObjectId = (seedValue) => {
+  const normalizedSeed = String(seedValue || "").trim().toLowerCase();
+  if (!normalizedSeed) {
+    return null;
+  }
+
+  // Build a stable 24-hex id so demo/header-only officers never persist null userId.
+  return crypto.createHash("sha1").update(normalizedSeed).digest("hex").slice(0, 24);
+};
 
 const buildSyntheticOfficer = (profile = {}) => ({
   staffId: profile.staffId || profile.email || profile.professionalId || profile.username || "demo-officer",
@@ -319,6 +330,12 @@ const getAttendancePayload = (req, officer) => {
     normalizeProfessionalId(officer.professionalId) ||
     String(officer.staffId || officer.userId || officer._id || "").trim().toLowerCase();
   const officerKey = rawKey || `officer-${Date.now()}`;
+  const lookupUserId =
+    (canLookupUserById(officer.userId) && String(officer.userId)) ||
+    (canLookupUserById(officer._id) && String(officer._id)) ||
+    (canLookupUserById(officer.staffId) && String(officer.staffId)) ||
+    null;
+  const userId = lookupUserId || toDeterministicObjectId(officerKey);
 
   // Ensure officerName is never empty — required field in DutyAttendance
   const officerName =
@@ -327,6 +344,7 @@ const getAttendancePayload = (req, officer) => {
     "Duty Officer";
 
   return {
+    userId,
     officerKey,
     officerId: officer.staffId || officer.userId || null,
     officerEmail: normalizeEmail(officer.staffEmail || officer.email),
@@ -942,9 +960,26 @@ router.post("/duty/check-in", async (req, res) => {
 
   try {
     const officerKey = buildOfficerKey(officer) || officer.staffEmail || officer.professionalId || `officer-${Date.now()}`;
+    const officerUserId =
+      (canLookupUserById(officer.userId) && String(officer.userId)) ||
+      (canLookupUserById(officer._id) && String(officer._id)) ||
+      (canLookupUserById(officer.staffId) && String(officer.staffId)) ||
+      toDeterministicObjectId(officerKey);
+
     const activeAttendance = await getActiveAttendance(officerKey);
     if (activeAttendance) {
       return res.status(409).json({ message: "Officer already checked in and active." });
+    }
+
+    const activeByUserId = await DutyAttendance.findOne({
+      userId: officerUserId,
+      $or: [{ status: "ACTIVE" }, { dutyStatus: "ACTIVE" }],
+    }).sort({ createdAt: -1 });
+    if (activeByUserId) {
+      return res.status(409).json({
+        message: "Officer already checked in and active.",
+        attendance: normalizeAttendance(activeByUserId),
+      });
     }
 
     const attendancePayload = getAttendancePayload(req, officer);
@@ -993,6 +1028,15 @@ router.post("/duty/check-in", async (req, res) => {
       message: "Checked in successfully.",
     });
   } catch (error) {
+    if (
+      error?.code === 11000 &&
+      String(error?.message || "").includes("userId_1_dutyStatus_1")
+    ) {
+      return res.status(409).json({
+        message: "Officer already checked in and active.",
+      });
+    }
+
     console.error("Check-in error:", error.message);
     console.error("Stack trace:", error.stack);
     return res.status(500).json({
