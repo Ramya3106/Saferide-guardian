@@ -171,13 +171,6 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
     } finally { setSyncing(false); }
   };
 
-  const handleDashboardToggleDuty = async () => {
-    const nextDutyState = await syncDuty();
-    if (nextDutyState === true) {
-      setActiveTab("profile");
-    }
-  };
-
   const handleReply = async (message) => {
     if (!selectedComplaint) return;
     setSending(true);
@@ -228,7 +221,7 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
           dutyAttendance={dutyAttendance}
           onDuty={onDuty}
           syncing={syncing}
-          onToggleDuty={handleDashboardToggleDuty}
+          onToggleDuty={syncDuty}
           onViewComplaint={fetchComplaintDetail}
           onViewAll={() => setActiveTab("complaints")}
           loading={loading}
