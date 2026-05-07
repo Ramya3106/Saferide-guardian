@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import {
   BackHandler,
   View,
@@ -13,6 +13,7 @@ import {
   Linking,
   Animated,
   Pressable,
+  StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -583,6 +584,7 @@ const PassengerDashboard = ({
 
       const payload = response.data?.data || response.data || {};
       const createdComplaint = payload.complaint;
+      if (!createdComplaint) throw new Error('Server did not return complaint data');
       setCurrentComplaint(createdComplaint);
       setComplaints((prev) => [createdComplaint, ...prev]);
       setSelectedTrackingComplaint(createdComplaint);
@@ -738,7 +740,7 @@ const PassengerDashboard = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView className="max-h-[400px]">
+          <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={true}>
             {modalStep === 1 ? (
               <View>
                 <Text className="text-lg font-bold text-slate-800 text-center mb-6 mt-2">
@@ -968,33 +970,6 @@ const PassengerDashboard = ({
   const renderStaffMessages = () => {
     if (!currentComplaint) return null;
 
-    const handleMessageSent = async (messageText) => {
-      try {
-        const response = await axios.post(
-          `${API_BASE}/passenger/messages/${currentComplaint._id}`,
-          { text: messageText },
-          {
-            headers: {
-              "x-user-email": userEmail,
-              "x-user-name": userName,
-              "x-user-phone": userPhone,
-              Authorization: `Bearer ${authToken}`,
-            },
-          },
-        );
-
-        if (response.data?.complaint) {
-          setCurrentComplaint({
-            ...currentComplaint,
-            ...response.data.complaint,
-          });
-        }
-      } catch (error) {
-        console.error("Error sending message:", error);
-        Alert.alert("Error", "Failed to send message. Please try again.");
-      }
-    };
-
     return (
       <View className="mb-5">
         <Text className="text-lg font-bold text-slate-800 mb-2.5">💬 Staff Messages</Text>
@@ -1002,7 +977,7 @@ const PassengerDashboard = ({
           complaint={currentComplaint}
           userEmail={userEmail}
           userName={userName}
-          onMessageSent={handleMessageSent}
+          onMessageSent={fetchComplaintHistory}
           apiBase={API_BASE}
           authToken={authToken}
         />
@@ -1095,7 +1070,7 @@ const PassengerDashboard = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView className="max-h-[400px]">
+          <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={true}>
             {loading ? (
               <ActivityIndicator size="large" color="#2563EB" style={{ marginTop: 20 }} />
             ) : complaints.length > 0 ? (
@@ -1133,7 +1108,7 @@ const PassengerDashboard = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView className="max-h-[400px]">
+          <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={true}>
             {acceptedComplaints.length === 0 ? (
               <Text className="text-sm text-slate-400 text-center py-5">No new notifications</Text>
             ) : (
@@ -1165,7 +1140,7 @@ const PassengerDashboard = ({
             </TouchableOpacity>
           </View>
 
-          <View className="max-h-[400px]">
+          <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={true}>
             {trackingLoading ? (
               <ActivityIndicator size="large" color="#2563EB" style={{ marginTop: 20 }} />
             ) : selectedTrackingComplaint ? (
@@ -1213,7 +1188,7 @@ const PassengerDashboard = ({
                 <Text className="text-[13px] text-slate-600 mb-1.5">Waiting for duty officer acknowledgement and live updates.</Text>
               </View>
             )}
-          </View>
+          </ScrollView>
         </View>
       </View>
     </Modal>
