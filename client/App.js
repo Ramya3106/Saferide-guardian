@@ -14,7 +14,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import {
@@ -3357,15 +3356,16 @@ const AppContent = () => {
               behavior={Platform.OS === "ios" ? "padding" : "height"}
               keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
             >
-              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <ScrollView
-                  contentContainerStyle={{ flexGrow: 1, padding: 24, paddingBottom: 40 }}
-                  className={!keyboardVisible ? "justify-center" : ""}
-                  keyboardShouldPersistTaps="handled"
-                  showsVerticalScrollIndicator={true}
-                  bounces={true}
-                  nestedScrollEnabled={true}
-                >
+              <ScrollView
+                contentContainerStyle={{ flexGrow: 1, padding: 24, paddingBottom: 40 }}
+                className={!keyboardVisible ? "justify-center" : ""}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
+                onScrollBeginDrag={Keyboard.dismiss}
+                showsVerticalScrollIndicator={true}
+                bounces={true}
+                nestedScrollEnabled={true}
+              >
                   <Animated.View
                     className={`${"w-[100%] bg-[#FFFFFF] rounded-5 p-6 border-[1px] border-[#E2E8F0] shadow-lg"}`}
                   >
@@ -4681,8 +4681,7 @@ const AppContent = () => {
                       </Animated.View>
                     )}
                   </Animated.View>
-                </ScrollView>
-              </TouchableWithoutFeedback>
+              </ScrollView>
             </KeyboardAvoidingView>
           </>
         )}
