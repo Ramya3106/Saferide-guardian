@@ -25,10 +25,8 @@ import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { getApiBase } from "./apiConfig";
 import * as Location from "expo-location";
-
 const API_BASE = getApiBase();
 
-const AnimatedIonicon = Animated.createAnimatedComponent(Ionicons);
 
 const CarAutoDashboard = ({ onLogout }) => {
   const iconShakeValue = useRef(new Animated.Value(0)).current;
@@ -96,11 +94,16 @@ const CarAutoDashboard = ({ onLogout }) => {
     transform: [{ translateX: iconShakeValue }],
   };
 
-  const ShakyIcon = ({ style, ...props }) => (
-    <Pressable onHoverIn={startIconShake} onHoverOut={stopIconShake}>
-      <AnimatedIonicon {...props} style={[iconShakeStyle, style]} />
-    </Pressable>
-  );
+const ShakyIcon = ({ style, ...props }) => (
+  <Pressable
+    onPressIn={startIconShake}
+    onPressOut={stopIconShake}
+  >
+    <Animated.View style={[iconShakeStyle, style]}>
+      <Ionicons {...props} />
+    </Animated.View>
+  </Pressable>
+);
 
   // Main states
   const [currentStep, setCurrentStep] = useState("vehicleSelection"); // vehicleSelection, dutySetup, dashboard
@@ -937,3 +940,4 @@ const CarAutoDashboard = ({ onLogout }) => {
 };
 
 
+export default CarAutoDashboard;

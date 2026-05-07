@@ -921,14 +921,14 @@ const PassengerDashboard = ({
 
           {modalStep === 2 && (
             <TouchableOpacity
-              style={styles.submitButton}
-              onPress={handleCreateComplaint}
+            className="text-white bg-blue-600 px-4 py-2"
+            onPress={handleCreateComplaint}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
-                <Text style={styles.submitButtonText}>
+                <Text className="text-white">
                   ➡️ Submit to {getSubmitAuthority(transportType)}
                 </Text>
               )}
