@@ -159,14 +159,29 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
     try {
       const next = !onDuty;
       const ep = next ? "/auth/duty/check-in" : "/auth/duty/check-out";
+      console.log(`[DUTY] Attempting ${next ? "check-in" : "check-out"} to ${API_BASE}${ep}`);
+      console.log("[DUTY] Request headers:", headers());
       const res = await axios.post(`${API_BASE}${ep}`, {
-        email: officerEmail || undefined, professionalId: professionalId || undefined, dutyUnit,
-      }, { headers: headers() });
+        email: officerEmail || undefined,
+        professionalId: professionalId || undefined,
+        dutyUnit,
+      }, { headers: headers(), timeout: 10000 });
+      console.log(`[DUTY] ${next ? "Check-in" : "Check-out"} success:`, res.data);
       if (setOnDuty) setOnDuty(next);
       setDutyAttendance(res.data?.attendance || null);
       if (next) loadComplaints();
       return next;
-    } catch {
+    } catch (error) {
+      console.error("[DUTY] Error:", error.message);
+      if (error.response) {
+        console.error("[DUTY] Response status:", error.response.status);
+        console.error("[DUTY] Response data:", error.response.data);
+      } else if (error.request) {
+        console.error("[DUTY] No response received:", error.request);
+      } else {
+        console.error("[DUTY] Request setup error:", error);
+      }
+      alert(`Failed to ${onDuty ? "check out" : "check in"}: ${error.response?.data?.message || error.message}`);
       return null;
     } finally { setSyncing(false); }
   };
