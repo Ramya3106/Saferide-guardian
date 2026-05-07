@@ -579,40 +579,68 @@ const PassengerDashboard = ({
         `${API_BASE}/passenger/complaints`,
         {
           transportType,
-          vehicleNumber,
-          itemType,
-          description,
-          fromLocation,
-          toLocation,
-          departureTime,
-          arrivalTime,
-          lastSeenLocation: fromLocation,
+          vehicleNumber: vehicleNumber.trim(),
+          itemType: itemType.trim(),
+          description: description.trim(),
+          fromLocation: fromLocation.trim(),
+          toLocation: toLocation.trim(),
+          departureTime: departureTime.trim(),
+          arrivalTime: arrivalTime.trim(),
+          lastSeenLocation: fromLocation.trim(),
           timestamp: new Date().toISOString(),
-          route: `${fromLocation} → ${toLocation}`,
+          route: `${fromLocation.trim()} → ${toLocation.trim()}`,
           submitAuthority,
-          photoUri,
+          photoUri: photoUri || null,
         },
         {
-          headers: requestHeaders({
+          headers: {
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+            "X-User-Role": authUserRole || "Passenger",
             "X-User-Email": userEmail,
             "X-User-Name": userName,
-          }),
+          },
         },
       );
 
-      const payload = response.data?.data || response.data || {};
-      const createdComplaint = payload.complaint;
-      if (!createdComplaint) throw new Error('Server did not return complaint data');
+      // Parse response — server wraps data in { ok, message, data: { complaint } }
+      const responseBody = response.data || {};
+      const createdComplaint =
+        responseBody?.data?.complaint ||
+        responseBody?.complaint ||
+        responseBody?.data ||
+        null;
+
+      if (!createdComplaint || !createdComplaint._id) {
+        throw new Error("Server did not return complaint data. Please try again.");
+      }
+
+      // Update local state
       setCurrentComplaint(createdComplaint);
       setComplaints((prev) => [createdComplaint, ...prev]);
       setSelectedTrackingComplaint(createdComplaint);
       setTrackingData(null);
-      setShowTrackingModal(true);
+
+      // Join the complaint room for real-time officer replies (Swiggy-style tracking)
+      if (socketRef.current) {
+        socketRef.current.emit("join:complaint", String(createdComplaint._id));
+      }
+
+      // Close modal and show tracking BEFORE the alert so UI is ready
       resetComplaintModal();
-      Alert.alert("Submitted", `Request submitted successfully to ${submitAuthority}!`);
+      setShowTrackingModal(true);
+
+      Alert.alert(
+        "✅ Submitted",
+        `Your complaint has been submitted to ${submitAuthority}. You will receive real-time updates.`,
+        [{ text: "OK" }],
+      );
     } catch (error) {
-      const backendMessage = error?.response?.data?.message || error.message || "Unknown error";
-      Alert.alert("Error", `Error creating complaint: ${backendMessage}`);
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Unknown error";
+      Alert.alert("Submission Failed", `Could not submit complaint: ${backendMessage}`);
     } finally {
       setLoading(false);
     }
@@ -921,14 +949,25 @@ const PassengerDashboard = ({
 
           {modalStep === 2 && (
             <TouchableOpacity
-            className="text-white bg-blue-600 px-4 py-2"
-            onPress={handleCreateComplaint}
+              style={{
+                backgroundColor: loading ? "#93C5FD" : "#2563EB",
+                borderRadius: 12,
+                paddingVertical: 14,
+                paddingHorizontal: 16,
+                alignItems: "center",
+                justifyContent: "center",
+                marginTop: 8,
+                flexDirection: "row",
+                gap: 8,
+              }}
+              onPress={handleCreateComplaint}
               disabled={loading}
+              activeOpacity={0.85}
             >
               {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <Text className="text-white">
+                <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 15 }}>
                   ➡️ Submit to {getSubmitAuthority(transportType)}
                 </Text>
               )}

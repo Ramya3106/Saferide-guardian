@@ -3534,6 +3534,25 @@ const AppContent = () => {
                           ],
                         }}
                       >
+                        {isOfficialRole && !isRegister ? (
+                          <View className="flex-row items-center mb-3 gap-2">
+                            <TouchableOpacity
+                              className="p-2 rounded-full bg-[#EFF6FF] border-[1px] border-[#BFDBFE]"
+                              onPress={() => {
+                                setRole("Passenger");
+                                setEmail("");
+                                setProfessionalId("");
+                                setPassword("");
+                                setError("");
+                                setForgotPasswordMode(false);
+                              }}
+                              accessibilityLabel="Back to role selection"
+                            >
+                              <Ionicons name="arrow-back" size={20} color="#2563EB" />
+                            </TouchableOpacity>
+                            <Text className="text-[#475569] text-xs font-semibold">Back to login options</Text>
+                          </View>
+                        ) : null}
                         <Text className="text-lg font-semibold text-[#1E293B] mb-4">
                           {isRegister
                             ? "Create your account"

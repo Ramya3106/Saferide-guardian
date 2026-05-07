@@ -29,6 +29,16 @@ const emitSocketEvent = (eventName, payload = {}) => {
     ioInstance.to(`officer:${officerId}`).emit(eventName, payload);
   }
 
+  // Broadcast train complaints to all on-duty officers in the relevant duty-unit rooms.
+  // This is the Rapido/Uber-style push: every officer in the duty room gets the alert instantly.
+  const transportType = payload?.complaint?.transportType;
+  if (transportType === "train") {
+    const TRAIN_DUTY_UNITS = ["TTR", "TTE", "RPF", "Police"];
+    for (const unit of TRAIN_DUTY_UNITS) {
+      ioInstance.to(`duty:${unit}`).emit(eventName, payload);
+    }
+  }
+
   return true;
 };
 

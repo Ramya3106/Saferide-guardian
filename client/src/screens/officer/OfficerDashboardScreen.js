@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, TouchableOpacity, Platform, ToastAndroid, ScrollView } from "react-native";
+import { Animated, View, Text, TouchableOpacity, Platform, ToastAndroid, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
@@ -109,7 +109,21 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
   const [detailLoading, setDetailLoading] = useState(false);
   // Track which notification IDs have been seen (badge clears when messages tab is opened)
   const [seenIds, setSeenIds] = useState(new Set());
+  // Real-time new complaint alert state (Rapido/Uber-style instant push)
+  const [newAlertCount, setNewAlertCount] = useState(0);
+  const newAlertAnim = useRef(new Animated.Value(0)).current;
+  // Animated duty status indicator in header
+  const dutyIndicatorAnim = useRef(new Animated.Value(onDuty ? 1 : 0)).current;
   const socketRef = useRef(null);
+
+  // Animate the header duty indicator whenever onDuty changes
+  useEffect(() => {
+    Animated.timing(dutyIndicatorAnim, {
+      toValue: onDuty ? 1 : 0,
+      duration: 400,
+      useNativeDriver: false,
+    }).start();
+  }, [onDuty]);
 
   const headers = useCallback(() => ({
     ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
@@ -189,15 +203,99 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
     try {
       const socket = socketService.connect(SOCKET_BASE, { role: "TTR/RPF/Police", email: officerEmail, professionalId, dutyUnit });
       socketRef.current = socket;
-      const onNew = (data) => {
-        const a = normalizeAlert(data?.complaint || data);
-        setComplaints(prev => [a, ...prev.filter(c => c.id !== a.id)]);
+
+      // Join duty-unit room on connect (and on reconnect) so this officer
+      // receives all train complaints broadcast to their unit — like a Rapido
+      // driver joining the city pool to receive ride requests in real time.
+      const joinRooms = () => {
+        socket.emit("join:duty", dutyUnit);
+        const officerRoomId = professionalId || officerEmail;
+        if (officerRoomId) socket.emit("join:officer", officerRoomId);
       };
+      socket.on("connect", joinRooms);
+      if (socket.connected) joinRooms();
+
+      // Pulse animation: slide-in banner when a new complaint arrives
+      const triggerNewAlertPulse = () => {
+        newAlertAnim.setValue(0);
+        Animated.sequence([
+          Animated.timing(newAlertAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+          Animated.delay(2500),
+          Animated.timing(newAlertAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+        ]).start();
+      };
+
+      const onNew = (data) => {
+        // Only on-duty officers receive live complaint pushes
+        if (!onDuty) return;
+        const raw = data?.complaint || data;
+        // Only process train complaints for the railway dashboard
+        if (raw?.transportType && raw.transportType !== "train") return;
+        const a = normalizeAlert(raw);
+        if (!a.id) return;
+        setComplaints(prev => {
+          const exists = prev.some(c => c.id === a.id);
+          if (exists) {
+            return prev.map(c => c.id === a.id ? { ...c, ...a } : c);
+          }
+          // Brand-new complaint — prepend and trigger alert UI
+          setNewAlertCount(n => n + 1);
+          triggerNewAlertPulse();
+          showToast(`New complaint: ${a.itemType || "Item"} on ${a.vehicleNumber || "train"}`);
+          return [a, ...prev];
+        });
+      };
+
+      const onStatusChange = (data) => {
+        const raw = data?.complaint || data;
+        const a = normalizeAlert(raw);
+        if (!a.id) return;
+        setComplaints(prev => prev.map(c => c.id === a.id ? { ...c, ...a } : c));
+        setSelectedComplaint(prev => prev && prev.id === a.id ? { ...prev, ...a } : prev);
+      };
+
+      const onEscalation = (data) => {
+        if (!onDuty) return;
+        const raw = data?.complaint || data;
+        if (raw?.transportType && raw.transportType !== "train") return;
+        const a = normalizeAlert(raw);
+        if (!a.id) return;
+        setComplaints(prev => prev.map(c => c.id === a.id ? { ...c, ...a } : c));
+        showToast(`Escalated: ${a.itemType || "Complaint"} — ${data?.escalationLevel || "Priority raised"}`);
+      };
+
+      // Real-time duty status change broadcast from server
+      const onDutyStatusChange = (data) => {
+        const myEmail = (officerEmail || "").toLowerCase();
+        const myPid   = (professionalId || "").toUpperCase();
+        const evtEmail = (data?.officerEmail || "").toLowerCase();
+        const evtPid   = (data?.professionalId || "").toUpperCase();
+        const isMe = (myEmail && evtEmail && myEmail === evtEmail) ||
+                     (myPid   && evtPid   && myPid   === evtPid);
+        if (!isMe) return;
+        if (setOnDuty) setOnDuty(Boolean(data?.onDuty));
+        if (data?.attendance) setDutyAttendance(data.attendance);
+        if (!data?.onDuty) {
+          setComplaints([]);
+          setNewAlertCount(0);
+        }
+      };
+
       socket.on("complaint:new", onNew);
-      socket.on("complaint:status-change", onNew);
-      return () => { socket.off("complaint:new", onNew); socket.off("complaint:status-change", onNew); socket.disconnect(); };
+      socket.on("complaint:status-change", onStatusChange);
+      socket.on("complaint:escalation", onEscalation);
+      socket.on("duty:status-change", onDutyStatusChange);
+
+      return () => {
+        socket.off("connect", joinRooms);
+        socket.off("complaint:new", onNew);
+        socket.off("complaint:status-change", onStatusChange);
+        socket.off("complaint:escalation", onEscalation);
+        socket.off("duty:status-change", onDutyStatusChange);
+        socket.disconnect();
+      };
     } catch { return undefined; }
-  }, [officerEmail, professionalId, dutyUnit]);
+  }, [officerEmail, professionalId, dutyUnit, onDuty]);
 
   const syncDuty = async () => {
     const previousOnDuty = Boolean(onDuty);
@@ -260,8 +358,10 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
         const officerRoomId = professionalId || officerEmail || authUserId || (res.data?.attendance?.officerId) || (res.data?.attendance?.officerEmail);
         if (next) {
           socketService.joinOfficer(officerRoomId);
+          socketService.joinDuty(dutyUnit); // join duty-unit pool for train complaint dispatch
         } else {
           socketService.leaveOfficer(officerRoomId);
+          socketService.leaveDuty(dutyUnit); // leave duty pool when going off duty
         }
       } catch (e) { /* silent */ }
       if (next) {
@@ -443,6 +543,7 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
   // Mark all current notifications as seen when the messages tab is active
   const handleOpenMessages = () => {
     setActiveTab("messages");
+    setNewAlertCount(0); // clear the "new complaint" counter when officer opens notifications
     setSeenIds(prev => {
       const next = new Set(prev);
       notificationItems.forEach(item => next.add(item.id));
@@ -462,11 +563,49 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
     <SafeAreaView className="flex-1 bg-blue-700" edges={["top"]}>
       {/* Header */}
       <View className="bg-blue-700 px-5 py-3.5 flex-row justify-between items-center">
-        <View>
+        <View style={{ flex: 1 }}>
           <Text className="text-white text-lg font-extrabold">{headerTitle}</Text>
-          <View className="flex-row items-center gap-1 mt-0.5">
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 3 }}>
             <Ionicons name="location-outline" size={13} color="#93C5FD" />
             <Text className="text-blue-300 text-xs">{loc}</Text>
+            {/* Animated duty status pill */}
+            <Animated.View
+              style={{
+                marginLeft: 6,
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: 999,
+                backgroundColor: dutyIndicatorAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ["rgba(148,163,184,0.25)", "rgba(34,197,94,0.25)"],
+                }),
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              <Animated.View
+                style={{
+                  width: 6, height: 6, borderRadius: 3,
+                  backgroundColor: dutyIndicatorAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ["#94A3B8", "#22C55E"],
+                  }),
+                }}
+              />
+              <Animated.Text
+                style={{
+                  fontSize: 10,
+                  fontWeight: "800",
+                  color: dutyIndicatorAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ["#94A3B8", "#86EFAC"],
+                  }),
+                }}
+              >
+                {onDuty ? "ON DUTY" : "OFF DUTY"}
+              </Animated.Text>
+            </Animated.View>
           </View>
         </View>
         <TouchableOpacity className="relative p-1" onPress={handleOpenMessages}>
@@ -478,6 +617,32 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Real-time new complaint alert banner — slides in like a Rapido ride request */}
+      <Animated.View
+        style={{
+          opacity: newAlertAnim,
+          transform: [{ translateY: newAlertAnim.interpolate({ inputRange: [0, 1], outputRange: [-40, 0] }) }],
+          position: "absolute",
+          top: 64,
+          left: 0,
+          right: 0,
+          zIndex: 50,
+        }}
+        pointerEvents="none"
+      >
+        <View className="mx-4 bg-red-500 rounded-xl px-4 py-2.5 flex-row items-center gap-2 shadow-lg">
+          <Ionicons name="alert-circle" size={18} color="#fff" />
+          <Text className="text-white font-extrabold text-[13px] flex-1">
+            🚨 New train complaint received!
+          </Text>
+          {newAlertCount > 1 && (
+            <View className="bg-white rounded-full px-2 py-0.5">
+              <Text className="text-red-600 text-[11px] font-extrabold">{newAlertCount}</Text>
+            </View>
+          )}
+        </View>
+      </Animated.View>
 
       {/* Content */}
       <View className="flex-1">{renderContent()}</View>

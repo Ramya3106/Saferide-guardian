@@ -106,6 +106,20 @@ const startServer = async () => {
       }
     });
 
+    // Officers join their duty-unit room to receive real-time train complaint alerts
+    // e.g., all TTR officers on duty join "duty:TTR" — like Rapido driver pool
+    socket.on("join:duty", (dutyUnit) => {
+      if (dutyUnit) {
+        socket.join(`duty:${String(dutyUnit).toUpperCase()}`);
+      }
+    });
+
+    socket.on("leave:duty", (dutyUnit) => {
+      if (dutyUnit) {
+        socket.leave(`duty:${String(dutyUnit).toUpperCase()}`);
+      }
+    });
+
     // Relay typing indicator to other participants in complaint room
     socket.on("chat:typing", (payload) => {
       try {
