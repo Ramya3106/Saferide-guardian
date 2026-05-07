@@ -27,19 +27,19 @@ const normalizeAlert = (a) => ({
   id: a._id || a.complaintId || a.id || "",
   status: a.status || "Submitted",
   passengerName: a.passengerName || "Passenger",
-  passengerPhone: a.passengerPhone || a.phoneNumber || a.contactNumber || "–",
+  passengerPhone: a.passengerPhone || a.phoneNumber || a.contactNumber || "-",
   itemType: a.itemType || a.lostItemType || "Item",
   description: a.description || a.itemDescription || "",
-  vehicleNumber: a.vehicleNumber || a.trainNumber || "–",
+  vehicleNumber: a.vehicleNumber || a.trainNumber || "-",
   trainName: a.trainName || a.vehicleName || a.busName || "",
-  route: a.route || `${a.fromLocation || "Origin"} → ${a.toLocation || "Destination"}`,
-  fromLocation: a.fromLocation || a.boardingStation || a.fromStop || "–",
-  toLocation: a.toLocation || a.destinationStation || a.toStop || "–",
-  coach: a.coach || a.coachNumber || "–",
-  seat: a.seat || a.berthNumber || "–",
+  route: a.route || `${a.fromLocation || "Origin"} -> ${a.toLocation || "Destination"}`,
+  fromLocation: a.fromLocation || a.boardingStation || a.fromStop || "-",
+  toLocation: a.toLocation || a.destinationStation || a.toStop || "-",
+  coach: a.coach || a.coachNumber || "-",
+  seat: a.seat || a.berthNumber || "-",
   priority: a.priority || "Normal",
-  reportedAt: a.reportedAt || a.reportedAtStation || a.currentTrainLocation || "–",
-  platform: a.platform || a.platformNumber || "–",
+  reportedAt: a.reportedAt || a.reportedAtStation || a.currentTrainLocation || "-",
+  platform: a.platform || a.platformNumber || "-",
   imageUrl: a.imageUrl || a.itemImage || a.photo || null,
   createdAt: a.createdAt || a.submittedAt || null,
   updatedAt: a.updatedAt || null,
@@ -169,6 +169,15 @@ export default function OfficerDashboardScreen({ roleLabel, officerEmail, profes
       console.log(`[DUTY] ${next ? "Check-in" : "Check-out"} success:`, res.data);
       if (setOnDuty) setOnDuty(next);
       setDutyAttendance(res.data?.attendance || null);
+      // Auto-join/leave officer socket room for real-time updates
+      try {
+        const officerRoomId = professionalId || officerEmail || authUserId || (res.data?.attendance?.officerId) || (res.data?.attendance?.officerEmail);
+        if (next) {
+          socketService.joinOfficer(officerRoomId);
+        } else {
+          socketService.leaveOfficer(officerRoomId);
+        }
+      } catch (e) { /* silent */ }
       if (next) loadComplaints();
       return next;
     } catch (error) {

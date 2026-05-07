@@ -161,7 +161,7 @@ const PassengerMessageThread = ({ complaint, userEmail, onMessageSent = () => {}
   const trainName = complaint?.trainName || complaint?.vehicleNumber || "Rajdhani Express 12301";
   const coachLabel = complaint?.coach || "B2";
   const seatLabel = complaint?.seat || "18";
-  const routeText = complaint?.route || `${complaint?.boardingStation || "NDLS"} → ${complaint?.destinationStation || "CSMT"}`;
+  const routeText = complaint?.route || `${complaint?.boardingStation || "NDLS"} -> ${complaint?.destinationStation || "CSMT"}`;
 
   return (
     <KeyboardAvoidingView

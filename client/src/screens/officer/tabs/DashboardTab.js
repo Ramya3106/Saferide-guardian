@@ -6,7 +6,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 const fmtTime = (d) => {
-  if (!d) return "–";
+  if (!d) return "-";
   return new Date(d).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 };
 
@@ -52,7 +52,7 @@ export default function DashboardTab({
 
   const dutyId = dutyAttendance?.dutyId
     || (dutyAttendance?._id ? dutyAttendance._id.slice(-8).toUpperCase() : null)
-    || "–";
+    || "-";
 
   return (
     <ScrollView
@@ -154,13 +154,13 @@ export default function DashboardTab({
             <Text className="text-xs text-slate-400">{timeAgo(priorityAlert.createdAt)}</Text>
           </View>
           <Text className="text-[15px] font-extrabold text-slate-900 mb-1.5">
-            ID: {priorityAlert.id?.slice(-10)?.toUpperCase() || "–"}
+            ID: {priorityAlert.id?.slice(-10)?.toUpperCase() || "-"}
           </Text>
           <Text className="text-[13px] text-slate-700 mb-0.5">
-            Train: {[priorityAlert.vehicleNumber, priorityAlert.trainName].filter(Boolean).join(" – ") || "–"}
+            Train: {[priorityAlert.vehicleNumber, priorityAlert.trainName].filter(Boolean).join(" - ") || "-"}
           </Text>
           <Text className="text-[13px] text-slate-700 mb-0.5">
-            From: {priorityAlert.fromLocation || "–"}{"  →  "}{priorityAlert.toLocation || "–"}
+            From: {priorityAlert.fromLocation || "-"}{"  ->  "}{priorityAlert.toLocation || "-"}
           </Text>
           <Text className="text-[13px] text-slate-700 mb-0.5">Item:  {priorityAlert.itemType}</Text>
           <Text className="text-[13px] text-slate-700 mb-0.5">
@@ -201,7 +201,7 @@ export default function DashboardTab({
               </View>
               <View className="flex-1">
                 <Text className="text-[13px] font-bold text-slate-900">
-                  {c.id?.slice(-10)?.toUpperCase() || "–"}
+                  {c.id?.slice(-10)?.toUpperCase() || "-"}
                 </Text>
                 <Text className="text-xs text-slate-500 mt-0.5">{c.itemType}</Text>
               </View>

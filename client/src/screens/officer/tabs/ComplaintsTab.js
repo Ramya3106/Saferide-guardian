@@ -93,13 +93,13 @@ export default function ComplaintsTab({ complaints, loading, onViewComplaint, on
         {filtered.map((c) => {
           const ns = normalizeStatus(c.status);
           const meta = STATUS_META[ns];
-          const trainLabel = [c.vehicleNumber, c.trainName].filter(Boolean).join(" – ") || "–";
+          const trainLabel = [c.vehicleNumber, c.trainName].filter(Boolean).join(" - ") || "-";
           const fromTo = (c.fromLocation && c.toLocation)
-            ? `${c.fromLocation} → ${c.toLocation}`
+            ? `${c.fromLocation} -> ${c.toLocation}`
             : c.route || null;
           const coachSeat = [
-            c.coach && c.coach !== "–" ? `Coach: ${c.coach}` : null,
-            c.seat && c.seat !== "–" ? `Seat: ${c.seat}` : null,
+            c.coach && c.coach !== "-" ? `Coach: ${c.coach}` : null,
+            c.seat && c.seat !== "-" ? `Seat: ${c.seat}` : null,
           ].filter(Boolean).join(", ");
 
           return (
@@ -125,20 +125,20 @@ export default function ComplaintsTab({ complaints, loading, onViewComplaint, on
 
               {/* ID */}
               <Text className="text-[15px] font-extrabold text-slate-900 mb-1">
-                ID: {c.id?.slice(-10)?.toUpperCase() || "–"}
+                ID: {c.id?.slice(-10)?.toUpperCase() || "-"}
               </Text>
 
               {/* Train */}
               <Text className="text-[13px] text-slate-700 mb-0.5">Train: {trainLabel}</Text>
 
-              {/* From → To */}
+              {/* From -> To */}
               {!!fromTo && (
                 <Text className="text-[13px] text-slate-700 mb-0.5">From: {fromTo}</Text>
               )}
 
               {/* Item */}
               <Text className="text-[13px] text-slate-700 mb-0.5">
-                Item:  {c.itemType}{c.description ? ` – ${c.description}` : ""}
+                Item:  {c.itemType}{c.description ? ` - ${c.description}` : ""}
               </Text>
 
               {/* Passenger */}

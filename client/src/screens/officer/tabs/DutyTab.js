@@ -13,7 +13,7 @@ const ROLE_LABELS = {
 };
 
 const fmtDateTime = (d) => {
-  if (!d) return "–";
+  if (!d) return "-";
   return new Date(d).toLocaleString("en-IN", {
     day: "2-digit", month: "short", year: "numeric",
     hour: "2-digit", minute: "2-digit",
@@ -21,7 +21,7 @@ const fmtDateTime = (d) => {
 };
 
 const fmtTime = (d) => {
-  if (!d) return "–";
+  if (!d) return "-";
   return new Date(d).toLocaleTimeString("en-IN", {
     hour: "2-digit", minute: "2-digit",
   });
@@ -33,10 +33,10 @@ export default function DutyTab({
   refreshing, onRefresh,
 }) {
   const roleLabel = ROLE_LABELS[dutyUnit] || dutyUnit || "Railway Authority";
-  const location = dutyAttendance?.assignedStation || dutyAttendance?.assignedRoute || "–";
+  const location = dutyAttendance?.assignedStation || dutyAttendance?.assignedRoute || "-";
   const dutyId = dutyAttendance?.dutyId
-    || (dutyAttendance?._id ? dutyAttendance._id.slice(-8).toUpperCase() : "–")
-    || "–";
+    || (dutyAttendance?._id ? dutyAttendance._id.slice(-8).toUpperCase() : "-")
+    || "-";
   const checkIn = dutyAttendance?.checkInTime;
   const checkOut = dutyAttendance?.checkOutTime;
 
@@ -50,7 +50,7 @@ export default function DutyTab({
   const timeline = [
     {
       label: "Checked In",
-      value: checkIn ? fmtTime(checkIn) : "–",
+      value: checkIn ? fmtTime(checkIn) : "-",
       done: !!checkIn,
       dotColor: "#22C55E",
       lineColor: "#22C55E",
@@ -58,15 +58,15 @@ export default function DutyTab({
     {
       label: "Active on Duty",
       value: checkIn
-        ? `${fmtTime(checkIn)} – ${onDuty ? "Till Now" : fmtTime(checkOut)}`
-        : "–",
+        ? `${fmtTime(checkIn)} - ${onDuty ? "Till Now" : fmtTime(checkOut)}`
+        : "-",
       done: !!checkIn && onDuty,
       dotColor: "#F59E0B",
       lineColor: "#E2E8F0",
     },
     {
       label: "Checked Out",
-      value: checkOut ? fmtTime(checkOut) : "–",
+      value: checkOut ? fmtTime(checkOut) : "-",
       done: !!checkOut,
       dotColor: "#CBD5E1",
       lineColor: null,
@@ -178,10 +178,10 @@ export default function DutyTab({
         <View className="bg-white rounded-2xl p-[18px] mb-3.5">
           <Text className="text-base font-bold text-slate-900 mb-4">Officer Information</Text>
           {[
-            { icon: "person-outline",           label: officerName || "–" },
-            { icon: "mail-outline",             label: officerEmail || "–" },
-            { icon: "id-card-outline",          label: professionalId || "–" },
-            { icon: "shield-checkmark-outline", label: dutyUnit || "–" },
+            { icon: "person-outline",           label: officerName || "-" },
+            { icon: "mail-outline",             label: officerEmail || "-" },
+            { icon: "id-card-outline",          label: professionalId || "-" },
+            { icon: "shield-checkmark-outline", label: dutyUnit || "-" },
           ].map(({ icon, label }) => (
             <View key={icon} className="flex-row items-center gap-3 py-2 border-b border-slate-100">
               <Ionicons name={icon} size={17} color="#64748B" />

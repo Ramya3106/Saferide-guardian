@@ -19,7 +19,7 @@ const normalizeStatus = (s) => {
 };
 
 const fmtDate = (d) => {
-  if (!d) return "–";
+  if (!d) return "-";
   return new Date(d).toLocaleString("en-IN", {
     day: "2-digit", month: "short", year: "numeric",
     hour: "2-digit", minute: "2-digit",
@@ -34,7 +34,7 @@ const QUICK_REPLIES = ["Item Found", "Item Not Found", "Will Update Shortly", "C
 ───────────────────────────────────────────── */
 function RespondPage({ complaint, sending, onBack, onSend }) {
   const [text, setText] = useState("");
-  const trainLabel = [complaint.vehicleNumber, complaint.trainName].filter(Boolean).join(" – ") || "–";
+  const trainLabel = [complaint.vehicleNumber, complaint.trainName].filter(Boolean).join(" - ") || "-";
 
   const handleSend = () => {
     if (!text.trim()) { Alert.alert("Empty", "Please type a reply."); return; }
@@ -68,7 +68,7 @@ function RespondPage({ complaint, sending, onBack, onSend }) {
             </View>
             <View className="flex-1">
               <Text className="text-sm font-extrabold text-slate-900">
-                ID: {complaint.id?.slice(-10)?.toUpperCase() || "–"}
+                ID: {complaint.id?.slice(-10)?.toUpperCase() || "-"}
               </Text>
               <Text className="text-[13px] text-slate-600 mt-0.5">{complaint.itemType}</Text>
               <Text className="text-xs text-slate-400 mt-0.5">{trainLabel}</Text>
@@ -164,10 +164,10 @@ export default function DetailTab({ complaint, sending, detailLoading, onBack, o
 
   const ns = normalizeStatus(complaint.status);
   const meta = STATUS_META[ns];
-  const trainLabel = [complaint.vehicleNumber, complaint.trainName].filter(Boolean).join(" – ") || "–";
+  const trainLabel = [complaint.vehicleNumber, complaint.trainName].filter(Boolean).join(" - ") || "-";
   const routeLabel = (complaint.fromLocation && complaint.toLocation)
-    ? `${complaint.fromLocation} → ${complaint.toLocation}`
-    : complaint.route || "–";
+    ? `${complaint.fromLocation} -> ${complaint.toLocation}`
+    : complaint.route || "-";
 
   const handleMarkSecured = () =>
     Alert.alert(
@@ -211,7 +211,7 @@ export default function DetailTab({ complaint, sending, detailLoading, onBack, o
               </Text>
             </View>
             <Text className="text-base font-extrabold text-slate-900">
-              ID: {complaint.id?.slice(-10)?.toUpperCase() || "–"}
+              ID: {complaint.id?.slice(-10)?.toUpperCase() || "-"}
             </Text>
           </View>
           <Text className="text-[13px] text-slate-500">Reported:  {fmtDate(complaint.createdAt)}</Text>
@@ -222,11 +222,11 @@ export default function DetailTab({ complaint, sending, detailLoading, onBack, o
           <Text className="text-[15px] font-bold text-slate-900 mb-3">Complaint Information</Text>
           {[
             ["train-outline",       "Train Name",       trainLabel],
-            ["git-compare-outline", "From → To",        routeLabel],
-            ["grid-outline",        "Coach / Seat",     `${complaint.coach || "–"} / ${complaint.seat || "–"}`],
-            ["bag-handle-outline",  "Item Description", complaint.itemType + (complaint.description ? ` – ${complaint.description}` : "")],
+            ["git-compare-outline", "From -> To",        routeLabel],
+            ["grid-outline",        "Coach / Seat",     `${complaint.coach || "-"} / ${complaint.seat || "-"}`],
+            ["bag-handle-outline",  "Item Description", complaint.itemType + (complaint.description ? ` - ${complaint.description}` : "")],
             ["person-outline",      "Passenger Name",   complaint.passengerName],
-            ["call-outline",        "Phone Number",     complaint.passengerPhone || "–"],
+            ["call-outline",        "Phone Number",     complaint.passengerPhone || "-"],
           ].map(([icon, label, value]) => (
             <View key={label} className="flex-row justify-between items-center py-[9px] border-b border-slate-100">
               <View className="flex-row items-center gap-[9px] flex-1">
@@ -244,8 +244,8 @@ export default function DetailTab({ complaint, sending, detailLoading, onBack, o
         <View className="bg-white rounded-2xl p-4 mb-3">
           <Text className="text-[15px] font-bold text-slate-900 mb-3">Additional Info</Text>
           {[
-            ["location-outline", "Reported At", complaint.reportedAt || "–"],
-            ["apps-outline",     "Platform",    String(complaint.platform || "–")],
+            ["location-outline", "Reported At", complaint.reportedAt || "-"],
+            ["apps-outline",     "Platform",    String(complaint.platform || "-")],
           ].map(([icon, label, value]) => (
             <View key={label} className="flex-row justify-between items-center py-[9px] border-b border-slate-100">
               <View className="flex-row items-center gap-[9px] flex-1">
