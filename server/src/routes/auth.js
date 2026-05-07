@@ -976,8 +976,13 @@ router.post("/duty/check-in", requireAuth, requireRoles(OFFICER_ROLES), async (r
       message: "Checked in successfully.",
     });
   } catch (error) {
-    console.error("Check-in error:", error.message);
-    return res.status(500).json({ message: "Unable to check in." });
+    console.error("Check-in error:", error);
+    console.error("Stack trace:", error.stack);
+    return res.status(500).json({ 
+      message: "Unable to check in.", 
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
