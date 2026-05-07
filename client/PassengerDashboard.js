@@ -2182,6 +2182,7 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     color: "#FFFFFF",
     fontWeight: "700",
+    padding: 10
   },
 });
 

@@ -124,8 +124,8 @@ const DriverConductorDashboard = ({
   // Complaints data
   const [complaints, setComplaints] = useState([]);
 
-  const [selectedComplaint, setSelectedComplaint] = useState(null);
-  const [verificationStep, setVerificationStep] = useState(null); // null, photo, found, notFound, chat, pickup, qr
+  const [acceptedComplaint, setAcceptedComplaint] = useState(null);
+  const [itemConfirmation, setItemConfirmation] = useState(null); // null, itemPhoto, meetingDetails, notFound
   const [itemFound, setItemFound] = useState(null);
   const [pickupStop, setPickupStop] = useState("");
   const [pickupTime, setPickupTime] = useState("");
@@ -214,9 +214,9 @@ const DriverConductorDashboard = ({
         return true;
       }
 
-      if (selectedComplaint || verificationStep) {
-        setSelectedComplaint(null);
-        setVerificationStep(null);
+      if (acceptedComplaint) {
+        setAcceptedComplaint(null);
+        setItemConfirmation(null);
         setItemFound(null);
         setPickupStop("");
         setPickupTime("");
@@ -247,7 +247,7 @@ const DriverConductorDashboard = ({
     );
 
     return () => subscription.remove();
-  }, [currentStep, selectedComplaint, showQRModal, skipSetup, verificationStep]);
+  }, [currentStep, acceptedComplaint, showQRModal, skipSetup, itemConfirmation]);
 
   useEffect(() => {
     stepFadeAnim.setValue(0);
@@ -319,33 +319,21 @@ const DriverConductorDashboard = ({
 
   // CONDUCTOR FUNCTIONS
   const handleAcceptComplaint = (complaint) => {
-    setSelectedComplaint(complaint);
-    setVerificationStep("photo");
+    setAcceptedComplaint(complaint);
+    setItemConfirmation("itemPhoto");
   };
 
   const handleItemConfirmed = (found) => {
     setItemFound(found);
     if (found) {
-      setVerificationStep("chat");
+      setItemConfirmation("meetingDetails");
     } else {
-      setVerificationStep("notFound");
+      setItemConfirmation("notFound");
     }
   };
 
-  const handleGoToChat = () => {
-    setVerificationStep("chat");
-  };
-
-  const handleGoToPickup = () => {
-    setVerificationStep("pickup");
-  };
-
-  const handleOpenQR = () => {
-    setShowQRModal(true);
-  };
-
   const handleCompleteHandover = () => {
-    if (selectedComplaint) {
+    if (acceptedComplaint) {
       setPerformanceStats({
         ...performanceStats,
         recovered: performanceStats.recovered + 1,
@@ -354,10 +342,10 @@ const DriverConductorDashboard = ({
           ((performanceStats.recovered + 1) / performanceStats.totalToday) * 100
         ),
       });
-      setComplaints(complaints.filter((c) => c.id !== selectedComplaint.id));
+      setComplaints(complaints.filter((c) => c.id !== acceptedComplaint.id));
     }
-    setSelectedComplaint(null);
-    setVerificationStep(null);
+    setAcceptedComplaint(null);
+    setItemConfirmation(null);
     setItemFound(null);
     setPickupStop("");
     setPickupTime("");
@@ -382,9 +370,9 @@ const DriverConductorDashboard = ({
       const { latitude, longitude } = location.coords;
 
       // Send location to backend
-      if (selectedComplaint) {
+      if (acceptedComplaint) {
         await axios.post(
-          `${API_BASE}/passenger/share-location/${selectedComplaint.id}`,
+          `${API_BASE}/passenger/share-location/${acceptedComplaint.id}`,
           {
             latitude,
             longitude,
@@ -756,7 +744,7 @@ const DriverConductorDashboard = ({
   // Render Conductor Dashboard
   const renderConductorDashboard = () => (
     <>
-      {!selectedComplaint ? (
+      {!acceptedComplaint ? (
         <ScrollView contentContainerStyle={styles.dashboardContent}>
           {/* Header */}
           <View style={styles.dashboardHeader}>
@@ -925,7 +913,7 @@ const DriverConductorDashboard = ({
           </TouchableOpacity>
         </ScrollView>
       ) : (
-        renderConductorComplaintFlow()
+        renderAcceptedComplaintFlow()
       )}
 
       {/* QR Modal */}
@@ -975,37 +963,34 @@ const DriverConductorDashboard = ({
     </>
   );
 
-  // Render Conductor Complaint Flow
-  const renderConductorComplaintFlow = () => (
+  // Render Accepted Complaint Flow
+  const renderAcceptedComplaintFlow = () => (
     <ScrollView contentContainerStyle={styles.scrollContent}>
       <View style={styles.backButtonContainer}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => setSelectedComplaint(null)}
+          onPress={() => setAcceptedComplaint(null)}
         >
           <ShakyIcon name="arrow-back" size={24} color="#2563EB" />
-          <Text style={styles.backButtonText}>Back to Queue</Text>
+          <Text style={styles.backButtonText}>Back to Dashboard</Text>
         </TouchableOpacity>
       </View>
 
       {/* Item Photo Step */}
-      {verificationStep === "photo" && (
+      {itemConfirmation === "itemPhoto" && (
         <View>
           <Text style={styles.formTitle}>📸 Item Verification</Text>
           <View style={styles.formContainer}>
             <View style={styles.complaintSummary}>
               <Text style={styles.summaryTitle}>Complaint Details</Text>
               <Text style={styles.summaryText}>
-                Complaint ID: #{selectedComplaint.id}
+                📦 Item: {acceptedComplaint.item}
               </Text>
               <Text style={styles.summaryText}>
-                📦 Item: {selectedComplaint.item}
+                👤 Passenger: {acceptedComplaint.passengerName}
               </Text>
               <Text style={styles.summaryText}>
-                👤 Passenger: {selectedComplaint.passengerName}
-              </Text>
-              <Text style={styles.summaryText}>
-                💺 Seat: {selectedComplaint.seat}
+                💺 Seat: {acceptedComplaint.seat}
               </Text>
             </View>
 
@@ -1035,56 +1020,16 @@ const DriverConductorDashboard = ({
         </View>
       )}
 
-      {/* Chat Step */}
-      {verificationStep === "chat" && (
+      {/* Meeting Details Step */}
+      {itemConfirmation === "meetingDetails" && itemFound && (
         <View>
-          <Text style={styles.formTitle}>💬 Passenger Communication</Text>
-          <View style={styles.formContainer}>
-            <View style={styles.itemSecuredCard}>
-              <Text style={styles.itemSecuredTitle}>🟢 ITEM SECURED</Text>
-              <Text style={styles.itemSecuredText}>
-                Item safely stored with conductor
-              </Text>
-            </View>
-
-            <View style={styles.chatBox}>
-              <View style={styles.chatMessage}>
-                <Text style={styles.chatText}>"Item is safe"</Text>
-              </View>
-              <View style={styles.chatMessage}>
-                <Text style={styles.chatText}>
-                  "Collect at Guindy 10:30 AM"
-                </Text>
-              </View>
-              <View style={styles.chatMessage}>
-                <Text style={styles.chatText}>
-                  "Please bring ID proof"
-                </Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={handleGoToPickup}
-            >
-              <Text style={styles.primaryButtonText}>
-                📍 Next: Pickup Scheduling
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      {/* Pickup Scheduling Step */}
-      {verificationStep === "pickup" && (
-        <View>
-          <Text style={styles.formTitle}>📍 Pickup Scheduling</Text>
+          <Text style={styles.formTitle}>� Meeting Details</Text>
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Select Stop</Text>
+              <Text style={styles.label}>Meeting Point</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Guindy / CMBT / Velachery"
+                placeholder="Enter meeting location"
                 placeholderTextColor="#CBD5E1"
                 value={pickupStop}
                 onChangeText={setPickupStop}
@@ -1092,10 +1037,10 @@ const DriverConductorDashboard = ({
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Select Time</Text>
+              <Text style={styles.label}>Pickup Time</Text>
               <TextInput
                 style={styles.input}
-                placeholder="10:30 AM"
+                placeholder="Enter pickup time"
                 placeholderTextColor="#CBD5E1"
                 value={pickupTime}
                 onChangeText={setPickupTime}
@@ -1121,29 +1066,17 @@ const DriverConductorDashboard = ({
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.locationButton}>
-              <ShakyIcon name="location" size={24} color="#FFFFFF" />
-              <Text style={styles.locationButtonText}>Share Live Location</Text>
-
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.notifyButton}>
-              <ShakyIcon name="send" size={24} color="#FFFFFF" />
-              <Text style={styles.notifyButtonText}>Notify Passenger</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity
               style={styles.primaryButton}
-              onPress={handleOpenQR}
+              onPress={() => setShowQRModal(true)}
             >
-              <Text style={styles.primaryButtonText}>🔐 Proceed to QR Handover</Text>
+              <Text style={styles.primaryButtonText}>📍 Next: QR Handover</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
 
-      {/* Not Found Step */}
-      {verificationStep === "notFound" && (
+      {itemConfirmation === "notFound" && !itemFound && (
         <View>
           <Text style={styles.formTitle}>❌ Item Not Found</Text>
           <View style={styles.formContainer}>
@@ -1159,9 +1092,9 @@ const DriverConductorDashboard = ({
               style={styles.primaryButton}
               onPress={() => {
                 setComplaints(
-                  complaints.filter((c) => c.id !== selectedComplaint.id)
+                  complaints.filter((c) => c.id !== acceptedComplaint.id)
                 );
-                setSelectedComplaint(null);
+                setAcceptedComplaint(null);
               }}
             >
               <Text style={styles.primaryButtonText}>Return to Queue</Text>
