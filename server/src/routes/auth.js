@@ -829,7 +829,9 @@ router.get("/duty/status", async (req, res) => {
 // POST /api/auth/duty/check-in  (header-auth)
 router.post("/duty/check-in", async (req, res) => {
   let officer = null;
-  try { officer = await resolveOfficerFromAuth(req); } catch {}
+  try { officer = await resolveOfficerFromAuth(req); } catch (e) {
+    console.error("Auth resolution failed:", e.message);
+  }
   if (!officer) officer = await resolveOfficerFromHeaders(req);
   if (!officer) return res.status(404).json({ message: "Officer not found. Check credentials." });
 
@@ -861,15 +863,22 @@ router.post("/duty/check-in", async (req, res) => {
     }
     return res.json({ officer, attendance: normalizeAttendance(attendance), message: "Checked in successfully." });
   } catch (error) {
-    console.error("Check-in error:", error.message);
-    return res.status(500).json({ message: "Unable to check in." });
+    console.error("Check-in error:", error);
+    console.error("Check-in stack:", error.stack);
+    return res.status(500).json({ 
+      message: "Unable to check in.", 
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
 // POST /api/auth/duty/check-out  (header-auth)
 router.post("/duty/check-out", async (req, res) => {
   let officer = null;
-  try { officer = await resolveOfficerFromAuth(req); } catch {}
+  try { officer = await resolveOfficerFromAuth(req); } catch (e) {
+    console.error("Auth resolution failed:", e.message);
+  }
   if (!officer) officer = await resolveOfficerFromHeaders(req);
   if (!officer) return res.status(404).json({ message: "Officer not found. Check credentials." });
 
@@ -888,8 +897,13 @@ router.post("/duty/check-out", async (req, res) => {
     }
     return res.json({ officer, attendance: normalizeAttendance(activeAttendance), message: "Checked out successfully." });
   } catch (error) {
-    console.error("Check-out error:", error.message);
-    return res.status(500).json({ message: "Unable to check out." });
+    console.error("Check-out error:", error);
+    console.error("Check-out stack:", error.stack);
+    return res.status(500).json({ 
+      message: "Unable to check out.", 
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1021,8 +1035,13 @@ router.post("/duty/check-out", requireAuth, requireRoles(OFFICER_ROLES), async (
       message: "Checked out successfully.",
     });
   } catch (error) {
-    console.error("Check-out error:", error.message);
-    return res.status(500).json({ message: "Unable to check out." });
+    console.error("Check-out error:", error);
+    console.error("Stack trace:", error.stack);
+    return res.status(500).json({ 
+      message: "Unable to check out.", 
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
