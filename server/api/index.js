@@ -22,6 +22,10 @@ const initDb = async () => {
   }
 };
 
+app.use("/", async (req, res, next) => {
+ return res.status(200).json({ message: "Safe Ride API is running!" });
+});
+
 // Middleware to ensure database connection before processing API requests
 app.use(async (req, res, next) => {
   await initDb();
